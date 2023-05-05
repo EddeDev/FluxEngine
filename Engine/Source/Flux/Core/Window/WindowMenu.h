@@ -28,8 +28,8 @@ namespace Flux {
 					break;
 			}
 
-			childMenu->m_ID = rootMenu->m_IDCounter;
-			rootMenu->m_IDCounter++;
+			childMenu->m_ID = rootMenu->m_ID;
+			rootMenu->m_ID++;
 
 			return childMenu;
 		}
@@ -48,8 +48,8 @@ namespace Flux {
 					break;
 			}
 
-			childMenu->m_ID = rootMenu->m_IDCounter;
-			rootMenu->m_IDCounter++;
+			childMenu->m_ID = rootMenu->m_ID;
+			rootMenu->m_ID++;
 
 			return childMenu;
 		}
@@ -68,7 +68,6 @@ namespace Flux {
 	private:
 		std::string m_Name;
 		uint32 m_ID = 0;
-		uint32 m_IDCounter = 0;
 		bool m_IsSeparator = false;
 		WindowMenuCallback m_Callback;
 		WindowMenu* m_Parent = nullptr;

@@ -21,6 +21,4 @@
 #include <array>
 #include <vector>
 
-#include "Flux/Core/BaseTypes.h"
-#include "Flux/Core/RefCounting.h"
-#include "Flux/Core/Logging/Logger.h"
+#include "Flux/Core/Core.h"
