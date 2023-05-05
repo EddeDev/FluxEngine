@@ -1,12 +1,15 @@
 #include "FluxPCH.h"
 
 #include "Flux/Core/Window/Window.h"
+#include "Flux/Core/Platform.h"
 
 namespace Flux {
 
 	int32 Main()
 	{
 		Logger::Init();
+		Platform::Init();
+
 		FLUX_INFO("Flux Engine");
 		FLUX_INFO("Initializing...");
 
@@ -34,12 +37,18 @@ namespace Flux {
 		}
 		window->SetMenu(menu);
 
+		std::string msg = Platform::GetErrorMessage(Platform::GetLastError());
+
+		FLUX_DEBUG_BREAK();
+
 		while (running)
 		{
 			window->ProcessEvents();
 		}
 
 		FLUX_INFO("Shutting down...");
+
+		Platform::Shutdown();
 		Logger::Shutdown();
 		return 0;
 	}

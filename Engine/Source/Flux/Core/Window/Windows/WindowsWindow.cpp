@@ -1,6 +1,8 @@
 #include "FluxPCH.h"
 #include "WindowsWindow.h"
 
+#include "Flux/Core/Platform.h"
+
 #ifdef FLUX_PLATFORM_WINDOWS
 
 #include <VersionHelpers.h>
@@ -10,29 +12,6 @@
 #endif
 
 namespace Flux {
-
-	namespace Utils {
-
-		std::string GetErrorAsString(DWORD errorMessageID)
-		{
-			if (errorMessageID == 0)
-				return std::string();
-
-			LPSTR messageBuffer = nullptr;
-			size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
-			std::string message(messageBuffer, size);
-			LocalFree(messageBuffer);
-
-			if (message[message.size() - 1] == '\n')
-				message.pop_back();
-			if (message[message.size() - 1] == '\r')
-				message.pop_back();
-			if (message[message.size() - 1] == '.')
-				message.pop_back();
-			return message;
-		}
-
-	}
 
 	static const wchar_t* s_WindowClassName = L"FluxWindow";
 
@@ -103,8 +82,7 @@ namespace Flux {
 
 		if (!m_WindowHandle)
 		{
-			DWORD lastError = GetLastError();
-			FLUX_ERROR("Failed to create window ({0}: {1})", lastError, Utils::GetErrorAsString(lastError));
+			FLUX_ERROR("Failed to create window ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			return;
 		}
 
@@ -176,7 +154,7 @@ namespace Flux {
 			if (!result)
 			{
 				DWORD lastError = GetLastError();
-				FLUX_ASSERT(false, "AppendMenuA failed ({0}: {1})", lastError, Utils::GetErrorAsString(lastError));
+				FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			}
 		}
 	}

@@ -2,16 +2,6 @@
 
 #include "Logging/Logger.h"
 
-#define FLUX_LEGACY_ASSERTS 0
-
-#if FLUX_LEGACY_ASSERTS
-	#if defined(FLUX_PLATFORM_WINDOWS)
-		#define FLUX_PLATFORM_BREAK() __debugbreak()
-	#else
-		#define FLUX_PLATFORM_BREAK()
-	#endif
-#endif
-
 #ifdef FLUX_BUILD_DEBUG
 	#define FLUX_ENABLE_ASSERTS
 #endif
