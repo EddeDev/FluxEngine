@@ -11,8 +11,8 @@ namespace Flux {
 		FLUX_INFO("Initializing...");
 
 		WindowCreateInfo windowCreateInfo;
-		windowCreateInfo.Width = 1600;
-		windowCreateInfo.Height = 900;
+		windowCreateInfo.Width = 1600 / 2;
+		windowCreateInfo.Height = 900 / 2;
 
 		Unique<Window> window = Window::Create(windowCreateInfo);
 

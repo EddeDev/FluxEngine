@@ -31,6 +31,9 @@ REGISTER_FORMATTER(glm::bvec2, "[{0}, {1}]", v.x, v.y);
 REGISTER_FORMATTER(glm::bvec3, "[{0}, {1}, {2}]", v.x, v.y, v.z);
 REGISTER_FORMATTER(glm::bvec4, "[{0}, {1}, {2}, {3}]", v.x, v.y, v.z, v.w);
 
+REGISTER_FORMATTER(glm::mat2, "\n{0}\n{1}", v[0], v[1]);
+REGISTER_FORMATTER(glm::mat3, "\n{0}\n{1}\n{2}", v[0], v[1], v[2]);
+
 template<>
 struct fmt::formatter<glm::mat4> : fmt::formatter<std::string>
 {

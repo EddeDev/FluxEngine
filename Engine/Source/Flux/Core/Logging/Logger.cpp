@@ -6,20 +6,26 @@
 
 namespace Flux {
 
+#ifndef FLUX_BUILD_SHIPPING
+	#define FLUX_HAS_CONSOLE
+#endif
+
 	void Logger::Init()
 	{
-		std::array<spdlog::sink_ptr, 2> sinks = {
+		std::vector<spdlog::sink_ptr> sinks = {
 			std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
+#ifdef FLUX_HAS_CONSOLE
 			std::make_shared<spdlog::sinks::basic_file_sink_mt>("Logs/Latest.log", true),
+#endif
 		};
 
-		for (auto& sink : sinks)
-		{
-			sink->set_level(spdlog::level::trace);
-			sink->set_pattern("%^[%T] [%n]: %v%$");
-		}
+		sinks[0]->set_pattern("[%T] [%n]: %v");
+#ifdef FLUX_HAS_CONSOLE
+		sinks[1]->set_pattern("%^[%T] [%n]: %v%$");
+#endif
 
 		s_Logger = CreateUnique<spdlog::logger>("Flux", sinks.begin(), sinks.end());
+		s_Logger->set_level(spdlog::level::trace);
 	}
 
 	void Logger::Shutdown()

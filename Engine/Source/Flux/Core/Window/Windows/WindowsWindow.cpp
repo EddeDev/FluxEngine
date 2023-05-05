@@ -165,8 +165,6 @@ namespace Flux {
 			HMENU hChildMenu = CreateMenu();
 			CreateChildMenus(childMenu, hChildMenu);
 
-			FLUX_INFO("{0}: {1}", childMenu->GetName(), childMenu->GetID());
-
 			BOOL result;
 			if (childMenu->IsSeparator())
 				result = AppendMenuA(hMenu, MF_SEPARATOR | MF_BYPOSITION, (UINT_PTR)childMenu->GetID(), NULL);
