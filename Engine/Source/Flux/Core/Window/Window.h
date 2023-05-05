@@ -1,5 +1,7 @@
 #pragma once
 
+#include "WindowMenu.h"
+
 namespace Flux {
 
 	struct WindowCreateInfo
@@ -20,6 +22,8 @@ namespace Flux {
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;
+
+		virtual void SetMenu(Shared<WindowMenu> menu) = 0;
 
 		static Unique<Window> Create(const WindowCreateInfo& createInfo);
 	};

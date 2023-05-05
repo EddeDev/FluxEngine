@@ -22,6 +22,18 @@ namespace Flux {
 			running = false;
 		});
 
+		auto menu = WindowMenu::Create();
+		{
+			auto fileMenu = menu->AddMenu("File");
+			fileMenu->AddMenu("Open Scene");
+			fileMenu->AddSeparator();
+			fileMenu->AddMenu("Exit", [&]() { running = false; });
+
+			auto helpMenu = menu->AddMenu("Help");
+			helpMenu->AddMenu("About");
+		}
+		window->SetMenu(menu);
+
 		while (running)
 		{
 			window->ProcessEvents();

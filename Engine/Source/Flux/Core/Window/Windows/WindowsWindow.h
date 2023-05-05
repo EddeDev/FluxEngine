@@ -16,6 +16,8 @@ namespace Flux {
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) { m_Data.CloseCallbacks.push_back(callback); }
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) { m_Data.SizeCallbacks.push_back(callback); }
+
+		virtual void SetMenu(Shared<WindowMenu> menu);
 	private:
 		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	private:
@@ -29,6 +31,8 @@ namespace Flux {
 
 			std::vector<WindowCloseCallback> CloseCallbacks;
 			std::vector<WindowSizeCallback> SizeCallbacks;
+
+			Shared<WindowMenu> Menu;
 		} m_Data;
 
 		inline static ATOM s_WindowClass = 0;

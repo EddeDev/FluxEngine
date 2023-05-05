@@ -27,6 +27,8 @@ namespace Flux {
 				message.pop_back();
 			if (message[message.size() - 1] == '\r')
 				message.pop_back();
+			if (message[message.size() - 1] == '.')
+				message.pop_back();
 			return message;
 		}
 
@@ -149,6 +151,76 @@ namespace Flux {
 		}
 	}
 
+	static void CreateChildMenus(Shared<WindowMenu> menu, HMENU hMenu)
+	{
+		auto& childMenus = menu->GetChildren();
+		for (auto& childMenu : childMenus)
+		{
+			if (!childMenu)
+			{
+				FLUX_ASSERT(false, "WindowMenu is nullptr!");
+				continue;
+			}
+
+			HMENU hChildMenu = CreateMenu();
+			CreateChildMenus(childMenu, hChildMenu);
+
+			FLUX_INFO("{0}: {1}", childMenu->GetName(), childMenu->GetID());
+
+			BOOL result;
+			if (childMenu->IsSeparator())
+				result = AppendMenuA(hMenu, MF_SEPARATOR | MF_BYPOSITION, (UINT_PTR)childMenu->GetID(), NULL);
+			else if (childMenu->GetChildren().empty())
+				result = AppendMenuA(hMenu, MF_STRING, (UINT_PTR)childMenu->GetID(), childMenu->GetName().c_str());
+			else
+				result = AppendMenuA(hMenu, MF_POPUP, (UINT_PTR)hChildMenu, childMenu->GetName().c_str());
+
+			if (!result)
+			{
+				DWORD lastError = GetLastError();
+				FLUX_ASSERT(false, "AppendMenuA failed ({0}: {1})", lastError, Utils::GetErrorAsString(lastError));
+			}
+		}
+	}
+
+	static Shared<WindowMenu> FindMenuByID(Shared<WindowMenu> rootMenu, uint32 id)
+	{
+		auto& childMenus = rootMenu->GetChildren();
+		for (auto& childMenu : childMenus)
+		{
+			if (!childMenu)
+			{
+				FLUX_ASSERT(false, "WindowMenu is nullptr!");
+				continue;
+			}
+			
+			if (id == childMenu->GetID())
+				return childMenu;
+
+			Shared<WindowMenu> menu = FindMenuByID(childMenu, id);
+			if (menu)
+				return menu;
+		}
+		return nullptr;
+	}
+
+	void WindowsWindow::SetMenu(Shared<WindowMenu> menu)
+	{
+		if (!menu)
+		{
+			FLUX_ASSERT(false, "WindowMenu is nullptr!");
+			return;
+		}
+
+		if (menu->HasParent() || menu->GetChildren().empty())
+			return;
+
+		HMENU hMenu = CreateMenu();
+		CreateChildMenus(menu, hMenu);
+		::SetMenu(m_WindowHandle, hMenu);
+		m_Data.Menu = menu;
+	}
+
 	LRESULT CALLBACK WindowsWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		WindowData* data = (WindowData*)GetPropW(hWnd, L"Data");
@@ -157,11 +229,6 @@ namespace Flux {
 
 		switch (uMsg)
 		{
-		case WM_CREATE:
-		{
-			__debugbreak();
-			break;
-		}
 		case WM_SIZE:
 		{
 			const uint32 width = LOWORD(lParam);
@@ -176,6 +243,20 @@ namespace Flux {
 					callback(width, height);
 			}
 
+			break;
+		}
+		case WM_COMMAND:
+		{
+			if (data->Menu)
+			{
+				Shared<WindowMenu> menu = FindMenuByID(data->Menu, (uint32)wParam);
+				if (menu)
+				{
+					auto& callback = menu->GetCallback();
+					if (callback)
+						callback();
+				}
+			}
 			break;
 		}
 		case WM_CLOSE:
