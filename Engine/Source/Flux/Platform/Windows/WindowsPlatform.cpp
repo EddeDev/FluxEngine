@@ -1,30 +1,23 @@
 #include "FluxPCH.h"
-#include "Flux/Core/Platform.h"
+#include "WindowsPlatform.h"
 
 #ifdef FLUX_PLATFORM_WINDOWS
 
 namespace Flux {
 
-	void Platform::Init()
+	void WindowsPlatform::Init()
 	{
 		DisableProcessWindowsGhosting();
 
 		FLUX_ASSERT(SUCCEEDED(OleInitialize(NULL)), "Failed to initialize the COM library.");
 	}
 
-	void Platform::Shutdown()
+	void WindowsPlatform::Shutdown()
 	{
 		OleUninitialize();
 	}
 
-#ifndef FLUX_BUILD_SHIPPING
-	bool Platform::IsDebuggerPresent()
-	{
-		return ::IsDebuggerPresent();
-	}
-#endif
-
-	std::string Platform::GetErrorMessage(int32 error)
+	std::string WindowsPlatform::GetErrorMessage(int32 error)
 	{
 		if (error == 0)
 			return {};
@@ -44,7 +37,7 @@ namespace Flux {
 		return message;
 	}
 
-	uint32 Platform::GetLastError()
+	uint32 WindowsPlatform::GetLastError()
 	{
 		return static_cast<uint32>(::GetLastError());
 	}

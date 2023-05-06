@@ -1,8 +1,6 @@
 #include "FluxPCH.h"
 #include "WindowsWindow.h"
 
-#include "Flux/Core/Platform.h"
-
 #ifdef FLUX_PLATFORM_WINDOWS
 
 #include <VersionHelpers.h>

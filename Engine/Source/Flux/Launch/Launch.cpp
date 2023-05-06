@@ -1,7 +1,6 @@
 #include "FluxPCH.h"
 
 #include "Flux/Core/Window/Window.h"
-#include "Flux/Core/Platform.h"
 
 namespace Flux {
 
@@ -38,8 +37,6 @@ namespace Flux {
 		window->SetMenu(menu);
 
 		std::string msg = Platform::GetErrorMessage(Platform::GetLastError());
-
-		FLUX_DEBUG_BREAK();
 
 		while (running)
 		{
