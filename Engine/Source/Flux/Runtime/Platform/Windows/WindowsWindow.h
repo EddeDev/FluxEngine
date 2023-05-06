@@ -2,7 +2,7 @@
 
 #ifdef FLUX_PLATFORM_WINDOWS
 
-#include "Flux/Core/Window/Window.h"
+#include "Flux/Runtime/Core/Window.h"
 
 namespace Flux {
 
@@ -12,12 +12,12 @@ namespace Flux {
 		WindowsWindow(const WindowCreateInfo& createInfo);
 		~WindowsWindow();
 
-		virtual void ProcessEvents() const override;
-
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) { m_Data.CloseCallbacks.push_back(callback); }
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) { m_Data.SizeCallbacks.push_back(callback); }
 
 		virtual void SetMenu(Shared<WindowMenu> menu);
+
+		virtual WindowHandle GetNativeHandle() const override { return m_WindowHandle; }
 	private:
 		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	private:

@@ -7,9 +7,9 @@ namespace Flux {
 	struct WindowMenu
 	{
 	public:
-		WindowMenu(bool isSeparator = false)
+		explicit WindowMenu(bool isSeparator = false)
 			: m_IsSeparator(isSeparator) {}
-		WindowMenu(std::string_view name, const WindowMenuCallback& callback, WindowMenu* parent)
+		explicit WindowMenu(std::string_view name, const WindowMenuCallback& callback, WindowMenu* parent)
 			: m_Name(name), m_Callback(callback), m_Parent(parent)
 		{
 		}

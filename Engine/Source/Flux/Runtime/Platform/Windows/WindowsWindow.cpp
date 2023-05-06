@@ -117,16 +117,6 @@ namespace Flux {
 			UnregisterClassW(MAKEINTATOM(s_WindowClass), g_Instance);
 	}
 
-	void WindowsWindow::ProcessEvents() const
-	{
-		MSG msg;
-		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
-		}
-	}
-
 	static void CreateChildMenus(Shared<WindowMenu> menu, HMENU hMenu)
 	{
 		auto& childMenus = menu->GetChildren();

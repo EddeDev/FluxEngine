@@ -5,8 +5,7 @@
 #include "Logging/LogMacros.h"
 #include "Logging/LogFormatters.h"
 #include "AssertionMacros.h"
-
-#include "Flux/Platform/Platform.h"
+#include "Platform.h"
 
 #define FLUX_BIND_CALLBACK(func, ...) \
 [__VA_ARGS__](auto&&... args) -> decltype(auto) \

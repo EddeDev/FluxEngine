@@ -6,7 +6,7 @@
 	#define FLUX_TRACE_ENABLED
 #endif
 
-#ifdef LQ_TRACE_ENABLED
+#ifdef FLUX_TRACE_ENABLED
 	#define FLUX_TRACE(...) ::Flux::Logger::Log(::Flux::LogVerbosity::Trace, __VA_ARGS__)
 #else
 	#define FLUX_TRACE(...)

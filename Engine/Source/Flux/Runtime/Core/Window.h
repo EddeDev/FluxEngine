@@ -15,17 +15,19 @@ namespace Flux {
 	typedef std::function<void()> WindowCloseCallback;
 	typedef std::function<void(uint32, uint32)> WindowSizeCallback;
 
+	using WindowHandle = void*;
+
 	class Window
 	{
 	public:
-		virtual void ProcessEvents() const = 0;
-
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;
 
 		virtual void SetMenu(Shared<WindowMenu> menu) = 0;
 
-		static Unique<Window> Create(const WindowCreateInfo& createInfo);
+		virtual WindowHandle GetNativeHandle() const = 0;
+
+		static Shared<Window> Create(const WindowCreateInfo& createInfo);
 	};
 
 }
