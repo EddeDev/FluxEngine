@@ -21,14 +21,14 @@ namespace Flux {
 		}
 	public:
 		template<typename... TArgs>
-		static void Assert(fmt::format_string<TArgs...> fmt, TArgs&&... args)
+		static void AssertionFailed(fmt::format_string<TArgs...> fmt, TArgs&&... args)
 		{
 			std::string message = fmt::format(fmt, std::forward<TArgs>(args)...);
 			s_Logger->error(fmt::format("Assertion failed: {0}", message));
 			AssertMessageBox(message);
 		}
 		
-		static void Assert()
+		static void AssertionFailed()
 		{
 			std::string message = "Assertion failed.";
 			s_Logger->error(message);
@@ -36,14 +36,14 @@ namespace Flux {
 		}
 
 		template<typename... TArgs>
-		static void Verify(fmt::format_string<TArgs...> fmt, TArgs&&... args)
+		static void VerifyFailed(fmt::format_string<TArgs...> fmt, TArgs&&... args)
 		{
 			std::string message = fmt::format(fmt, std::forward<TArgs>(args)...);
 			s_Logger->error(fmt::format("Verify failed: {0}", message));
 			AssertMessageBox(message);
 		}
 
-		static void Verify()
+		static void VerifyFailed()
 		{
 			std::string message = "Verify failed.";
 			s_Logger->error(message);

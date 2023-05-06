@@ -23,7 +23,7 @@ namespace Flux {
 		{
 			return Flux::Launch(hInstance);
 		}
-		#else
+	#else
 		int32 WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR lpCmdLine, _In_ int32 nShowCmd)
 		{
 			return Flux::Launch(hInstance);
