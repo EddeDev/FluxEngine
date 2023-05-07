@@ -23,6 +23,9 @@ namespace Flux {
 
 		static std::string GetErrorMessage(int32 error);
 		static uint32 GetLastError();
+
+		static std::string GetEnvironmentVariable(const char* variableName);
+		static bool SetEnvironmentVariable(const char* variableName, const char* value);
 	};
 
 	typedef WindowsPlatform Platform;

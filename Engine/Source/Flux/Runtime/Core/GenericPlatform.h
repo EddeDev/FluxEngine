@@ -67,6 +67,9 @@ namespace Flux {
 
 		static std::string GetErrorMessage(int32 error) { return "Not implemented"; }
 		static uint32 GetLastError() { return 0; }
+
+		static std::string GetEnvironmentVariable(const char* variableName) { return "Not implemented"; }
+		static bool SetEnvironmentVariable(const char* variableName, const char* value) {}
 	};
 
 }

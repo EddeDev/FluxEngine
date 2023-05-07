@@ -31,6 +31,7 @@ namespace Flux {
 		Shared<WindowMenu> fileMenu = menu->AddMenu("File");
 		fileMenu->AddMenu("Open Scene");
 		fileMenu->AddSeparator();
+		fileMenu->AddMenu("Restart", [this]() { Close(true); });
 		fileMenu->AddMenu("Exit", [this]() { Close(); });
 
 		Shared<WindowMenu> helpMenu = menu->AddMenu("Help");
@@ -54,14 +55,14 @@ namespace Flux {
 		while (m_Running)
 		{
 			float time = Platform::GetTime();
-			float deltaTime = time - lastTime;
+			float deltaTime = glm::min<float>(time - lastTime, 1.0f / 30.0f);
 			lastTime = time;
 
 			FLUX_TRACE("{0} fps", (int32)(1.0f / deltaTime));
 
 			OnUpdate();
 
-			Platform::Sleep(0.000016f);
+			Platform::Sleep(0.01f);
 			Platform::Tick();
 		}
 

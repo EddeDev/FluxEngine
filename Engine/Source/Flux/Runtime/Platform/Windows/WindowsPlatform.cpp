@@ -139,6 +139,24 @@ namespace Flux {
 		return static_cast<uint32>(::GetLastError());
 	}
 
+	std::string WindowsPlatform::GetEnvironmentVariable(const char* variableName)
+	{
+		static char buffer[65535];
+		DWORD bufferSize = ::GetEnvironmentVariableA(variableName, buffer, sizeof(buffer));
+		return { buffer, bufferSize };
+	}
+
+	bool WindowsPlatform::SetEnvironmentVariable(const char* variableName, const char* value)
+	{
+		uint32 error = ::SetEnvironmentVariableA(variableName, value);
+		if (error == 0)
+		{
+			FLUX_WARNING("Failed to set environment variable '{0}' to '{1}'", variableName, value);
+			return false;
+		}
+		return true;
+	}
+
 }
 
 #endif
