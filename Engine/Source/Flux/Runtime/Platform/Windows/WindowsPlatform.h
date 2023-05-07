@@ -18,7 +18,7 @@ namespace Flux {
 		static float GetTime();
 		static uint64 GetNanoTime();
 
-		static MessageBoxResult MessageBox(Window* window, MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption);
+		static MessageBoxResult MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window = nullptr);
 
 		static bool IsDebuggerPresent();
 		static void DebugBreak();

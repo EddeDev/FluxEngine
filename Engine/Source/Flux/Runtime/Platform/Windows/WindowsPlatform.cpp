@@ -97,7 +97,7 @@ namespace Flux {
 		return value * (nsPerSecond / s_Data.TimerFrequency);
 	}
 
-	MessageBoxResult WindowsPlatform::MessageBox(Window* window, MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption)
+	MessageBoxResult WindowsPlatform::MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window)
 	{
 		uint32 flags = 0;
 

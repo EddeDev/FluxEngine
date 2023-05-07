@@ -64,7 +64,7 @@ namespace Flux {
 		if (Platform::IsDebuggerPresent())
 			buttons = MessageBoxButtons::YesNo;
 
-		MessageBoxResult result = Platform::MessageBox(nullptr, buttons, MessageBoxIcon::Error,  text.c_str(), "Flux Assert");
+		MessageBoxResult result = Platform::MessageBox(buttons, MessageBoxIcon::Error,  text.c_str(), "Flux Assert");
 		if (Platform::IsDebuggerPresent())
 		{
 			if (result == MessageBoxResult::Yes)
