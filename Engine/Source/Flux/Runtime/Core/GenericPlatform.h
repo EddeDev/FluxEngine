@@ -42,13 +42,15 @@ namespace Flux {
 		Yes
 	};
 
+	using WindowClassHandle = uint32;
+
 	class GenericPlatform
 	{
 	public:
 		static void Init() {}
-		static void Tick() {}
 		static void Shutdown() {}
 
+		static void PumpMessages() {}
 		static void Sleep(float seconds) {}
 
 		static float GetTime() { return 0.0f; }
@@ -70,6 +72,8 @@ namespace Flux {
 
 		static std::string GetEnvironmentVariable(const char* variableName) { return "Not implemented"; }
 		static bool SetEnvironmentVariable(const char* variableName, const char* value) {}
+
+		static WindowClassHandle GetWindowClass() { return 0; }
 	};
 
 }

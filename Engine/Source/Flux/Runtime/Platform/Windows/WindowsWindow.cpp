@@ -11,29 +11,13 @@
 
 namespace Flux {
 
-	static const wchar_t* s_WindowClassName = L"FluxWindow";
-
 	extern HINSTANCE g_Instance;
 
 	WindowsWindow::WindowsWindow(const WindowCreateInfo& createInfo)
 	{
-		if (s_WindowCount == 0)
-		{
-			WNDCLASSEXW windowClass = {};
-			windowClass.cbSize = sizeof(WNDCLASSEXW);
-			windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-			windowClass.lpfnWndProc = WindowProc;
-			windowClass.hInstance = g_Instance;
-			windowClass.hIcon = (HICON)LoadImageW(NULL, IDI_APPLICATION, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
-			windowClass.hCursor = LoadCursorW(g_Instance, IDC_ARROW);
-			windowClass.lpszClassName = s_WindowClassName;
-
-			s_WindowClass = RegisterClassExW(&windowClass);
-		}
-
-		m_Data.Width = createInfo.Width;
-		m_Data.Height = createInfo.Height;
-		m_Data.Title = createInfo.Title;
+		m_Width = createInfo.Width;
+		m_Height = createInfo.Height;
+		m_Title = createInfo.Title;
 
 		DWORD style = 0;
 		style |= WS_CLIPSIBLINGS;
@@ -50,29 +34,36 @@ namespace Flux {
 		DWORD exStyle = 0;
 		exStyle |= WS_EX_APPWINDOW;
 
-		int32 windowX = (GetSystemMetrics(SM_CXSCREEN) / 2) - (m_Data.Width / 2);
-		int32 windowY = (GetSystemMetrics(SM_CYSCREEN) / 2) - (m_Data.Height / 2);
+		int32 windowX = (GetSystemMetrics(SM_CXSCREEN) / 2) - (m_Width / 2);
+		int32 windowY = (GetSystemMetrics(SM_CYSCREEN) / 2) - (m_Height / 2);
 
-		RECT rect = { 0, 0, static_cast<LONG>(m_Data.Width), static_cast<LONG>(m_Data.Height) };
+		RECT rect = { 0, 0, static_cast<LONG>(m_Width), static_cast<LONG>(m_Height) };
 		if (AdjustWindowRectEx(&rect, style, FALSE, exStyle))
 		{
 			windowX = windowX + rect.left;
 			windowY = windowY + rect.top;
-			m_Data.Width = rect.right - rect.left;
-			m_Data.Height = rect.bottom - rect.top;
+			m_Width = rect.right - rect.left;
+			m_Height = rect.bottom - rect.top;
+		}
+
+		ATOM windowClass = static_cast<ATOM>(Platform::GetWindowClass());
+		if (!windowClass)
+		{
+			FLUX_ASSERT(false, "Window class is NULL!");
+			return;
 		}
 
 		std::wstring title = std::wstring(createInfo.Title.begin(), createInfo.Title.end());
 
 		m_WindowHandle = CreateWindowExW(
 			exStyle,
-			MAKEINTATOM(s_WindowClass),
+			MAKEINTATOM(windowClass),
 			title.c_str(),
 			style,
 			windowX,
 			windowY,
-			m_Data.Width,
-			m_Data.Height,
+			m_Width,
+			m_Height,
 			NULL,
 			NULL,
 			g_Instance,
@@ -80,13 +71,11 @@ namespace Flux {
 
 		if (!m_WindowHandle)
 		{
-			FLUX_ERROR("Failed to create window ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "Failed to create window ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			return;
 		}
 
-		s_WindowCount++;
-
-		SetPropW(m_WindowHandle, L"Data", &m_Data);
+		SetPropW(m_WindowHandle, L"Window", this);
 
 		if (IsWindows7OrGreater())
 		{
@@ -100,8 +89,8 @@ namespace Flux {
 		RECT clientRect;
 		if (GetClientRect(m_WindowHandle, &clientRect))
 		{
-			m_Data.Width = clientRect.right;
-			m_Data.Height = clientRect.bottom;
+			m_Width = clientRect.right;
+			m_Height = clientRect.bottom;
 		}
 
 		ShowWindow(m_WindowHandle, SW_SHOWNA);
@@ -110,11 +99,6 @@ namespace Flux {
 	WindowsWindow::~WindowsWindow()
 	{
 		DestroyWindow(m_WindowHandle);
-
-		s_WindowCount--;
-
-		if (s_WindowCount == 0)
-			UnregisterClassW(MAKEINTATOM(s_WindowClass), g_Instance);
 	}
 
 	static void CreateChildMenus(Shared<WindowMenu> menu, HMENU hMenu)
@@ -182,15 +166,11 @@ namespace Flux {
 		HMENU hMenu = CreateMenu();
 		CreateChildMenus(menu, hMenu);
 		::SetMenu(m_WindowHandle, hMenu);
-		m_Data.Menu = menu;
+		m_Menu = menu;
 	}
 
-	LRESULT CALLBACK WindowsWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
-		WindowData* data = (WindowData*)GetPropW(hWnd, L"Data");
-		if (!data)
-			return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-
 		switch (uMsg)
 		{
 		case WM_SIZE:
@@ -198,12 +178,12 @@ namespace Flux {
 			const uint32 width = LOWORD(lParam);
 			const uint32 height = HIWORD(lParam);
 
-			if (width != data->Width || height != data->Height)
+			if (width != m_Width || height != m_Height)
 			{
-				data->Width = width;
-				data->Height = height;
+				m_Width = width;
+				m_Height = height;
 
-				for (auto& callback : data->SizeCallbacks)
+				for (auto& callback : m_SizeCallbacks)
 					callback(width, height);
 			}
 
@@ -211,9 +191,9 @@ namespace Flux {
 		}
 		case WM_COMMAND:
 		{
-			if (data->Menu)
+			if (m_Menu)
 			{
-				Shared<WindowMenu> menu = FindMenuByID(data->Menu, (uint32)wParam);
+				Shared<WindowMenu> menu = FindMenuByID(m_Menu, (uint32)wParam);
 				if (menu)
 				{
 					auto& callback = menu->GetCallback();
@@ -225,13 +205,13 @@ namespace Flux {
 		}
 		case WM_CLOSE:
 		{
-			for (auto& callback : data->CloseCallbacks)
+			for (auto& callback : m_CloseCallbacks)
 				callback();
 			break;
 		}
 		}
 
-		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+		return static_cast<int32>(DefWindowProcW(m_WindowHandle, uMsg, wParam, lParam));
 	}
 
 }

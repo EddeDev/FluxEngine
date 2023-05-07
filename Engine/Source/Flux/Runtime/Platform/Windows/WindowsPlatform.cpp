@@ -7,22 +7,54 @@
 
 namespace Flux {
 
-	static const uint64 s_NSPerSecond = 1000000000;
+	extern HINSTANCE g_Instance;
 
-	static uint64 s_TimerOffset;
-	static uint64 s_TimerFrequency;
+	struct WindowsPlatformData
+	{
+		uint64 TimerOffset;
+		uint64 TimerFrequency;
 
+		ATOM WindowClass;
+	};
+
+	static WindowsPlatformData s_Data;
+	
 	void WindowsPlatform::Init()
 	{
-		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&s_TimerOffset));
-		FLUX_ASSERT(QueryPerformanceFrequency((LARGE_INTEGER*)&s_TimerFrequency));
+		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_Data.TimerOffset))
+			FLUX_ASSERT(false, "QueryPerformanceCounter failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+		
+		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_Data.TimerFrequency))
+			FLUX_ASSERT(false, "QueryPerformanceFrequency failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		DisableProcessWindowsGhosting();
 
-		FLUX_ASSERT(SUCCEEDED(OleInitialize(NULL)), "Failed to initialize the COM library.");
+		WNDCLASSEXW windowClass = {};
+		windowClass.cbSize = sizeof(WNDCLASSEXW);
+		windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+		windowClass.lpfnWndProc = WindowProc;
+		windowClass.hInstance = g_Instance;
+		windowClass.hIcon = (HICON)LoadImageW(NULL, IDI_APPLICATION, IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		windowClass.hCursor = LoadCursorW(g_Instance, IDC_ARROW);
+		windowClass.lpszClassName = L"FluxWindow";
+
+		s_Data.WindowClass = RegisterClassExW(&windowClass);
+		if (!s_Data.WindowClass)
+			FLUX_ASSERT(false, "RegisterClassExW failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+
+		if (!SUCCEEDED(OleInitialize(NULL)))
+			FLUX_ASSERT(false, "Failed to initialize COM library.\n{0}", Platform::GetErrorMessage(Platform::GetLastError()));
 	}
 
-	void WindowsPlatform::Tick()
+	void WindowsPlatform::Shutdown()
+	{
+		if (!UnregisterClassW(MAKEINTATOM(s_Data.WindowClass), g_Instance))
+			FLUX_ASSERT(false, "UnregisterClassExW failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+
+		OleUninitialize();
+	}
+
+	void WindowsPlatform::PumpMessages()
 	{
 		MSG msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
@@ -32,9 +64,13 @@ namespace Flux {
 		}
 	}
 
-	void WindowsPlatform::Shutdown()
+	LRESULT CALLBACK WindowsPlatform::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
-		OleUninitialize();
+		WindowsWindow* window = (WindowsWindow*)GetPropW(hWnd, L"Window");
+		if (window)
+			return window->ProcessMessage(uMsg, wParam, lParam);
+
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 
 	void WindowsPlatform::Sleep(float seconds)
@@ -50,14 +86,15 @@ namespace Flux {
 	{
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
-		return static_cast<float>(value - s_TimerOffset) / s_TimerFrequency;
+		return static_cast<float>(value - s_Data.TimerOffset) / s_Data.TimerFrequency;
 	}
 
 	uint64 WindowsPlatform::GetNanoTime()
 	{
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
-		return value * (s_NSPerSecond / s_TimerFrequency);
+		constexpr uint64 nsPerSecond = 1000 * 1000 * 1000;
+		return value * (nsPerSecond / s_Data.TimerFrequency);
 	}
 
 	MessageBoxResult WindowsPlatform::MessageBox(Window* window, MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption)
@@ -155,6 +192,11 @@ namespace Flux {
 			return false;
 		}
 		return true;
+	}
+
+	WindowClassHandle WindowsPlatform::GetWindowClass()
+	{
+		return static_cast<WindowClassHandle>(s_Data.WindowClass);
 	}
 
 }

@@ -15,9 +15,9 @@ namespace Flux {
 	void Logger::Init()
 	{
 		std::vector<spdlog::sink_ptr> sinks = {
-			std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
-#ifdef FLUX_HAS_CONSOLE
 			std::make_shared<spdlog::sinks::basic_file_sink_mt>("Logs/Latest.log", true),
+#ifdef FLUX_HAS_CONSOLE
+			std::make_shared<spdlog::sinks::stdout_color_sink_mt>()
 #endif
 		};
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef FLUX_PLATFORM_WINDOWS
+
 #include "Flux/Runtime/Core/GenericPlatform.h"
 
 namespace Flux {
@@ -8,9 +10,9 @@ namespace Flux {
 	{
 	public:
 		static void Init();
-		static void Tick();
 		static void Shutdown();
 
+		static void PumpMessages();
 		static void Sleep(float seconds);
 
 		static float GetTime();
@@ -26,8 +28,14 @@ namespace Flux {
 
 		static std::string GetEnvironmentVariable(const char* variableName);
 		static bool SetEnvironmentVariable(const char* variableName, const char* value);
+
+		static WindowClassHandle GetWindowClass();
+	private:
+		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	};
 
 	typedef WindowsPlatform Platform;
 
 }
+
+#endif

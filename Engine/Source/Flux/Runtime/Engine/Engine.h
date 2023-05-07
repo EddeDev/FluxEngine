@@ -23,7 +23,7 @@ namespace Flux {
 		virtual void OnInit() {}
 		virtual void OnExit() {}
 		virtual void OnUpdate() {}
- 	private:
+ 	protected:
 		inline static Engine* s_Instance = nullptr;
 
 		Shared<Window> m_Window;
