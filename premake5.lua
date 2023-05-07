@@ -21,18 +21,18 @@ project "FluxEngine"
     files
     {
         "Engine/Source/**.cpp",
-        "Engine/Source/**.h"
+        "Engine/Source/**.h",
+
+        "Engine/Libraries/glm/glm/**.hpp",
+        "Engine/Libraries/glm/glm/**.inl"
     }
 
     includedirs
     {
         "Engine/Source",
-        "Engine/Libraries/spdlog/include"
+        "Engine/Libraries/spdlog/include",
+        "Engine/Libraries/glm"
     }
-
-    if VulkanSDK ~= nil then
-        includedirs "%{VulkanSDK}/Include";
-    end
 
     filter "system:windows"
         systemversion "latest"
