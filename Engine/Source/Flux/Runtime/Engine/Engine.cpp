@@ -10,8 +10,7 @@ namespace Flux {
 
 	Engine::Engine()
 	{
-		FLUX_ASSERT(!s_Instance);
-
+		FLUX_ASSERT(!s_Instance, "Engine instance already exists!");
 		s_Instance = this;
 
 		WindowCreateInfo windowCreateInfo;
@@ -23,12 +22,15 @@ namespace Flux {
 		{
 			Close();
 		});
+		m_Window->AddSizeCallback([](auto w, auto h)
+			{
+				FLUX_INFO("Window size: {0}, {1}", w, h);
+			});
 	}
 
 	Engine::~Engine()
 	{
-		FLUX_ASSERT(s_Instance);
-
+		FLUX_ASSERT(s_Instance, "Engine instance is nullptr!");
 		s_Instance = nullptr;
 	}
 

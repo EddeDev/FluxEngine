@@ -1,45 +1,20 @@
 #pragma once
 
 #include "Window.h"
+#include "MessageBox.h"
 
 namespace Flux {
 
-	enum class MessageBoxButtons : uint8
+	using WindowMenu = void*;
+
+	enum WindowMenuFlags : uint32
 	{
-		None = 0,
-
-		AbortRetryIgnore,
-		Ok,
-		OkCancel,
-		RetryCancel,
-		YesNo,
-		YesNoCancel
-	};
-
-	enum class MessageBoxIcon : uint8
-	{
-		None = 0,
-
-		Asterisk,
-		Error,
-		Exclamation,
-		Hand,
-		Information,
-		Question,
-		Stop,
-		Warning
-	};
-
-	enum class MessageBoxResult : uint8
-	{
-		Abort = 0,
-		Cancel,
-		Ignore,
-		No,
-		None,
-		Ok,
-		Retry,
-		Yes
+		WindowMenu_Enabled = 0,
+		WindowMenu_String = 0,
+		WindowMenu_Grayed = 1 << 0,
+		WindowMenu_Disabled = 1 << 1,
+		WindowMenu_Popup = 1 << 4,
+		WindowMenu_Separator = 1 << 11
 	};
 
 	using WindowClassHandle = uint32;
@@ -56,7 +31,13 @@ namespace Flux {
 		static float GetTime() { return 0.0f; }
 		static uint64 GetNanoTime() { return 0; }
 
-		static MessageBoxResult MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window = nullptr) {}
+		static WindowMenu CreateMenu() { return nullptr; }
+		static bool SetMenu(Window* window, WindowMenu menu) { return false; }
+		static bool AddMenu(WindowMenu menu, uint32 id = 0, const char* name = "") { return false; }
+		static bool AddMenuSeparator(WindowMenu menu) { return false; }
+		static bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "") { return false; }
+
+		static MessageBoxResult MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window = nullptr) { return MessageBoxResult::Cancel; }
 
 		static bool IsDebuggerPresent()
 		{
@@ -66,6 +47,8 @@ namespace Flux {
 			return true;
 #endif
 		}
+
+		static void DebugBreak() {}
 
 		static std::string GetErrorMessage(int32 error) { return "Not implemented"; }
 		static uint32 GetLastError() { return 0; }

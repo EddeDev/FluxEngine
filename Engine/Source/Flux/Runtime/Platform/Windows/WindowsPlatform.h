@@ -18,6 +18,12 @@ namespace Flux {
 		static float GetTime();
 		static uint64 GetNanoTime();
 
+		static WindowMenu CreateMenu();
+		static bool SetMenu(Window* window, WindowMenu menu);
+		static bool AddMenu(WindowMenu menu, uint32 id = 0, const char* name = "");
+		static bool AddMenuSeparator(WindowMenu menu);
+		static bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "");
+
 		static MessageBoxResult MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window = nullptr);
 
 		static bool IsDebuggerPresent();

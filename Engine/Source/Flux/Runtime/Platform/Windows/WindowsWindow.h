@@ -15,8 +15,6 @@ namespace Flux {
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) { m_CloseCallbacks.push_back(callback); }
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) { m_SizeCallbacks.push_back(callback); }
 
-		virtual void SetMenu(Shared<WindowMenu> menu);
-
 		virtual WindowHandle GetNativeHandle() const override { return m_WindowHandle; }
 
 		int32 ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);

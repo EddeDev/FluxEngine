@@ -5,18 +5,18 @@ namespace Flux {
 
 	void EditorEngine::OnInit()
 	{
-		Shared<WindowMenu> menu = WindowMenu::Create();
+	
 
-		Shared<WindowMenu> fileMenu = menu->AddMenu("File");
-		fileMenu->AddMenu("Open Scene");
-		fileMenu->AddSeparator();
-		fileMenu->AddMenu("Restart", [this]() { Close(true); });
-		fileMenu->AddMenu("Exit", [this]() { Close(); });
+		WindowMenu fileMenu = Platform::CreateMenu();
+		Platform::AddMenu(fileMenu, 1 << 0, "Open Scene...");
+		Platform::AddMenuSeparator(fileMenu);
+		Platform::AddMenu(fileMenu, 1 << 1, "Exit\tAlt+F4");
 
-		Shared<WindowMenu> helpMenu = menu->AddMenu("Help");
-		helpMenu->AddMenu("About");
+		WindowMenu menu = Platform::CreateMenu();
+		Platform::AddPopupMenu(menu, fileMenu, "File");
 
-		m_Window->SetMenu(menu);
+		Platform::SetMenu(m_Window.get(), menu);
+
 	}
 
 	void EditorEngine::OnExit()

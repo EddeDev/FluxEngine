@@ -97,6 +97,50 @@ namespace Flux {
 		return value * (nsPerSecond / s_Data.TimerFrequency);
 	}
 
+	WindowMenu WindowsPlatform::CreateMenu()
+	{
+		return static_cast<WindowMenu>(::CreateMenu());
+	}
+
+	bool WindowsPlatform::SetMenu(Window* window, WindowMenu menu)
+	{
+		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
+		if (!hWnd)
+			return false;
+
+		return ::SetMenu(hWnd, static_cast<HMENU>(menu));
+	}
+
+	bool WindowsPlatform::AddMenu(WindowMenu menu, uint32 id, const char* name)
+	{
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING, (UINT_PTR)id, name))
+		{
+			FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return false;
+		}
+		return true;
+	}
+
+	bool WindowsPlatform::AddMenuSeparator(WindowMenu menu)
+	{
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
+		{
+			FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return false;
+		}
+		return true;
+	}
+
+	bool WindowsPlatform::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name)
+	{
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP, (UINT_PTR)childMenu, name))
+		{
+			FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return false;
+		}
+		return true;
+	}
+
 	MessageBoxResult WindowsPlatform::MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window)
 	{
 		uint32 flags = 0;
@@ -125,7 +169,7 @@ namespace Flux {
 
 		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
 
-		int32 result = MessageBoxA(hWnd, text, caption, flags);
+		int32 result = ::MessageBoxA(hWnd, text, caption, flags);
 		switch (result)
 		{
 		case IDABORT:    return MessageBoxResult::Abort;

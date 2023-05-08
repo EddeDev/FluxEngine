@@ -75,13 +75,19 @@ namespace Flux {
 			return;
 		}
 
-		SetPropW(m_WindowHandle, L"Window", this);
+		if (!SetPropW(m_WindowHandle, L"Window", this))
+			FLUX_ASSERT(false, "SetPropW failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		if (IsWindows7OrGreater())
 		{
-			ChangeWindowMessageFilterEx(m_WindowHandle, WM_DROPFILES, MSGFLT_ALLOW, NULL);
-			ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYDATA, MSGFLT_ALLOW, NULL);
-			ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYGLOBALDATA, MSGFLT_ALLOW, NULL);
+			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_DROPFILES, MSGFLT_ALLOW, NULL))
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			
+			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYDATA, MSGFLT_ALLOW, NULL))
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+
+			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYGLOBALDATA, MSGFLT_ALLOW, NULL))
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 		}
 
 		DragAcceptFiles(m_WindowHandle, TRUE);
@@ -98,75 +104,14 @@ namespace Flux {
 
 	WindowsWindow::~WindowsWindow()
 	{
-		DestroyWindow(m_WindowHandle);
-	}
-
-	static void CreateChildMenus(Shared<WindowMenu> menu, HMENU hMenu)
-	{
-		auto& childMenus = menu->GetChildren();
-		for (auto& childMenu : childMenus)
+		if (!IsWindow(m_WindowHandle))
 		{
-			if (!childMenu)
-			{
-				FLUX_ASSERT(false, "WindowMenu is nullptr!");
-				continue;
-			}
-
-			HMENU hChildMenu = CreateMenu();
-			CreateChildMenus(childMenu, hChildMenu);
-
-			BOOL result;
-			if (childMenu->IsSeparator())
-				result = AppendMenuA(hMenu, MF_SEPARATOR | MF_BYPOSITION, (UINT_PTR)childMenu->GetID(), NULL);
-			else if (childMenu->GetChildren().empty())
-				result = AppendMenuA(hMenu, MF_STRING, (UINT_PTR)childMenu->GetID(), childMenu->GetName().c_str());
-			else
-				result = AppendMenuA(hMenu, MF_POPUP, (UINT_PTR)hChildMenu, childMenu->GetName().c_str());
-
-			if (!result)
-			{
-				DWORD lastError = GetLastError();
-				FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
-			}
-		}
-	}
-
-	static Shared<WindowMenu> FindMenuByID(Shared<WindowMenu> rootMenu, uint32 id)
-	{
-		auto& childMenus = rootMenu->GetChildren();
-		for (auto& childMenu : childMenus)
-		{
-			if (!childMenu)
-			{
-				FLUX_ASSERT(false, "WindowMenu is nullptr!");
-				continue;
-			}
-			
-			if (id == childMenu->GetID())
-				return childMenu;
-
-			Shared<WindowMenu> menu = FindMenuByID(childMenu, id);
-			if (menu)
-				return menu;
-		}
-		return nullptr;
-	}
-
-	void WindowsWindow::SetMenu(Shared<WindowMenu> menu)
-	{
-		if (!menu)
-		{
-			FLUX_ASSERT(false, "WindowMenu is nullptr!");
+			FLUX_WARNING("Invalid window handle!");
 			return;
 		}
 
-		if (menu->HasParent() || menu->GetChildren().empty())
-			return;
-
-		HMENU hMenu = CreateMenu();
-		CreateChildMenus(menu, hMenu);
-		::SetMenu(m_WindowHandle, hMenu);
-		m_Menu = menu;
+		if (!DestroyWindow(m_WindowHandle))
+			FLUX_ASSERT(false, "DestroyWindow failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -185,21 +130,6 @@ namespace Flux {
 
 				for (auto& callback : m_SizeCallbacks)
 					callback(width, height);
-			}
-
-			break;
-		}
-		case WM_COMMAND:
-		{
-			if (m_Menu)
-			{
-				Shared<WindowMenu> menu = FindMenuByID(m_Menu, (uint32)wParam);
-				if (menu)
-				{
-					auto& callback = menu->GetCallback();
-					if (callback)
-						callback();
-				}
 			}
 			break;
 		}
