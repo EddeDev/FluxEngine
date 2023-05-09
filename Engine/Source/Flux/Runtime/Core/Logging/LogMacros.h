@@ -17,4 +17,4 @@
 #define FLUX_ERROR(...)    ::Flux::Logger::Log(::Flux::LogVerbosity::Error,    __VA_ARGS__)
 #define FLUX_CRITICAL(...) ::Flux::Logger::Log(::Flux::LogVerbosity::Critical, __VA_ARGS__)
 
-// #define FLUX_INFO_CATEGORY(category, ...) ::Flux::Logger::Log(category, ::Flux::LogVerbosity::Info,     __VA_ARGS__)
+#define FLUX_INFO_CATEGORY(category, ...) ::Flux::Logger::LogCategory(category, ::Flux::LogVerbosity::Info, __VA_ARGS__)

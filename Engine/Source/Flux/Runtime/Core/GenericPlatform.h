@@ -19,6 +19,8 @@ namespace Flux {
 
 	using WindowClassHandle = uint32;
 
+	typedef std::function<void(WindowMenu, uint32)> WindowMenuCallback;
+
 	class GenericPlatform
 	{
 	public:
@@ -32,7 +34,7 @@ namespace Flux {
 		static uint64 GetNanoTime() { return 0; }
 
 		static WindowMenu CreateMenu() { return nullptr; }
-		static bool SetMenu(Window* window, WindowMenu menu) { return false; }
+		static bool SetMenu(Window* window, WindowMenu menu, WindowMenuCallback callback = {}) { return false; }
 		static bool AddMenu(WindowMenu menu, uint32 id = 0, const char* name = "") { return false; }
 		static bool AddMenuSeparator(WindowMenu menu) { return false; }
 		static bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "") { return false; }

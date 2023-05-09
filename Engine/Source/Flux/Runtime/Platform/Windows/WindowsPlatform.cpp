@@ -68,7 +68,20 @@ namespace Flux {
 	{
 		WindowsWindow* window = (WindowsWindow*)GetPropW(hWnd, L"Window");
 		if (window)
+		{
+			if (uMsg == WM_COMMAND)
+			{
+				auto it = s_Menus.find(window);
+				if (it != s_Menus.end())
+				{
+					auto& data = it->second;
+					if (data.Callback)
+						data.Callback(data.Menu, (uint32)wParam);
+				}
+			}
+
 			return window->ProcessMessage(uMsg, wParam, lParam);
+		}
 
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
@@ -86,7 +99,7 @@ namespace Flux {
 	{
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
-		return static_cast<float>(value - s_Data.TimerOffset) / s_Data.TimerFrequency;
+		return static_cast<float>(value - s_Data.TimerOffset) / static_cast<float>(s_Data.TimerFrequency);
 	}
 
 	uint64 WindowsPlatform::GetNanoTime()
@@ -102,11 +115,15 @@ namespace Flux {
 		return static_cast<WindowMenu>(::CreateMenu());
 	}
 
-	bool WindowsPlatform::SetMenu(Window* window, WindowMenu menu)
+	bool WindowsPlatform::SetMenu(Window* window, WindowMenu menu, WindowMenuCallback callback)
 	{
 		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
 		if (!hWnd)
 			return false;
+
+		auto& data = s_Menus[window];
+		data.Menu = menu;
+		data.Callback = callback;
 
 		return ::SetMenu(hWnd, static_cast<HMENU>(menu));
 	}

@@ -19,6 +19,13 @@ namespace Flux {
 			auto level = static_cast<spdlog::level::level_enum>(verbosity);
 			s_Logger->log(level, fmt, std::forward<TArgs>(args)...);
 		}
+
+		template<typename... TArgs>
+		static void LogCategory(std::string_view category, LogVerbosity verbosity, fmt::format_string<TArgs...> fmt, TArgs&&... args)
+		{
+			auto level = static_cast<spdlog::level::level_enum>(verbosity);
+			s_Logger->log(level, fmt, std::forward<TArgs>(args)...);
+		}
 	public:
 		template<typename... TArgs>
 		static void AssertionFailed(fmt::format_string<TArgs...> fmt, TArgs&&... args)

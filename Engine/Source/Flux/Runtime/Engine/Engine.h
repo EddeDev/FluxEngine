@@ -17,6 +17,7 @@ namespace Flux {
 		template<typename TEngine = Engine>
 		static TEngine& Get()
 		{
+			FLUX_ASSERT(s_Instance, "Engine instance is nullptr!");
 			return (TEngine&)*s_Instance;
 		}
 	protected:
@@ -28,6 +29,13 @@ namespace Flux {
 
 		Shared<Window> m_Window;
 		bool m_Running = true;
+		
+		float m_FrameTime = 0.0f;
+		float m_LastFrameTime = 0.0f;
+
+		float m_LastTime = 0.0f;
+		uint32 m_FrameCounter = 0;
+		uint32 m_FramesPerSecond = 0;
 	};
 
 }

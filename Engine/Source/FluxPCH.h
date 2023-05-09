@@ -20,5 +20,7 @@
 #include <memory>
 #include <array>
 #include <vector>
+#include <unordered_map>
+#include <map>
 
 #include "Flux/Runtime/Core/Core.h"

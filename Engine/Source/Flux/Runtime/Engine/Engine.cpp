@@ -22,10 +22,6 @@ namespace Flux {
 		{
 			Close();
 		});
-		m_Window->AddSizeCallback([](auto w, auto h)
-			{
-				FLUX_INFO("Window size: {0}, {1}", w, h);
-			});
 	}
 
 	Engine::~Engine()
@@ -38,16 +34,26 @@ namespace Flux {
 	{
 		OnInit();
 
-		float lastTime = 0.0f;
 		while (m_Running)
 		{
 			float time = Platform::GetTime();
-			float deltaTime = glm::min<float>(time - lastTime, 1.0f / 30.0f);
-			lastTime = time;
+			m_FrameTime = time - m_LastFrameTime;
+			m_LastFrameTime = time;
+
+			m_FrameCounter++;
+			if (time >= m_LastTime + 1.0f)
+			{
+				m_FramesPerSecond = m_FrameCounter;
+				m_FrameCounter = 0;
+				m_LastTime = time;
+			}
+
+			Platform::GetNanoTime();
+
+			FLUX_WARNING("Frame time: {0:.1f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FramesPerSecond);
 
 			OnUpdate();
 
-			Platform::Sleep(0.01f);
 			Platform::PumpMessages();
 		}
 
