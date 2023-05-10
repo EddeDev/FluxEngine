@@ -31,13 +31,9 @@ namespace Flux {
 
 			Engine* engine = CreateEngine();
 			if (engine)
-			{
 				engine->Run();
-			}
 			else
-			{
 				FLUX_VERIFY(false, "Engine is nullptr");
-			}
 
 			FLUX_INFO("Shutting down...");
 			delete engine;

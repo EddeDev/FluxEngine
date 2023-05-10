@@ -36,6 +36,8 @@ namespace Flux {
 		float m_LastTime = 0.0f;
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
+
+		uint32 m_Frames = 0;
 	};
 
 }

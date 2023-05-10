@@ -24,9 +24,9 @@ namespace Flux {
 		static void LogCategory(std::string_view category, LogVerbosity verbosity, fmt::format_string<TArgs...> fmt, TArgs&&... args)
 		{
 			auto level = static_cast<spdlog::level::level_enum>(verbosity);
-			s_Logger->log(level, fmt, std::forward<TArgs>(args)...);
+			s_Logger->log(level, "[{0}] {1}", category, fmt::format(fmt, std::forward<TArgs>(args)...));
 		}
-	public:
+
 		template<typename... TArgs>
 		static void AssertionFailed(fmt::format_string<TArgs...> fmt, TArgs&&... args)
 		{
@@ -37,7 +37,7 @@ namespace Flux {
 		
 		static void AssertionFailed()
 		{
-			std::string message = "Assertion failed!";
+			const char* message = "Assertion failed!";
 			s_Logger->error(message);
 			AssertMessageBox(message);
 		}
@@ -52,7 +52,7 @@ namespace Flux {
 
 		static void VerifyFailed()
 		{
-			std::string message = "Verify failed!";
+			const char* message = "Verify failed!";
 			s_Logger->error(message);
 			AssertMessageBox(message);
 		}

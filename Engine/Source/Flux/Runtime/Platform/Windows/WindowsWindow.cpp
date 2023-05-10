@@ -53,12 +53,14 @@ namespace Flux {
 			return;
 		}
 
-		std::wstring title = std::wstring(createInfo.Title.begin(), createInfo.Title.end());
+		int32 wTitleSize = MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, NULL, 0);
+		wchar_t* wTitle = new wchar_t[wTitleSize];
+		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, wTitle, wTitleSize);
 
 		m_WindowHandle = CreateWindowExW(
 			exStyle,
 			MAKEINTATOM(windowClass),
-			title.c_str(),
+			wTitle,
 			style,
 			windowX,
 			windowY,
@@ -69,25 +71,27 @@ namespace Flux {
 			g_Instance,
 			NULL);
 
+		delete[] wTitle;
+
 		if (!m_WindowHandle)
 		{
-			FLUX_ASSERT(false, "Failed to create window ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "Failed to create window. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			return;
 		}
 
 		if (!SetPropW(m_WindowHandle, L"Window", this))
-			FLUX_ASSERT(false, "SetPropW failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "SetPropW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		if (IsWindows7OrGreater())
 		{
 			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_DROPFILES, MSGFLT_ALLOW, NULL))
-				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			
 			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYDATA, MSGFLT_ALLOW, NULL))
-				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYGLOBALDATA, MSGFLT_ALLOW, NULL))
-				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 		}
 
 		DragAcceptFiles(m_WindowHandle, TRUE);
@@ -111,7 +115,7 @@ namespace Flux {
 		}
 
 		if (!DestroyWindow(m_WindowHandle))
-			FLUX_ASSERT(false, "DestroyWindow failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "DestroyWindow failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)

@@ -1,15 +1,18 @@
 #include "FluxPCH.h"
-#include "WindowsPlatform.h"
 
 #ifdef FLUX_PLATFORM_WINDOWS
 
+#include "Flux/Runtime/Core/Platform.h"
+
 #include "WindowsWindow.h"
+
+#include <ShObjIdl.h>
 
 namespace Flux {
 
 	extern HINSTANCE g_Instance;
 
-	struct WindowsPlatformData
+	struct PlatformData
 	{
 		uint64 TimerOffset;
 		uint64 TimerFrequency;
@@ -17,15 +20,56 @@ namespace Flux {
 		ATOM WindowClass;
 	};
 
-	static WindowsPlatformData s_Data;
+	struct MenuData
+	{
+		WindowMenu Menu = nullptr;
+		WindowMenuCallback Callback;
+	};
+
+	std::map<Window*, MenuData> g_Menus;
+
+	static PlatformData s_Data;
+
+	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	{
+		WindowsWindow* window = (WindowsWindow*)GetPropW(hWnd, L"Window");
+		if (window)
+		{
+			switch (uMsg)
+			{
+			case WM_COMMAND:
+			{
+				auto it = g_Menus.find(window);
+				if (it != g_Menus.end())
+				{
+					auto& data = it->second;
+					if (data.Callback)
+						data.Callback(data.Menu, (uint32)wParam);
+				}
+				break;
+			}
+			case WM_DESTROY:
+			{
+				auto it = g_Menus.find(window);
+				if (it != g_Menus.end())
+					g_Menus.erase(it);
+				break;
+			}
+			}
+
+			return window->ProcessMessage(uMsg, wParam, lParam);
+		}
+
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	}
 	
-	void WindowsPlatform::Init()
+	void Platform::Init()
 	{
 		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_Data.TimerOffset))
-			FLUX_ASSERT(false, "QueryPerformanceCounter failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "QueryPerformanceCounter failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 		
 		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_Data.TimerFrequency))
-			FLUX_ASSERT(false, "QueryPerformanceFrequency failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "QueryPerformanceFrequency failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		DisableProcessWindowsGhosting();
 
@@ -40,21 +84,26 @@ namespace Flux {
 
 		s_Data.WindowClass = RegisterClassExW(&windowClass);
 		if (!s_Data.WindowClass)
-			FLUX_ASSERT(false, "RegisterClassExW failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "RegisterClassExW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
-		if (!SUCCEEDED(OleInitialize(NULL)))
+		if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 			FLUX_ASSERT(false, "Failed to initialize COM library.\n{0}", Platform::GetErrorMessage(Platform::GetLastError()));
 	}
 
-	void WindowsPlatform::Shutdown()
+	void Platform::Shutdown()
 	{
 		if (!UnregisterClassW(MAKEINTATOM(s_Data.WindowClass), g_Instance))
-			FLUX_ASSERT(false, "UnregisterClassExW failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
-		OleUninitialize();
+		CoUninitialize();
 	}
 
-	void WindowsPlatform::PumpMessages()
+	bool Platform::WaitMessage()
+	{
+		return ::WaitMessage();
+	}
+
+	void Platform::PumpMessages()
 	{
 		MSG msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
@@ -64,29 +113,7 @@ namespace Flux {
 		}
 	}
 
-	LRESULT CALLBACK WindowsPlatform::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-	{
-		WindowsWindow* window = (WindowsWindow*)GetPropW(hWnd, L"Window");
-		if (window)
-		{
-			if (uMsg == WM_COMMAND)
-			{
-				auto it = s_Menus.find(window);
-				if (it != s_Menus.end())
-				{
-					auto& data = it->second;
-					if (data.Callback)
-						data.Callback(data.Menu, (uint32)wParam);
-				}
-			}
-
-			return window->ProcessMessage(uMsg, wParam, lParam);
-		}
-
-		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-	}
-
-	void WindowsPlatform::Sleep(float seconds)
+	void Platform::Sleep(float seconds)
 	{
 		DWORD milliseconds = static_cast<DWORD>(seconds * 1000.0f);
 		if (milliseconds == 0)
@@ -95,14 +122,14 @@ namespace Flux {
 			::Sleep(milliseconds);
 	}
 	
-	float WindowsPlatform::GetTime()
+	float Platform::GetTime()
 	{
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
 		return static_cast<float>(value - s_Data.TimerOffset) / static_cast<float>(s_Data.TimerFrequency);
 	}
 
-	uint64 WindowsPlatform::GetNanoTime()
+	uint64 Platform::GetNanoTime()
 	{
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
@@ -110,55 +137,153 @@ namespace Flux {
 		return value * (nsPerSecond / s_Data.TimerFrequency);
 	}
 
-	WindowMenu WindowsPlatform::CreateMenu()
+	WindowMenu Platform::CreateMenu()
 	{
 		return static_cast<WindowMenu>(::CreateMenu());
 	}
 
-	bool WindowsPlatform::SetMenu(Window* window, WindowMenu menu, WindowMenuCallback callback)
+	bool Platform::SetMenu(Window* window, WindowMenu menu, WindowMenuCallback callback)
 	{
 		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
 		if (!hWnd)
 			return false;
 
-		auto& data = s_Menus[window];
+		auto& data = g_Menus[window];
 		data.Menu = menu;
 		data.Callback = callback;
+
+		FLUX_ERROR("{0} menus ({1})", g_Menus.size(), (void*)window);
 
 		return ::SetMenu(hWnd, static_cast<HMENU>(menu));
 	}
 
-	bool WindowsPlatform::AddMenu(WindowMenu menu, uint32 id, const char* name)
+	bool Platform::AddMenu(WindowMenu menu, uint32 id, const char* name)
 	{
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING, (UINT_PTR)id, name))
 		{
-			FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			return false;
 		}
 		return true;
 	}
 
-	bool WindowsPlatform::AddMenuSeparator(WindowMenu menu)
+	bool Platform::AddMenuSeparator(WindowMenu menu)
 	{
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
 		{
-			FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			return false;
 		}
 		return true;
 	}
 
-	bool WindowsPlatform::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name)
+	bool Platform::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name)
 	{
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP, (UINT_PTR)childMenu, name))
 		{
-			FLUX_ASSERT(false, "AppendMenuA failed ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 			return false;
 		}
 		return true;
 	}
 
-	MessageBoxResult WindowsPlatform::MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window)
+	DialogResult Platform::OpenFolderDialog(Window* window, char** outPath, const char* title)
+	{
+		IFileOpenDialog* fileDialog = NULL;
+
+		HRESULT result = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_PPV_ARGS(&fileDialog));
+		if (!SUCCEEDED(result))
+		{
+			FLUX_ASSERT(false, "CoCreateInstance failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return DialogResult::None;
+		}
+
+		DWORD dwOptions = 0;
+		if (!SUCCEEDED(fileDialog->GetOptions(&dwOptions)))
+		{
+			FLUX_ASSERT(false, "GetOptions for IFileDialog failed.");
+			
+			fileDialog->Release();
+			return DialogResult::None;
+		}
+
+		if (!SUCCEEDED(fileDialog->SetOptions(dwOptions | FOS_PICKFOLDERS)))
+		{
+			FLUX_ASSERT(false, "SetOptions for IFileDialog failed.");
+		
+			fileDialog->Release();
+			return DialogResult::None;
+		}
+
+		int32 wTitleSize = MultiByteToWideChar(CP_UTF8, 0, title, -1, NULL, 0);
+		wchar_t* wTitle = new wchar_t[wTitleSize];
+		MultiByteToWideChar(CP_UTF8, 0, title, -1, wTitle, wTitleSize);
+		if (!SUCCEEDED(fileDialog->SetTitle(wTitle)))
+		{
+			FLUX_ASSERT(false, "SetTitle for IFileDialog failed.");
+		
+			fileDialog->Release();
+			delete[] wTitle;
+			return DialogResult::None;
+		}
+		delete[] wTitle;
+
+		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
+
+		result = fileDialog->Show(hWnd);
+		if (SUCCEEDED(result))
+		{
+			IShellItem* shellItem = NULL;
+
+			result = fileDialog->GetResult(&shellItem);
+			if (!SUCCEEDED(result))
+			{
+				FLUX_ASSERT(false, "GetResult for IFileDialog failed.");
+
+				fileDialog->Release();
+				return DialogResult::None;
+			}
+
+			wchar_t* path = NULL;
+			result = shellItem->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, &path);
+			if (!SUCCEEDED(result))
+			{
+				FLUX_ASSERT(false, "GetDisplayName for IShellItem failed.");
+
+				shellItem->Release();
+				fileDialog->Release();
+				return DialogResult::None;
+			}
+
+			int32 pathSize = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
+			*outPath = new char[pathSize];
+			(*outPath)[pathSize - 1] = '\0';
+			WideCharToMultiByte(CP_UTF8, 0, path, -1, *outPath, pathSize, NULL, NULL);
+
+			CoTaskMemFree(path);
+
+			shellItem->Release();
+			fileDialog->Release();
+			return DialogResult::Ok;
+		}
+		else if (result == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+		{
+			fileDialog->Release();
+			return DialogResult::Cancel;
+		}
+		else
+		{
+			FLUX_ASSERT(false, "Show for IFileDialog failed.");
+
+			fileDialog->Release();
+			return DialogResult::None;
+		}
+
+		FLUX_ASSERT(false);
+		return DialogResult::None;
+	}
+
+	DialogResult Platform::MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window)
 	{
 		uint32 flags = 0;
 
@@ -189,30 +314,30 @@ namespace Flux {
 		int32 result = ::MessageBoxA(hWnd, text, caption, flags);
 		switch (result)
 		{
-		case IDABORT:    return MessageBoxResult::Abort;
-		case IDCANCEL:   return MessageBoxResult::Cancel;
-		case IDCONTINUE: return MessageBoxResult::Ok;
-		case IDIGNORE:   return MessageBoxResult::Ignore;
-		case IDNO:       return MessageBoxResult::No;
-		case IDOK:       return MessageBoxResult::Ok;
-		case IDRETRY:    return MessageBoxResult::Retry;
-		case IDYES:      return MessageBoxResult::Yes;
+		case IDABORT:    return DialogResult::Abort;
+		case IDCANCEL:   return DialogResult::Cancel;
+		case IDCONTINUE: return DialogResult::Ok;
+		case IDIGNORE:   return DialogResult::Ignore;
+		case IDNO:       return DialogResult::No;
+		case IDOK:       return DialogResult::Ok;
+		case IDRETRY:    return DialogResult::Retry;
+		case IDYES:      return DialogResult::Yes;
 		}
 
-		return MessageBoxResult::None;
+		return DialogResult::None;
 	}
 
-	bool WindowsPlatform::IsDebuggerPresent()
+	bool Platform::IsDebuggerPresent()
 	{
 		return ::IsDebuggerPresent();
 	}
 
-	void WindowsPlatform::DebugBreak()
+	void Platform::DebugBreak()
 	{
 		::DebugBreak();
 	}
 
-	std::string WindowsPlatform::GetErrorMessage(int32 error)
+	std::string Platform::GetErrorMessage(int32 error)
 	{
 		if (error == 0)
 			return {};
@@ -226,25 +351,29 @@ namespace Flux {
 			message.pop_back();
 		if (message[message.size() - 1] == '\r')
 			message.pop_back();
+
+#define INCLUDE_DOT 0
+#if INCLUDE_DOT
 		if (message[message.size() - 1] == '.')
 			message.pop_back();
+#endif
 
 		return message;
 	}
 
-	uint32 WindowsPlatform::GetLastError()
+	uint32 Platform::GetLastError()
 	{
 		return static_cast<uint32>(::GetLastError());
 	}
 
-	std::string WindowsPlatform::GetEnvironmentVariable(const char* variableName)
+	std::string Platform::GetEnvironmentVariable(const char* variableName)
 	{
 		static char buffer[65535];
 		DWORD bufferSize = ::GetEnvironmentVariableA(variableName, buffer, sizeof(buffer));
 		return { buffer, bufferSize };
 	}
 
-	bool WindowsPlatform::SetEnvironmentVariable(const char* variableName, const char* value)
+	bool Platform::SetEnvironmentVariable(const char* variableName, const char* value)
 	{
 		uint32 error = ::SetEnvironmentVariableA(variableName, value);
 		if (error == 0)
@@ -255,7 +384,7 @@ namespace Flux {
 		return true;
 	}
 
-	WindowClassHandle WindowsPlatform::GetWindowClass()
+	WindowClassHandle Platform::GetWindowClass()
 	{
 		return static_cast<WindowClassHandle>(s_Data.WindowClass);
 	}

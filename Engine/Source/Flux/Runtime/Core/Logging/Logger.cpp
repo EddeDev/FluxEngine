@@ -21,9 +21,9 @@ namespace Flux {
 #endif
 		};
 
-		sinks[0]->set_pattern("[%T] [%n]: %v");
+		sinks[0]->set_pattern("[%T] [%n] %v");
 #ifdef FLUX_HAS_CONSOLE
-		sinks[1]->set_pattern("%^[%T] [%n]: %v%$");
+		sinks[1]->set_pattern("%^[%T] [%n] %v%$");
 #endif
 
 		s_Logger = CreateUnique<spdlog::logger>("Flux", sinks.begin(), sinks.end());
@@ -44,7 +44,7 @@ namespace Flux {
 		if (!message.empty())
 		{
 			text += message;
-			text += "\n\n";
+			text += '\n';
 		}
 
 		if (!expression.empty())
@@ -56,19 +56,22 @@ namespace Flux {
 
 		if (Platform::IsDebuggerPresent())
 		{
-			text += "\n\n";
+			text += '\n';
 			text += "Do you want to debug the crash?";
 		}
 
-		MessageBoxButtons buttons = MessageBoxButtons::None;
+		MessageBoxButtons buttons = MessageBoxButtons::Ok;
 		if (Platform::IsDebuggerPresent())
-			buttons = MessageBoxButtons::YesNo;
+			buttons = MessageBoxButtons::YesNoCancel;
 
-		MessageBoxResult result = Platform::MessageBox(buttons, MessageBoxIcon::Error, text.c_str(), "Flux Assert");
+		DialogResult result = Platform::MessageBox(buttons, MessageBoxIcon::Error, text.c_str(), "Flux Assert");
 		if (Platform::IsDebuggerPresent())
 		{
-			if (result == MessageBoxResult::Yes)
+			if (result == DialogResult::Yes)
 				Platform::DebugBreak();
+
+			if (result == DialogResult::Cancel)
+				exit(EXIT_FAILURE);
 		}
 	}
 

@@ -3,18 +3,22 @@
 
 namespace Flux {
 
-	enum MenuCommands : uint32
+	enum MenuItems : uint32
 	{
-		MENU_Test,
-		MENU_Exit
+		Menu_NewProject,
+		Menu_OpenProject,
+		Menu_SaveProject,
+		Menu_Exit
 	};
 
 	void EditorEngine::OnInit()
 	{
 		WindowMenu fileMenu = Platform::CreateMenu();
-		Platform::AddMenu(fileMenu, MENU_Test, "Test :)");
+		Platform::AddMenu(fileMenu, Menu_NewProject, "New Project...");
+		Platform::AddMenu(fileMenu, Menu_OpenProject, "Open Project...");
+		Platform::AddMenu(fileMenu, Menu_SaveProject, "Save Project");
 		Platform::AddMenuSeparator(fileMenu);
-		Platform::AddMenu(fileMenu, MENU_Exit, "Exit\tAlt+F4");
+		Platform::AddMenu(fileMenu, Menu_Exit, "Exit\tAlt+F4");
 
 		WindowMenu menu = Platform::CreateMenu();
 		Platform::AddPopupMenu(menu, fileMenu, "File");
@@ -30,16 +34,22 @@ namespace Flux {
 	{
 	}
 
-	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 menuID)
+	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 itemID)
 	{
-		switch (menuID)
+		switch (itemID)
 		{
-		case MENU_Test:
+		case Menu_OpenProject:
 		{
-			__debugbreak();
+			char* outPath = nullptr;
+			DialogResult result = Platform::OpenFolderDialog(m_Window.get(), &outPath, "Load Project");
+			if (result == DialogResult::Ok)
+			{
+				FLUX_ERROR("Path: {0}", outPath);
+				free(outPath);
+			}
 			break;
 		}
-		case MENU_Exit:
+		case Menu_Exit:
 		{
 			Close();
 			break;

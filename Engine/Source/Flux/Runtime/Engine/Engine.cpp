@@ -14,8 +14,8 @@ namespace Flux {
 		s_Instance = this;
 
 		WindowCreateInfo windowCreateInfo;
-		windowCreateInfo.Width = 720;
-		windowCreateInfo.Height = 450;
+		windowCreateInfo.Width = 1280;
+		windowCreateInfo.Height = 720;
 
 		m_Window = Window::Create(windowCreateInfo);
 		m_Window->AddCloseCallback([this]()
@@ -26,7 +26,6 @@ namespace Flux {
 
 	Engine::~Engine()
 	{
-		FLUX_ASSERT(s_Instance, "Engine instance is nullptr!");
 		s_Instance = nullptr;
 	}
 
@@ -43,18 +42,21 @@ namespace Flux {
 			m_FrameCounter++;
 			if (time >= m_LastTime + 1.0f)
 			{
+				FLUX_WARNING("Frame time: {0:.1f}ms ({1} fps), frames: {2}", m_FrameTime * 1000.0f, m_FrameCounter, m_Frames);
+
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
 				m_LastTime = time;
 			}
 
-			Platform::GetNanoTime();
-
-			FLUX_WARNING("Frame time: {0:.1f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FramesPerSecond);
-
 			OnUpdate();
 
+			using namespace std::chrono_literals;
+			std::this_thread::sleep_for(500ns);
+
 			Platform::PumpMessages();
+
+			m_Frames++;
 		}
 
 		OnExit();
