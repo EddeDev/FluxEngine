@@ -19,17 +19,19 @@ namespace Flux {
 		m_Height = createInfo.Height;
 		m_Title = createInfo.Title;
 
-		DWORD style = 0;
-		style |= WS_CLIPSIBLINGS;
-		style |= WS_CLIPCHILDREN;
-		style |= WS_SYSMENU;
-		style |= WS_MINIMIZEBOX;
-		style |= WS_CAPTION;
-		style |= WS_MAXIMIZEBOX;
-		style |= WS_THICKFRAME;
+		DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX;
 
-		if (createInfo.Maximized)
-			style |= WS_MAXIMIZE;
+		if (createInfo.Decorated)
+		{
+			style |= WS_CAPTION;
+
+			if (createInfo.Resizable)
+				style |= WS_MAXIMIZEBOX | WS_THICKFRAME;
+		}
+		else
+		{
+			style |= WS_POPUP;
+		}
 
 		DWORD exStyle = 0;
 		exStyle |= WS_EX_APPWINDOW;
@@ -57,6 +59,8 @@ namespace Flux {
 		wchar_t* wTitle = new wchar_t[wTitleSize];
 		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, wTitle, wTitleSize);
 
+		HWND hWndParent = static_cast<HWND>(createInfo.ParentWindow ? createInfo.ParentWindow->GetNativeHandle() : NULL);
+
 		m_WindowHandle = CreateWindowExW(
 			exStyle,
 			MAKEINTATOM(windowClass),
@@ -66,7 +70,7 @@ namespace Flux {
 			windowY,
 			m_Width,
 			m_Height,
-			NULL,
+			hWndParent,
 			NULL,
 			g_Instance,
 			NULL);
@@ -102,8 +106,6 @@ namespace Flux {
 			m_Width = clientRect.right;
 			m_Height = clientRect.bottom;
 		}
-
-		ShowWindow(m_WindowHandle, SW_SHOWNA);
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -128,9 +130,9 @@ namespace Flux {
 		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
 	}
 
-	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 itemID, const char* name) const
+	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 itemID, const char* name, bool disabled) const
 	{
-		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING, (UINT_PTR)itemID, name))
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING | (disabled ? MF_DISABLED : 0), (UINT_PTR)itemID, name))
 		{
 			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
 			return false;
@@ -148,14 +150,19 @@ namespace Flux {
 		return true;
 	}
 
-	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name) const
+	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name, bool disabled) const
 	{
-		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP, (UINT_PTR)childMenu, name))
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP | (disabled ? MF_DISABLED : 0), (UINT_PTR)childMenu, name))
 		{
 			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
 			return false;
 		}
 		return true;
+	}
+
+	void WindowsWindow::SetVisible(bool visible) const
+	{
+		::ShowWindow(m_WindowHandle, visible ? SW_SHOWNA : SW_HIDE);
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)

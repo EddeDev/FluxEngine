@@ -19,15 +19,15 @@ namespace Flux {
 	void EditorEngine::OnInit()
 	{
 		WindowMenu fileMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...");
+		m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...", true);
 		m_Window->AddMenu(fileMenu, Menu_File_OpenProject, "Open Project...");
-		m_Window->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project");
+		m_Window->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project", true);
 		m_Window->AddMenuSeparator(fileMenu);
 		m_Window->AddMenu(fileMenu, Menu_File_Restart, "Restart");
 		m_Window->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
 		
 		WindowMenu aboutMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine");
+		m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine", true);
 
 		WindowMenu menu = m_Window->CreateMenu();
 		m_Window->AddPopupMenu(menu, fileMenu, "File");
@@ -35,10 +35,20 @@ namespace Flux {
 
 		m_Window->SetMenu(menu);
 		m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
+
+		WindowCreateInfo aboutWindowCreateInfo;
+		aboutWindowCreateInfo.Width = 640;
+		aboutWindowCreateInfo.Height = 410;
+		aboutWindowCreateInfo.Title = "About Flux Engine";
+		aboutWindowCreateInfo.Resizable = false;
+		aboutWindowCreateInfo.ParentWindow = m_Window.get();
+
+		m_AboutWindow = Window::Create(aboutWindowCreateInfo);
 	}
 
 	void EditorEngine::OnExit()
 	{
+		m_AboutWindow.reset();
 	}
 
 	void EditorEngine::OnUpdate()
@@ -52,8 +62,7 @@ namespace Flux {
 		case Menu_File_OpenProject:
 		{
 			std::string outPath;
-			DialogResult result = Platform::OpenFolderDialog(m_Window.get(), &outPath, "Load Project");
-			if (result == DialogResult::Ok)
+			if (Platform::OpenFolderDialog(m_Window.get(), &outPath, "Load Project") == DialogResult::Ok)
 				FLUX_ERROR("Path: {0}", outPath);
 			break;
 		}
@@ -69,6 +78,7 @@ namespace Flux {
 		}
 		case Menu_About_AboutFluxEngine:
 		{
+			m_AboutWindow->SetVisible(true);
 			break;
 		}
 		}

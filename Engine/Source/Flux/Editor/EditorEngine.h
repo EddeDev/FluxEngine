@@ -14,6 +14,8 @@ namespace Flux {
 		virtual void OnUpdate() override;
 	private:
 		void OnMenuCallback(WindowMenu menu, uint32 menuID);
+	private:
+		Unique<Window> m_AboutWindow;
 	};
 
 }

@@ -33,6 +33,8 @@ namespace Flux {
 	{
 		OnInit();
 
+		m_Window->SetVisible(true);
+
 		while (m_Running)
 		{
 			float time = Platform::GetTime();
