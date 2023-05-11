@@ -29,10 +29,10 @@ namespace Flux {
 	void Platform::Init()
 	{
 		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_TimerOffset))
-			FLUX_ASSERT(false, "QueryPerformanceCounter failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "QueryPerformanceCounter failed. ({0})", Platform::GetErrorMessage());
 		
 		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_TimerFrequency))
-			FLUX_ASSERT(false, "QueryPerformanceFrequency failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "QueryPerformanceFrequency failed. ({0})", Platform::GetErrorMessage());
 
 		DisableProcessWindowsGhosting();
 
@@ -47,16 +47,16 @@ namespace Flux {
 
 		s_WindowClass = RegisterClassExW(&windowClass);
 		if (!s_WindowClass)
-			FLUX_ASSERT(false, "RegisterClassExW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "RegisterClassExW failed. ({0})", Platform::GetErrorMessage());
 
 		if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
-			FLUX_ASSERT(false, "Failed to initialize COM library.\n{0}", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "Failed to initialize COM library.\n{0}", Platform::GetErrorMessage());
 	}
 
 	void Platform::Shutdown()
 	{
 		if (!UnregisterClassW(MAKEINTATOM(s_WindowClass), g_Instance))
-			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage());
 
 		CoUninitialize();
 	}
@@ -107,7 +107,7 @@ namespace Flux {
 		HRESULT result = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_PPV_ARGS(&fileDialog));
 		if (!SUCCEEDED(result))
 		{
-			FLUX_ASSERT(false, "CoCreateInstance failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "CoCreateInstance failed. ({0})", Platform::GetErrorMessage());
 			return DialogResult::None;
 		}
 
@@ -252,26 +252,22 @@ namespace Flux {
 		::DebugBreak();
 	}
 
-	std::string Platform::GetErrorMessage(int32 error)
+	std::string Platform::GetErrorMessage(uint32 error)
 	{
 		if (error == 0)
-			return {};
+			error = GetLastError();
 
 		LPSTR messageBuffer = nullptr;
 		DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
 		std::string message(messageBuffer, size);
 		LocalFree(messageBuffer);
 
-		if (message[message.size() - 1] == '\n')
+		if (message.back() == '\n')
 			message.pop_back();
-		if (message[message.size() - 1] == '\r')
+		if (message.back() == '\r')
 			message.pop_back();
-
-#define INCLUDE_DOT 0
-#if INCLUDE_DOT
-		if (message[message.size() - 1] == '.')
+		if (message.back() == '.')
 			message.pop_back();
-#endif
 
 		return message;
 	}

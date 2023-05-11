@@ -58,10 +58,10 @@ namespace Flux {
 		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, wTitle, wTitleSize);
 
 		m_WindowHandle = CreateWindowExW(
-			exStyle,
+			style,
 			MAKEINTATOM(windowClass),
 			wTitle,
-			style,
+			exStyle,
 			windowX,
 			windowY,
 			m_Width,
@@ -75,23 +75,23 @@ namespace Flux {
 
 		if (!m_WindowHandle)
 		{
-			FLUX_ASSERT(false, "Failed to create window. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "Failed to create window. ({0})", Platform::GetErrorMessage());
 			return;
 		}
 
 		if (!SetPropW(m_WindowHandle, L"Window", this))
-			FLUX_ASSERT(false, "SetPropW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "SetPropW failed. ({0})", Platform::GetErrorMessage());
 
 		if (IsWindows7OrGreater())
 		{
 			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_DROPFILES, MSGFLT_ALLOW, NULL))
-				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage());
 			
 			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYDATA, MSGFLT_ALLOW, NULL))
-				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage());
 
 			if (!ChangeWindowMessageFilterEx(m_WindowHandle, WM_COPYGLOBALDATA, MSGFLT_ALLOW, NULL))
-				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+				FLUX_ASSERT(false, "ChangeWindowMessageFilterEx failed. ({0})", Platform::GetErrorMessage());
 		}
 
 		DragAcceptFiles(m_WindowHandle, TRUE);
@@ -115,7 +115,7 @@ namespace Flux {
 		}
 
 		if (!DestroyWindow(m_WindowHandle))
-			FLUX_ASSERT(false, "DestroyWindow failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "DestroyWindow failed. ({0})", Platform::GetErrorMessage());
 	}
 
 	WindowMenu WindowsWindow::CreateMenu() const
@@ -132,7 +132,7 @@ namespace Flux {
 	{
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING, (UINT_PTR)itemID, name))
 		{
-			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
 			return false;
 		}
 		return true;
@@ -142,7 +142,7 @@ namespace Flux {
 	{
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
 		{
-			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
 			return false;
 		}
 		return true;
@@ -152,7 +152,7 @@ namespace Flux {
 	{
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP, (UINT_PTR)childMenu, name))
 		{
-			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
 			return false;
 		}
 		return true;

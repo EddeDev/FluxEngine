@@ -64,7 +64,7 @@ namespace Flux {
 		static bool IsDebuggerPresent();
 		static void DebugBreak();
 
-		static std::string GetErrorMessage(int32 error);
+		static std::string GetErrorMessage(uint32 error = 0);
 		static uint32 GetLastError();
 
 		static std::string GetEnvironmentVariable(const char* variableName);
