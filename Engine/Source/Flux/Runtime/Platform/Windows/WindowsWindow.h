@@ -12,8 +12,15 @@ namespace Flux {
 		WindowsWindow(const WindowCreateInfo& createInfo);
 		~WindowsWindow();
 
+		virtual WindowMenu CreateMenu() const override;
+		virtual bool SetMenu(WindowMenu menu) const override;
+		virtual bool AddMenu(WindowMenu menu, uint32 itemID = 0, const char* name = "") const override;
+		virtual bool AddMenuSeparator(WindowMenu menu) const override;
+		virtual bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "") const override;
+
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) { m_CloseCallbacks.push_back(callback); }
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) { m_SizeCallbacks.push_back(callback); }
+		virtual void AddMenuCallback(const WindowMenuCallback& callback) { m_MenuCallbacks.push_back(callback); }
 
 		virtual WindowHandle GetNativeHandle() const override { return m_WindowHandle; }
 
@@ -27,8 +34,9 @@ namespace Flux {
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;
+		std::vector<WindowMenuCallback> m_MenuCallbacks;
 
-		Shared<WindowMenu> m_Menu;
+		WindowMenu m_Menu = nullptr;
 	};
 
 }

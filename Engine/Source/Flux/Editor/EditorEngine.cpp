@@ -5,25 +5,36 @@ namespace Flux {
 
 	enum MenuItems : uint32
 	{
-		Menu_NewProject,
-		Menu_OpenProject,
-		Menu_SaveProject,
-		Menu_Exit
+		// File
+		Menu_File_NewProject,
+		Menu_File_OpenProject,
+		Menu_File_SaveProject,
+		Menu_File_Restart,
+		Menu_File_Exit,
+
+		// About
+		Menu_About_AboutFluxEngine
 	};
 
 	void EditorEngine::OnInit()
 	{
-		WindowMenu fileMenu = Platform::CreateMenu();
-		Platform::AddMenu(fileMenu, Menu_NewProject, "New Project...");
-		Platform::AddMenu(fileMenu, Menu_OpenProject, "Open Project...");
-		Platform::AddMenu(fileMenu, Menu_SaveProject, "Save Project");
-		Platform::AddMenuSeparator(fileMenu);
-		Platform::AddMenu(fileMenu, Menu_Exit, "Exit\tAlt+F4");
+		WindowMenu fileMenu = m_Window->CreateMenu();
+		m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...");
+		m_Window->AddMenu(fileMenu, Menu_File_OpenProject, "Open Project...");
+		m_Window->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project");
+		m_Window->AddMenuSeparator(fileMenu);
+		m_Window->AddMenu(fileMenu, Menu_File_Restart, "Restart");
+		m_Window->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
+		
+		WindowMenu aboutMenu = m_Window->CreateMenu();
+		m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine");
 
-		WindowMenu menu = Platform::CreateMenu();
-		Platform::AddPopupMenu(menu, fileMenu, "File");
+		WindowMenu menu = m_Window->CreateMenu();
+		m_Window->AddPopupMenu(menu, fileMenu, "File");
+		m_Window->AddPopupMenu(menu, aboutMenu, "About");
 
-		Platform::SetMenu(m_Window.get(), menu, FLUX_BIND_CALLBACK(OnMenuCallback, this));
+		m_Window->SetMenu(menu);
+		m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
 	}
 
 	void EditorEngine::OnExit()
@@ -38,20 +49,26 @@ namespace Flux {
 	{
 		switch (itemID)
 		{
-		case Menu_OpenProject:
+		case Menu_File_OpenProject:
 		{
-			char* outPath = nullptr;
+			std::string outPath;
 			DialogResult result = Platform::OpenFolderDialog(m_Window.get(), &outPath, "Load Project");
 			if (result == DialogResult::Ok)
-			{
 				FLUX_ERROR("Path: {0}", outPath);
-				free(outPath);
-			}
 			break;
 		}
-		case Menu_Exit:
+		case Menu_File_Restart:
+		{
+			Close(true);
+			break;
+		}
+		case Menu_File_Exit:
 		{
 			Close();
+			break;
+		}
+		case Menu_About_AboutFluxEngine:
+		{
 			break;
 		}
 		}

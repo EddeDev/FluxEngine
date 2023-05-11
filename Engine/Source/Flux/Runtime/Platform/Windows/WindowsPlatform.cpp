@@ -12,63 +12,26 @@ namespace Flux {
 
 	extern HINSTANCE g_Instance;
 
-	struct PlatformData
-	{
-		uint64 TimerOffset;
-		uint64 TimerFrequency;
+	static uint64 s_TimerOffset;
+	static uint64 s_TimerFrequency;
 
-		ATOM WindowClass;
-	};
-
-	struct MenuData
-	{
-		WindowMenu Menu = nullptr;
-		WindowMenuCallback Callback;
-	};
-
-	std::map<Window*, MenuData> g_Menus;
-
-	static PlatformData s_Data;
+	static ATOM s_WindowClass;
 
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		WindowsWindow* window = (WindowsWindow*)GetPropW(hWnd, L"Window");
 		if (window)
-		{
-			switch (uMsg)
-			{
-			case WM_COMMAND:
-			{
-				auto it = g_Menus.find(window);
-				if (it != g_Menus.end())
-				{
-					auto& data = it->second;
-					if (data.Callback)
-						data.Callback(data.Menu, (uint32)wParam);
-				}
-				break;
-			}
-			case WM_DESTROY:
-			{
-				auto it = g_Menus.find(window);
-				if (it != g_Menus.end())
-					g_Menus.erase(it);
-				break;
-			}
-			}
-
 			return window->ProcessMessage(uMsg, wParam, lParam);
-		}
 
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 	
 	void Platform::Init()
 	{
-		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_Data.TimerOffset))
+		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_TimerOffset))
 			FLUX_ASSERT(false, "QueryPerformanceCounter failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 		
-		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_Data.TimerFrequency))
+		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_TimerFrequency))
 			FLUX_ASSERT(false, "QueryPerformanceFrequency failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		DisableProcessWindowsGhosting();
@@ -82,8 +45,8 @@ namespace Flux {
 		windowClass.hCursor = LoadCursorW(g_Instance, IDC_ARROW);
 		windowClass.lpszClassName = L"FluxWindow";
 
-		s_Data.WindowClass = RegisterClassExW(&windowClass);
-		if (!s_Data.WindowClass)
+		s_WindowClass = RegisterClassExW(&windowClass);
+		if (!s_WindowClass)
 			FLUX_ASSERT(false, "RegisterClassExW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
@@ -92,7 +55,7 @@ namespace Flux {
 
 	void Platform::Shutdown()
 	{
-		if (!UnregisterClassW(MAKEINTATOM(s_Data.WindowClass), g_Instance))
+		if (!UnregisterClassW(MAKEINTATOM(s_WindowClass), g_Instance))
 			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 
 		CoUninitialize();
@@ -126,7 +89,7 @@ namespace Flux {
 	{
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
-		return static_cast<float>(value - s_Data.TimerOffset) / static_cast<float>(s_Data.TimerFrequency);
+		return static_cast<float>(value - s_TimerOffset) / static_cast<float>(s_TimerFrequency);
 	}
 
 	uint64 Platform::GetNanoTime()
@@ -134,60 +97,10 @@ namespace Flux {
 		uint64 value = 0;
 		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
 		constexpr uint64 nsPerSecond = 1000 * 1000 * 1000;
-		return value * (nsPerSecond / s_Data.TimerFrequency);
+		return value * (nsPerSecond / s_TimerFrequency);
 	}
 
-	WindowMenu Platform::CreateMenu()
-	{
-		return static_cast<WindowMenu>(::CreateMenu());
-	}
-
-	bool Platform::SetMenu(Window* window, WindowMenu menu, WindowMenuCallback callback)
-	{
-		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
-		if (!hWnd)
-			return false;
-
-		auto& data = g_Menus[window];
-		data.Menu = menu;
-		data.Callback = callback;
-
-		FLUX_ERROR("{0} menus ({1})", g_Menus.size(), (void*)window);
-
-		return ::SetMenu(hWnd, static_cast<HMENU>(menu));
-	}
-
-	bool Platform::AddMenu(WindowMenu menu, uint32 id, const char* name)
-	{
-		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING, (UINT_PTR)id, name))
-		{
-			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
-			return false;
-		}
-		return true;
-	}
-
-	bool Platform::AddMenuSeparator(WindowMenu menu)
-	{
-		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
-		{
-			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
-			return false;
-		}
-		return true;
-	}
-
-	bool Platform::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name)
-	{
-		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP, (UINT_PTR)childMenu, name))
-		{
-			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
-			return false;
-		}
-		return true;
-	}
-
-	DialogResult Platform::OpenFolderDialog(Window* window, char** outPath, const char* title)
+	DialogResult Platform::OpenFolderDialog(Window* window, std::string* outPath, const char* title)
 	{
 		IFileOpenDialog* fileDialog = NULL;
 
@@ -255,10 +168,12 @@ namespace Flux {
 				return DialogResult::None;
 			}
 
-			int32 pathSize = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
-			*outPath = new char[pathSize];
-			(*outPath)[pathSize - 1] = '\0';
-			WideCharToMultiByte(CP_UTF8, 0, path, -1, *outPath, pathSize, NULL, NULL);
+			if (outPath)
+			{
+				int32 pathSize = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
+				outPath->resize(pathSize - 1);
+				WideCharToMultiByte(CP_UTF8, 0, path, -1, outPath->data(), pathSize - 1, NULL, NULL);
+			}
 
 			CoTaskMemFree(path);
 
@@ -386,7 +301,7 @@ namespace Flux {
 
 	WindowClassHandle Platform::GetWindowClass()
 	{
-		return static_cast<WindowClassHandle>(s_Data.WindowClass);
+		return static_cast<WindowClassHandle>(s_WindowClass);
 	}
 
 }

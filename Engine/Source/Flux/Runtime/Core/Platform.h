@@ -44,10 +44,6 @@ namespace Flux {
 
 	using WindowClassHandle = uint32;
 
-	using WindowMenu = void*;
-
-	typedef std::function<void(WindowMenu, uint32)> WindowMenuCallback;
-
 	class Platform
 	{
 	public:
@@ -62,13 +58,7 @@ namespace Flux {
 		static float GetTime();
 		static uint64 GetNanoTime();
 
-		static WindowMenu CreateMenu();
-		static bool SetMenu(Window* window, WindowMenu menu, WindowMenuCallback callback = {});
-		static bool AddMenu(WindowMenu menu, uint32 itemID = 0, const char* name = "");
-		static bool AddMenuSeparator(WindowMenu menu);
-		static bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "");
-
-		static DialogResult OpenFolderDialog(Window* window, char** outPath, const char* title = "Select Folder");
+		static DialogResult OpenFolderDialog(Window* window, std::string* outPath, const char* title = "Select Folder");
 		static DialogResult MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const char* text, const char* caption, Window* window = nullptr);
 
 		static bool IsDebuggerPresent();

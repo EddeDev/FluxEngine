@@ -118,10 +118,56 @@ namespace Flux {
 			FLUX_ASSERT(false, "DestroyWindow failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
 	}
 
+	WindowMenu WindowsWindow::CreateMenu() const
+	{
+		return static_cast<WindowMenu>(::CreateMenu());
+	}
+
+	bool WindowsWindow::SetMenu(WindowMenu menu) const
+	{
+		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
+	}
+
+	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 itemID, const char* name) const
+	{
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING, (UINT_PTR)itemID, name))
+		{
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return false;
+		}
+		return true;
+	}
+
+	bool WindowsWindow::AddMenuSeparator(WindowMenu menu) const
+	{
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
+		{
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return false;
+		}
+		return true;
+	}
+
+	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name) const
+	{
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP, (UINT_PTR)childMenu, name))
+		{
+			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage(Platform::GetLastError()));
+			return false;
+		}
+		return true;
+	}
+
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		switch (uMsg)
 		{
+		case WM_COMMAND:
+		{
+			for (auto& callback : m_MenuCallbacks)
+				callback(m_Menu, (uint32)wParam);
+			break;
+		}
 		case WM_SIZE:
 		{
 			const uint32 width = LOWORD(lParam);
