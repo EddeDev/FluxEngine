@@ -27,7 +27,7 @@ namespace Flux {
  	protected:
 		inline static Engine* s_Instance = nullptr;
 
-		Shared<Window> m_Window;
+		Unique<Window> m_Window;
 		bool m_Running = true;
 		
 		float m_FrameTime = 0.0f;

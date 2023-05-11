@@ -58,10 +58,10 @@ namespace Flux {
 		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, wTitle, wTitleSize);
 
 		m_WindowHandle = CreateWindowExW(
-			style,
+			exStyle,
 			MAKEINTATOM(windowClass),
 			wTitle,
-			exStyle,
+			style,
 			windowX,
 			windowY,
 			m_Width,
@@ -110,7 +110,7 @@ namespace Flux {
 	{
 		if (!IsWindow(m_WindowHandle))
 		{
-			FLUX_WARNING("Invalid window handle!");
+			FLUX_WARNING("Invalid window handle {0}", (void*)m_WindowHandle);
 			return;
 		}
 
@@ -187,6 +187,81 @@ namespace Flux {
 		{
 			for (auto& callback : m_CloseCallbacks)
 				callback();
+			break;
+		}
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(m_WindowHandle, &ps);
+
+			RECT rc;
+			GetClientRect(m_WindowHandle, &rc);
+
+			HBRUSH hbrBlack = (HBRUSH)GetStockObject(BLACK_BRUSH);
+			FillRect(hdc, &rc, hbrBlack);
+
+			SetBkColor(hdc, 0x00000000);
+			SetBkMode(hdc, TRANSPARENT);
+			SetTextAlign(hdc, TA_LEFT | TA_TOP | TA_NOUPDATECP);
+
+#if 0
+			SelectObject(hdc, (HFONT)GetStockObject(ANSI_VAR_FONT));
+#else
+			SelectObject(hdc, (HFONT)GetStockObject(DEFAULT_GUI_FONT));
+#endif
+
+			uint32 offset = 0;
+		#define DRAW_TEXT(text) \
+			{ \
+				auto label = text; \
+				SIZE textSize; \
+				GetTextExtentPoint32A(hdc, label, strlen(label), &textSize); \
+				const uint32 padding = 8; \
+				TextOutA(hdc, padding, offset + padding, label, strlen(label)); \
+				offset += textSize.cy + 4; \
+			}
+
+			SetTextColor(hdc, RGB(255, 255, 51));
+
+			DRAW_TEXT("Flux Engine");
+
+#ifdef FLUX_BUILD_DEBUG
+	#ifdef _M_X64
+			DRAW_TEXT("Debug x64");
+	#else
+			DRAW_TEXT("Debug x86");
+	#endif
+#endif
+
+#ifdef FLUX_BUILD_RELEASE
+	#ifdef _M_X64
+			DRAW_TEXT("Release x64");
+	#else
+			DRAW_TEXT("Release x86");
+	#endif
+#endif
+
+#ifdef FLUX_BUILD_RELEASE
+	#ifdef _M_X64
+			DRAW_TEXT("Shipping x64");
+	#else
+			DRAW_TEXT("Shipping x86");
+	#endif
+#endif
+
+			DWORD lastError = GetLastError();
+			if (lastError != 0)
+			{
+				std::string lastErrorStr = Platform::GetErrorMessage(lastError);
+				lastErrorStr.insert(0, "### ");
+				lastErrorStr.insert(lastErrorStr.size(), " ###");
+			
+				SetTextColor(hdc, RGB(255, 51, 51));
+				offset += 4 * 2;
+				DRAW_TEXT(lastErrorStr.c_str());
+			}
+
+			EndPaint(m_WindowHandle, &ps);
 			break;
 		}
 		}

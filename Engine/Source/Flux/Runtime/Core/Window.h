@@ -20,6 +20,8 @@ namespace Flux {
 	class Window
 	{
 	public:
+		virtual ~Window() = default;
+
 		virtual WindowMenu CreateMenu() const = 0;
 		virtual bool SetMenu(WindowMenu menu) const = 0;
 		virtual bool AddMenu(WindowMenu menu, uint32 itemID = 0, const char* name = "") const = 0;
@@ -32,7 +34,7 @@ namespace Flux {
 
 		virtual WindowHandle GetNativeHandle() const = 0;
 
-		static Shared<Window> Create(const WindowCreateInfo& createInfo);
+		static Unique<Window> Create(const WindowCreateInfo& createInfo);
 	};
 
 }
