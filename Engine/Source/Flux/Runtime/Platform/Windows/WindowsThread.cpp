@@ -23,7 +23,8 @@ namespace Flux {
 	{
 		Wait();
 		Destroy();
-		
+
+		WaitForSingleObject(m_ThreadHandle, INFINITE);
 		DeleteCriticalSection(&m_CriticalSection);
 	}
 

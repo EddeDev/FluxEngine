@@ -17,6 +17,7 @@ namespace Flux {
 
 	static ATOM s_WindowClass;
 
+	static ATOM s_HelperWindowClass;
 	static HWND s_HelperWindow;
 
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -42,8 +43,8 @@ namespace Flux {
 		wc.hInstance = g_Instance;
 		wc.lpszClassName = L"HelperWindow";
 
-		ATOM windowClass = RegisterClassExW(&wc);
-		if (!windowClass)
+		s_HelperWindowClass = RegisterClassExW(&wc);
+		if (!s_HelperWindowClass)
 		{
 			FLUX_ASSERT(false, "Failed to register helper window class.");
 			return false;
@@ -51,7 +52,7 @@ namespace Flux {
 
 		s_HelperWindow = CreateWindowExW(
 			WS_EX_OVERLAPPEDWINDOW,
-			MAKEINTATOM(windowClass),
+			MAKEINTATOM(s_HelperWindowClass),
 			L"HelperWindow",
 			WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
 			0,
@@ -113,6 +114,11 @@ namespace Flux {
 
 	void Platform::Shutdown()
 	{
+		DestroyWindow(s_HelperWindow);
+
+		if (!UnregisterClassW(MAKEINTATOM(s_HelperWindowClass), g_Instance))
+			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage());
+
 		if (!UnregisterClassW(MAKEINTATOM(s_WindowClass), g_Instance))
 			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage());
 
