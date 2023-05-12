@@ -259,11 +259,12 @@ namespace Flux {
 			{ \
 				auto label = text; \
 				SIZE textSize; \
-				GetTextExtentPoint32A(hdc, label, strlen(label), &textSize); \
+				GetTextExtentPoint32A(hdc, label, (int32)strlen(label), &textSize); \
 				const uint32 padding = 8; \
-				TextOutA(hdc, padding, offset + padding, label, strlen(label)); \
-				offset += textSize.cy + 4; \
+				TextOutA(hdc, padding, offset + padding, label, (int32)strlen(label)); \
+				offset += (int32)textSize.cy + 4; \
 			}
+
 
 			SetTextColor(hdc, RGB(255, 255, 51));
 
