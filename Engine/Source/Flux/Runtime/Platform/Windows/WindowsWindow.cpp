@@ -13,11 +13,15 @@ namespace Flux {
 
 	extern HINSTANCE g_Instance;
 
+#define ASSERT_ON_MAIN_THREAD(func) FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::" #func " must only be called from the main thread.")
+
 	WindowsWindow::WindowsWindow(const WindowCreateInfo& createInfo)
 	{
 		m_Width = createInfo.Width;
 		m_Height = createInfo.Height;
 		m_Title = createInfo.Title;
+
+		m_ThreadID = GetCurrentThreadId();
 
 		DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX;
 
@@ -122,16 +126,22 @@ namespace Flux {
 
 	WindowMenu WindowsWindow::CreateMenu() const
 	{
+		ASSERT_ON_MAIN_THREAD(CreateMenu);
+
 		return static_cast<WindowMenu>(::CreateMenu());
 	}
 
 	bool WindowsWindow::SetMenu(WindowMenu menu) const
 	{
+		ASSERT_ON_MAIN_THREAD(SetMenu);
+
 		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
 	}
 
 	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 itemID, const char* name, bool disabled) const
 	{
+		ASSERT_ON_MAIN_THREAD(AddMenu);
+
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING | (disabled ? MF_DISABLED : 0), (UINT_PTR)itemID, name))
 		{
 			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
@@ -142,6 +152,8 @@ namespace Flux {
 
 	bool WindowsWindow::AddMenuSeparator(WindowMenu menu) const
 	{
+		ASSERT_ON_MAIN_THREAD(AddMenuSeparator);
+
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
 		{
 			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
@@ -152,6 +164,8 @@ namespace Flux {
 
 	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name, bool disabled) const
 	{
+		ASSERT_ON_MAIN_THREAD(AddPopupMenu);
+
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP | (disabled ? MF_DISABLED : 0), (UINT_PTR)childMenu, name))
 		{
 			FLUX_ASSERT(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
@@ -162,7 +176,30 @@ namespace Flux {
 
 	void WindowsWindow::SetVisible(bool visible) const
 	{
+		ASSERT_ON_MAIN_THREAD(SetVisible);
+
 		::ShowWindow(m_WindowHandle, visible ? SW_SHOWNA : SW_HIDE);
+	}
+
+	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
+	{
+		ASSERT_ON_MAIN_THREAD(AddCloseCallback);
+
+		m_CloseCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddSizeCallback(const WindowSizeCallback& callback)
+	{
+		ASSERT_ON_MAIN_THREAD(AddSizeCallback);
+
+		m_SizeCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMenuCallback(const WindowMenuCallback& callback)
+	{
+		ASSERT_ON_MAIN_THREAD(AddMenuCallback);
+
+		m_MenuCallbacks.push_back(callback);
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)

@@ -6,6 +6,20 @@
 
 namespace Flux {
 
+	namespace Utils {
+
+		static void ExecuteQueue(std::queue<std::function<void()>>& queue, std::mutex& mutex)
+		{
+			std::unique_lock<std::mutex> lock(mutex);
+			while (!queue.empty())
+			{
+				auto& callback = queue.front();
+				callback();
+				queue.pop();
+			}
+		}
+	}
+
 	extern bool g_EngineRunning;
 
 	Engine::Engine()
@@ -13,15 +27,18 @@ namespace Flux {
 		FLUX_ASSERT(!s_Instance, "Engine instance already exists!");
 		s_Instance = this;
 
+		m_EventThreadID = std::this_thread::get_id();
+
+		Platform::SetConsoleTitle("Flux Engine");
+		Platform::SetThreadName(Platform::GetCurrentThread(), "Event Thread");
+		Platform::SetThreadPriority(Platform::GetCurrentThread(), ThreadPriority::Lowest);
+
 		WindowCreateInfo windowCreateInfo;
 		windowCreateInfo.Width = 1280;
 		windowCreateInfo.Height = 720;
 
 		m_Window = Window::Create(windowCreateInfo);
-		m_Window->AddCloseCallback([this]()
-		{
-			Close();
-		});
+		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
 	}
 
 	Engine::~Engine()
@@ -31,9 +48,35 @@ namespace Flux {
 
 	void Engine::Run()
 	{
+		ThreadCreateInfo mainThreadCreateInfo;
+		mainThreadCreateInfo.Name = "Main Thread";
+		mainThreadCreateInfo.Priority = ThreadPriority::Highest;
+
+		m_MainThread = Thread::Create(mainThreadCreateInfo);
+		m_MainThread->Submit([this]() { m_MainThreadID = std::this_thread::get_id();});
+		m_MainThread->Wait();
+
+		m_MainThread->Submit(FLUX_BIND_CALLBACK(MT_MainLoop, this));
+
+		while (m_Running)
+		{
+			Platform::WaitMessage();
+			Platform::PumpMessages();
+
+			Utils::ExecuteQueue(m_EventThreadQueue, m_EventThreadMutex);
+		}
+
+		m_MainThread.reset();
+	}
+
+	void Engine::MT_MainLoop()
+	{
 		OnInit();
 
-		m_Window->SetVisible(true);
+		SubmitToEventThread([this]()
+		{
+			m_Window->SetVisible(true);
+		});
 
 		while (m_Running)
 		{
@@ -44,19 +87,19 @@ namespace Flux {
 			m_FrameCounter++;
 			if (time >= m_LastTime + 1.0f)
 			{
-				FLUX_WARNING("Frame time: {0:.1f}ms ({1} fps), frames: {2}", m_FrameTime * 1000.0f, m_FrameCounter, m_Frames);
+				FLUX_TRACE("Frame time: {0:.1f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FrameCounter);
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
 				m_LastTime = time;
 			}
 
+			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
+
 			OnUpdate();
 
 			using namespace std::chrono_literals;
 			std::this_thread::sleep_for(500ns);
-
-			Platform::PumpMessages();
 
 			m_Frames++;
 		}
@@ -66,8 +109,31 @@ namespace Flux {
 
 	void Engine::Close(bool restart)
 	{
+		FLUX_ASSERT(std::this_thread::get_id() == m_MainThreadID, "Engine::Close must only be called from the main thread.");
+
 		m_Running = false;
 		g_EngineRunning = restart;
+	}
+
+	void Engine::OnWindowClose()
+	{
+		SubmitToMainThread([this]()
+		{
+			Close();
+		});
+	}
+
+	void Engine::SubmitToEventThread(std::function<void()> function)
+	{
+		std::lock_guard<std::mutex> lock(m_EventThreadMutex);
+		m_EventThreadQueue.push(std::move(function));
+		Platform::PostEmptyEvent();
+	}
+
+	void Engine::SubmitToMainThread(std::function<void()> function)
+	{
+		std::lock_guard<std::mutex> lock(m_MainThreadMutex);
+		m_MainThreadQueue.push(std::move(function));
 	}
 
 }

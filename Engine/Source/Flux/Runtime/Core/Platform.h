@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Window.h"
+#include "Thread.h"
 
 namespace Flux {
 
@@ -32,11 +33,12 @@ namespace Flux {
 
 	enum class DialogResult : uint8
 	{
-		Abort = 0,
+		None = 0,
+		
+		Abort,
 		Cancel,
 		Ignore,
 		No,
-		None,
 		Ok,
 		Retry,
 		Yes
@@ -51,6 +53,7 @@ namespace Flux {
 		static void Shutdown();
 
 		static bool WaitMessage();
+		static bool PostEmptyEvent();
 		static void PumpMessages();
 
 		static void Sleep(float seconds);
@@ -63,6 +66,13 @@ namespace Flux {
 
 		static bool IsDebuggerPresent();
 		static void DebugBreak();
+
+		static bool SetConsoleTitle(const char* title);
+
+		static bool SetThreadName(ThreadHandle handle, const char* name);
+		static void SetThreadPriority(ThreadHandle handle, ThreadPriority priority);
+		static ThreadPriority GetThreadPriority(ThreadHandle handle);
+		static ThreadHandle GetCurrentThread();
 
 		static std::string GetErrorMessage(uint32 error = 0);
 		static uint32 GetLastError();

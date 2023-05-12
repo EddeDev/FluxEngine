@@ -10,7 +10,7 @@ namespace Flux {
 	{
 	public:
 		WindowsWindow(const WindowCreateInfo& createInfo);
-		~WindowsWindow();
+		virtual ~WindowsWindow();
 
 		virtual WindowMenu CreateMenu() const override;
 		virtual bool SetMenu(WindowMenu menu) const override;
@@ -20,9 +20,9 @@ namespace Flux {
 
 		virtual void SetVisible(bool visible) const override;
 
-		virtual void AddCloseCallback(const WindowCloseCallback& callback) { m_CloseCallbacks.push_back(callback); }
-		virtual void AddSizeCallback(const WindowSizeCallback& callback) { m_SizeCallbacks.push_back(callback); }
-		virtual void AddMenuCallback(const WindowMenuCallback& callback) { m_MenuCallbacks.push_back(callback); }
+		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
+		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
+		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
 
 		virtual WindowHandle GetNativeHandle() const override { return m_WindowHandle; }
 
@@ -33,6 +33,8 @@ namespace Flux {
 		uint32 m_Width = 0;
 		uint32 m_Height = 0;
 		std::string m_Title;
+		
+		DWORD m_ThreadID;
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;

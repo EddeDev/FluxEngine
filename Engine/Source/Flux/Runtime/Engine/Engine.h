@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Flux/Runtime/Core/Window.h"
+#include "Flux/Runtime/Core/Thread.h"
 
 namespace Flux {
 
@@ -13,6 +14,11 @@ namespace Flux {
 
 		void Run();
 		void Close(bool restart = false);
+		void SubmitToEventThread(std::function<void()> function);
+		void SubmitToMainThread(std::function<void()> function);
+
+		Unique<Window>& GetWindow() { return m_Window; }
+		const Unique<Window>& GetWindow() const { return m_Window; }
 
 		template<typename TEngine = Engine>
 		static TEngine& Get()
@@ -20,6 +26,10 @@ namespace Flux {
 			FLUX_ASSERT(s_Instance, "Engine instance is nullptr!");
 			return (TEngine&)*s_Instance;
 		}
+	private:
+		void MT_MainLoop();
+
+		void OnWindowClose();
 	protected:
 		virtual void OnInit() {}
 		virtual void OnExit() {}
@@ -28,7 +38,17 @@ namespace Flux {
 		inline static Engine* s_Instance = nullptr;
 
 		Unique<Window> m_Window;
-		bool m_Running = true;
+		Unique<Thread> m_MainThread;
+
+		std::thread::id m_EventThreadID;
+		std::queue<std::function<void()>> m_EventThreadQueue;
+		std::mutex m_EventThreadMutex;
+
+		std::thread::id m_MainThreadID;
+		std::queue<std::function<void()>> m_MainThreadQueue;
+		std::mutex m_MainThreadMutex;
+
+		std::atomic<bool> m_Running = true;
 		
 		float m_FrameTime = 0.0f;
 		float m_LastFrameTime = 0.0f;

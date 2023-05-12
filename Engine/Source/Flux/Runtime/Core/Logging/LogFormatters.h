@@ -39,15 +39,9 @@ struct fmt::formatter<glm::mat4> : fmt::formatter<std::string>
 {
 	auto format(const glm::mat4& v, fmt::format_context& context) -> decltype(context.out())
 	{
-		glm::vec3 scale;
+		glm::vec3 translation, scale, skew;
 		glm::quat orientation;
-		glm::vec3 translation;
-
-		// Unused
-		glm::vec3 skew;
 		glm::vec4 perspective;
-
-		// TODO: Optimize
 		if (!glm::decompose(v, scale, orientation, translation, skew, perspective))
 			return fmt::format_to(context.out(), "\n{0}\n{1}\n{2}\n{3}", v[0], v[1], v[2], v[3]);
 

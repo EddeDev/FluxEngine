@@ -18,37 +18,43 @@ namespace Flux {
 
 	void EditorEngine::OnInit()
 	{
-		WindowMenu fileMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...", true);
-		m_Window->AddMenu(fileMenu, Menu_File_OpenProject, "Open Project...");
-		m_Window->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project", true);
-		m_Window->AddMenuSeparator(fileMenu);
-		m_Window->AddMenu(fileMenu, Menu_File_Restart, "Restart");
-		m_Window->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
-		
-		WindowMenu aboutMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine", true);
+		SubmitToEventThread([this]()
+		{
+			WindowMenu fileMenu = m_Window->CreateMenu();
+			m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...", true);
+			m_Window->AddMenu(fileMenu, Menu_File_OpenProject, "Open Project...");
+			m_Window->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project", true);
+			m_Window->AddMenuSeparator(fileMenu);
+			m_Window->AddMenu(fileMenu, Menu_File_Restart, "Restart");
+			m_Window->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
 
-		WindowMenu menu = m_Window->CreateMenu();
-		m_Window->AddPopupMenu(menu, fileMenu, "File");
-		m_Window->AddPopupMenu(menu, aboutMenu, "About");
+			WindowMenu aboutMenu = m_Window->CreateMenu();
+			m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine", true);
 
-		m_Window->SetMenu(menu);
-		m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
+			WindowMenu menu = m_Window->CreateMenu();
+			m_Window->AddPopupMenu(menu, fileMenu, "File");
+			m_Window->AddPopupMenu(menu, aboutMenu, "About");
 
-		WindowCreateInfo aboutWindowCreateInfo;
-		aboutWindowCreateInfo.Width = 640;
-		aboutWindowCreateInfo.Height = 410;
-		aboutWindowCreateInfo.Title = "About Flux Engine";
-		aboutWindowCreateInfo.Resizable = false;
-		aboutWindowCreateInfo.ParentWindow = m_Window.get();
+			m_Window->SetMenu(menu);
+			m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
 
-		m_AboutWindow = Window::Create(aboutWindowCreateInfo);
+			WindowCreateInfo aboutWindowCreateInfo;
+			aboutWindowCreateInfo.Width = 640;
+			aboutWindowCreateInfo.Height = 410;
+			aboutWindowCreateInfo.Title = "About Flux Engine";
+			aboutWindowCreateInfo.Resizable = false;
+			aboutWindowCreateInfo.ParentWindow = m_Window.get();
+
+			m_AboutWindow = Window::Create(aboutWindowCreateInfo);
+		});
 	}
 
 	void EditorEngine::OnExit()
 	{
-		m_AboutWindow.reset();
+		SubmitToEventThread([this]()
+		{
+			m_AboutWindow.reset();
+		});
 	}
 
 	void EditorEngine::OnUpdate()
@@ -68,12 +74,12 @@ namespace Flux {
 		}
 		case Menu_File_Restart:
 		{
-			Close(true);
+			SubmitToMainThread([this]() { Close(true); });
 			break;
 		}
 		case Menu_File_Exit:
 		{
-			Close();
+			SubmitToMainThread([this](){ Close(); });
 			break;
 		}
 		case Menu_About_AboutFluxEngine:

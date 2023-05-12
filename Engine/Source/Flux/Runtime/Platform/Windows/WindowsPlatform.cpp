@@ -17,6 +17,8 @@ namespace Flux {
 
 	static ATOM s_WindowClass;
 
+	static HWND s_HelperWindow;
+
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		WindowsWindow* window = (WindowsWindow*)GetPropW(hWnd, L"Window");
@@ -25,7 +27,61 @@ namespace Flux {
 
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
+
+	static LRESULT CALLBACK HelperWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	{
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	}
 	
+	static bool CreateHelperWindow()
+	{
+		WNDCLASSEXW wc = {};
+		wc.cbSize = sizeof(WNDCLASSEXW);
+		wc.style = CS_OWNDC;
+		wc.lpfnWndProc = (WNDPROC)HelperWindowProc;
+		wc.hInstance = g_Instance;
+		wc.lpszClassName = L"HelperWindow";
+
+		ATOM windowClass = RegisterClassExW(&wc);
+		if (!windowClass)
+		{
+			FLUX_ASSERT(false, "Failed to register helper window class.");
+			return false;
+		}
+
+		s_HelperWindow = CreateWindowExW(
+			WS_EX_OVERLAPPEDWINDOW,
+			MAKEINTATOM(windowClass),
+			L"HelperWindow",
+			WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+			0,
+			0,
+			1,
+			1,
+			NULL,
+			NULL,
+			g_Instance,
+			NULL
+		);
+
+		if (!s_HelperWindow)
+		{
+			FLUX_ASSERT(false, "Failed to create helper window.");
+			return false;
+		}
+
+		ShowWindow(s_HelperWindow, SW_HIDE);
+
+		MSG msg;
+		while (PeekMessageW(&msg, s_HelperWindow, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
+
+		return true;
+	}
+
 	void Platform::Init()
 	{
 		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_TimerOffset))
@@ -51,6 +107,8 @@ namespace Flux {
 
 		if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 			FLUX_ASSERT(false, "Failed to initialize COM library.\n{0}", Platform::GetErrorMessage());
+
+		CreateHelperWindow();
 	}
 
 	void Platform::Shutdown()
@@ -64,6 +122,11 @@ namespace Flux {
 	bool Platform::WaitMessage()
 	{
 		return ::WaitMessage();
+	}
+
+	bool Platform::PostEmptyEvent()
+	{
+		return ::PostMessageW(s_HelperWindow, WM_NULL, 0, 0);
 	}
 
 	void Platform::PumpMessages()
@@ -250,6 +313,60 @@ namespace Flux {
 	void Platform::DebugBreak()
 	{
 		::DebugBreak();
+	}
+	
+	bool Platform::SetConsoleTitle(const char* title)
+	{
+		return ::SetConsoleTitleA(title);
+	}
+
+	bool Platform::SetThreadName(ThreadHandle handle, const char* name)
+	{
+		int32 wNameSize = MultiByteToWideChar(CP_UTF8, 0, name, -1, NULL, 0);
+		wchar_t* wName = new wchar_t[wNameSize];
+		MultiByteToWideChar(CP_UTF8, 0, name, -1, wName, wNameSize);
+		bool success = SUCCEEDED(::SetThreadDescription((HANDLE)handle, wName));
+		delete[] wName;
+		if (!success)
+		{
+			FLUX_ASSERT(false, "SetThreadDescription failed. ({0})", Platform::GetErrorMessage());
+			return false;
+		}
+		return true;
+	}
+
+	void Platform::SetThreadPriority(ThreadHandle handle, ThreadPriority priority)
+	{
+		int32 nPriority = 0;
+		switch (priority)
+		{
+		case ThreadPriority::Lowest:      nPriority = THREAD_PRIORITY_LOWEST; break;
+		case ThreadPriority::BelowNormal: nPriority = THREAD_PRIORITY_BELOW_NORMAL; break;
+		case ThreadPriority::Normal:      nPriority = THREAD_PRIORITY_NORMAL; break;
+		case ThreadPriority::AboveNormal: nPriority = THREAD_PRIORITY_ABOVE_NORMAL; break;
+		case ThreadPriority::Highest:     nPriority = THREAD_PRIORITY_HIGHEST; break;
+		}
+		::SetThreadPriority((HANDLE)handle, nPriority);
+	}
+
+	ThreadPriority Platform::GetThreadPriority(ThreadHandle handle)
+	{
+		int32 nPriority = ::GetThreadPriority((HANDLE)handle);
+		switch (nPriority)
+		{
+		case THREAD_PRIORITY_LOWEST:       return ThreadPriority::Lowest;
+		case THREAD_PRIORITY_BELOW_NORMAL: return ThreadPriority::BelowNormal;
+		case THREAD_PRIORITY_NORMAL:       return ThreadPriority::Normal;
+		case THREAD_PRIORITY_ABOVE_NORMAL: return ThreadPriority::AboveNormal;
+		case THREAD_PRIORITY_HIGHEST:      return ThreadPriority::Highest;
+		}
+		FLUX_ASSERT(false, "Unknown thread priority");
+		return ThreadPriority::None;
+	}
+
+	ThreadHandle Platform::GetCurrentThread()
+	{
+		return ::GetCurrentThread();
 	}
 
 	std::string Platform::GetErrorMessage(uint32 error)
