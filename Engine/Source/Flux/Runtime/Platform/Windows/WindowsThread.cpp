@@ -1,4 +1,7 @@
 #include "FluxPCH.h"
+
+#ifdef FLUX_PLATFORM_WINDOWS
+
 #include "WindowsThread.h"
 
 namespace Flux {
@@ -73,7 +76,10 @@ namespace Flux {
 			}
 			
 			if (thread->m_Destroying)
+			{
+				LeaveCriticalSection(&thread->m_CriticalSection);
 				break;
+			}
 			
 			Job& job = thread->m_Jobs.front();
 
@@ -91,3 +97,5 @@ namespace Flux {
 	}
 
 }
+
+#endif
