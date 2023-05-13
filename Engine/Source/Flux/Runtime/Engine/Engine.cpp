@@ -39,6 +39,8 @@ namespace Flux {
 
 		m_Window = Window::Create(windowCreateInfo);
 		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
+
+		Ref<GraphicsContext> context = GraphicsContext::Create();
 	}
 
 	Engine::~Engine()

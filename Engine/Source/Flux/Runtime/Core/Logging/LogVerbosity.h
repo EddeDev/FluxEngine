@@ -42,7 +42,7 @@ namespace Flux {
 				return LogVerbosity::Error;
 			if (string == "Critical")
 				return LogVerbosity::Critical;
-			return (LogVerbosity)0;
+			return static_cast<LogVerbosity>(0);
 		}
 		
 	}

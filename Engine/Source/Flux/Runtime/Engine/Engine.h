@@ -3,6 +3,9 @@
 #include "Flux/Runtime/Core/Window.h"
 #include "Flux/Runtime/Core/Thread.h"
 
+#include "Flux/Runtime/Renderer/GraphicsAPI.h"
+#include "Flux/Runtime/Renderer/GraphicsContext.h"
+
 namespace Flux {
 
 	class Engine
@@ -16,6 +19,9 @@ namespace Flux {
 		void Close(bool restart = false);
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
+
+		void SetGraphicsAPI(GraphicsAPI api) { m_GraphicsAPI = api; }
+		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
 
 		Unique<Window>& GetWindow() { return m_Window; }
 		const Unique<Window>& GetWindow() const { return m_Window; }
@@ -40,6 +46,8 @@ namespace Flux {
 		Unique<Window> m_Window;
 		Unique<Thread> m_MainThread;
 
+		GraphicsAPI m_GraphicsAPI = GraphicsAPI::Vulkan;
+
 		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;
 		std::mutex m_EventThreadMutex;
@@ -57,5 +65,7 @@ namespace Flux {
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
 	};
+
+#define FLUX_CURRENT_GRAPHICS_API Engine::Get().GetGraphicsAPI()
 
 }
