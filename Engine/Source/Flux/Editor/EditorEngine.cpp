@@ -12,6 +12,9 @@ namespace Flux {
 		Menu_File_Restart,
 		Menu_File_Exit,
 
+		// Edit
+		Menu_Edit_Preferences,
+
 		// About
 		Menu_About_AboutFluxEngine
 	};
@@ -28,11 +31,15 @@ namespace Flux {
 			m_Window->AddMenu(fileMenu, Menu_File_Restart, "Restart");
 			m_Window->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
 
+			WindowMenu editMenu = m_Window->CreateMenu();
+			m_Window->AddMenu(editMenu, Menu_Edit_Preferences, "Preferences");
+
 			WindowMenu aboutMenu = m_Window->CreateMenu();
 			m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine", true);
 
 			WindowMenu menu = m_Window->CreateMenu();
 			m_Window->AddPopupMenu(menu, fileMenu, "File");
+			m_Window->AddPopupMenu(menu, editMenu, "Edit");
 			m_Window->AddPopupMenu(menu, aboutMenu, "About");
 
 			m_Window->SetMenu(menu);
@@ -79,7 +86,7 @@ namespace Flux {
 		}
 		case Menu_File_Exit:
 		{
-			SubmitToMainThread([this](){ Close(); });
+			SubmitToMainThread([this]() { Close(); });
 			break;
 		}
 		case Menu_About_AboutFluxEngine:

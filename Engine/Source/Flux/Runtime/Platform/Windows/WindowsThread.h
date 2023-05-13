@@ -18,6 +18,7 @@ namespace Flux {
 		virtual void Submit(Job job) override;
 
 		virtual ThreadHandle GetHandle() const override { return m_ThreadHandle; }
+		virtual ThreadID GetID() const override { return static_cast<ThreadID>(m_ThreadID); }
 	private:
 		void Destroy();
 

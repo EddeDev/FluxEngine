@@ -34,7 +34,7 @@ namespace Flux {
 		uint32 m_Height = 0;
 		std::string m_Title;
 		
-		DWORD m_ThreadID;
+		ThreadID m_ThreadID;
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;

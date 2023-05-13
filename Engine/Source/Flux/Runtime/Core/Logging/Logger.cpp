@@ -1,8 +1,6 @@
 #include "FluxPCH.h"
 #include "Logger.h"
 
-#include "Flux/Runtime/Core/Platform.h"
-
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 

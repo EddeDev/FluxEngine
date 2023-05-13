@@ -19,7 +19,7 @@ namespace Flux {
 		m_Height = createInfo.Height;
 		m_Title = createInfo.Title;
 
-		m_ThreadID = GetCurrentThreadId();
+		m_ThreadID = Platform::GetCurrentThreadID();
 
 		DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX;
 
@@ -112,6 +112,8 @@ namespace Flux {
 
 	WindowsWindow::~WindowsWindow()
 	{
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+
 		if (!IsWindow(m_WindowHandle))
 			return;
 
@@ -123,21 +125,21 @@ namespace Flux {
 
 	WindowMenu WindowsWindow::CreateMenu() const
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::CreateMenu must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		return static_cast<WindowMenu>(::CreateMenu());
 	}
 
 	bool WindowsWindow::SetMenu(WindowMenu menu) const
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::SetMenu must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
 	}
 
 	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 itemID, const char* name, bool disabled) const
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::AddMenu must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING | (disabled ? MF_DISABLED : 0), (UINT_PTR)itemID, name))
 		{
@@ -149,7 +151,7 @@ namespace Flux {
 
 	bool WindowsWindow::AddMenuSeparator(WindowMenu menu) const
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::AddMenuSeparator must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
 		{
@@ -161,7 +163,7 @@ namespace Flux {
 
 	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name, bool disabled) const
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::AddPopupMenu must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP | (disabled ? MF_DISABLED : 0), (UINT_PTR)childMenu, name))
 		{
@@ -173,28 +175,28 @@ namespace Flux {
 
 	void WindowsWindow::SetVisible(bool visible) const
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::SetVisible must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		::ShowWindow(m_WindowHandle, visible ? SW_SHOWNA : SW_HIDE);
 	}
 
 	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::AddCloseCallback must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		m_CloseCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddSizeCallback(const WindowSizeCallback& callback)
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::AddSizeCallback must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		m_SizeCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddMenuCallback(const WindowMenuCallback& callback)
 	{
-		FLUX_ASSERT(GetCurrentThreadId() == m_ThreadID, "Window::AddMenuCallback must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
 
 		m_MenuCallbacks.push_back(callback);
 	}
@@ -261,7 +263,6 @@ namespace Flux {
 				TextOutA(hdc, padding, offset + padding, label, (int32)strlen(label)); \
 				offset += (int32)textSize.cy + 4; \
 			}
-
 
 			SetTextColor(hdc, RGB(255, 255, 51));
 

@@ -20,6 +20,7 @@ namespace Flux {
 	};
 
 	using ThreadHandle = void*;
+	using ThreadID = uint32;
 
 	class Thread
 	{
@@ -34,6 +35,7 @@ namespace Flux {
 		virtual void Submit(Job job) = 0;
 
 		virtual ThreadHandle GetHandle() const = 0;
+		virtual ThreadID GetID() const = 0;
 
 		static Unique<Thread> Create(const ThreadCreateInfo& createInfo);
 	};

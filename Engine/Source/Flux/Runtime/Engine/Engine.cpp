@@ -27,7 +27,7 @@ namespace Flux {
 		FLUX_ASSERT(!s_Instance, "Engine instance already exists!");
 		s_Instance = this;
 
-		m_EventThreadID = std::this_thread::get_id();
+		m_EventThreadID = Platform::GetCurrentThreadID();
 
 		Platform::SetConsoleTitle("Flux Engine");
 		Platform::SetThreadName(Platform::GetCurrentThread(), "Event Thread");
@@ -53,8 +53,7 @@ namespace Flux {
 		mainThreadCreateInfo.Priority = ThreadPriority::Highest;
 
 		m_MainThread = Thread::Create(mainThreadCreateInfo);
-		m_MainThread->Submit([this]() { m_MainThreadID = std::this_thread::get_id();});
-		m_MainThread->Wait();
+		m_MainThreadID = m_MainThread->GetID();
 
 		m_MainThread->Submit(FLUX_BIND_CALLBACK(MT_MainLoop, this));
 
@@ -109,7 +108,7 @@ namespace Flux {
 
 	void Engine::Close(bool restart)
 	{
-		FLUX_ASSERT(std::this_thread::get_id() == m_MainThreadID, "Engine::Close must only be called from the main thread.");
+		FLUX_ASSERT_ON_THREAD(m_MainThreadID);
 
 		m_Running = false;
 		g_EngineRunning = restart;

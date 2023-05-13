@@ -12,7 +12,7 @@ namespace Flux {
 #ifdef FLUX_PLATFORM_WINDOWS
 		return CreateUnique<WindowsThread>(createInfo);
 #else
-#error Unknown platform!
+	#error Unknown platform!
 #endif
 		return nullptr;
 	}

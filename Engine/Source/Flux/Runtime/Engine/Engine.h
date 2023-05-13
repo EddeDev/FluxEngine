@@ -40,11 +40,11 @@ namespace Flux {
 		Unique<Window> m_Window;
 		Unique<Thread> m_MainThread;
 
-		std::thread::id m_EventThreadID;
+		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;
 		std::mutex m_EventThreadMutex;
 
-		std::thread::id m_MainThreadID;
+		ThreadID m_MainThreadID;
 		std::queue<std::function<void()>> m_MainThreadQueue;
 		std::mutex m_MainThreadMutex;
 

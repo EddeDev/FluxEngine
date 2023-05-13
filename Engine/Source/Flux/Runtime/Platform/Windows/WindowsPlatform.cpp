@@ -341,6 +341,22 @@ namespace Flux {
 		return true;
 	}
 
+	std::string Platform::GetThreadName(ThreadHandle handle)
+	{
+		wchar_t* name;
+		if (!SUCCEEDED(GetThreadDescription((HANDLE)handle, &name)))
+		{
+			FLUX_ASSERT(false, "GetThreadDescription failed. ({0})", Platform::GetErrorMessage());
+			return "";
+		}
+
+		int32 size = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
+		std::string result;
+		result.resize(static_cast<size_t>(size - 1));
+		WideCharToMultiByte(CP_UTF8, 0, name, -1, result.data(), size - 1, NULL, NULL);
+		return result;
+	}
+
 	void Platform::SetThreadPriority(ThreadHandle handle, ThreadPriority priority)
 	{
 		int32 nPriority = 0;
@@ -373,6 +389,21 @@ namespace Flux {
 	ThreadHandle Platform::GetCurrentThread()
 	{
 		return ::GetCurrentThread();
+	}
+
+	ThreadHandle Platform::GetThreadFromID(ThreadID threadID)
+	{
+		return ::OpenThread(THREAD_QUERY_INFORMATION, FALSE, static_cast<DWORD>(threadID));
+	}
+
+	ThreadID Platform::GetThreadID(ThreadHandle handle)
+	{
+		return static_cast<ThreadID>(::GetThreadId((HANDLE)handle));
+	}
+
+	ThreadID Platform::GetCurrentThreadID()
+	{
+		return static_cast<ThreadID>(::GetCurrentThreadId());
 	}
 
 	std::string Platform::GetErrorMessage(uint32 error)

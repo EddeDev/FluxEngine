@@ -23,5 +23,6 @@
 #include <queue>
 #include <unordered_map>
 #include <map>
+#include <functional>
 
 #include "Flux/Runtime/Core/Core.h"

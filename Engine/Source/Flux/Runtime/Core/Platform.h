@@ -70,9 +70,15 @@ namespace Flux {
 		static bool SetConsoleTitle(const char* title);
 
 		static bool SetThreadName(ThreadHandle handle, const char* name);
+		static std::string GetThreadName(ThreadHandle handle);
+
 		static void SetThreadPriority(ThreadHandle handle, ThreadPriority priority);
 		static ThreadPriority GetThreadPriority(ThreadHandle handle);
+
 		static ThreadHandle GetCurrentThread();
+		static ThreadHandle GetThreadFromID(ThreadID threadID);
+		static ThreadID GetThreadID(ThreadHandle handle);
+		static ThreadID GetCurrentThreadID();
 
 		static std::string GetErrorMessage(uint32 error = 0);
 		static uint32 GetLastError();
