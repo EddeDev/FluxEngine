@@ -35,6 +35,7 @@ namespace Flux {
 		virtual bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "", bool disabled = false) const = 0;
 
 		virtual void SetVisible(bool visible) const = 0;
+		virtual bool IsVisible() const = 0;
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;

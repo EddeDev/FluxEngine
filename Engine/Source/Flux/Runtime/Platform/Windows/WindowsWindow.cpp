@@ -113,9 +113,7 @@ namespace Flux {
 	WindowsWindow::~WindowsWindow()
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
-
-		if (!IsWindow(m_WindowHandle))
-			return;
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
 
 		RemovePropW(m_WindowHandle, L"Window");
 
@@ -133,6 +131,7 @@ namespace Flux {
 	bool WindowsWindow::SetMenu(WindowMenu menu) const
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
 
 		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
 	}
@@ -140,6 +139,7 @@ namespace Flux {
 	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 itemID, const char* name, bool disabled) const
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING | (disabled ? MF_DISABLED : 0), (UINT_PTR)itemID, name))
 		{
@@ -152,6 +152,7 @@ namespace Flux {
 	bool WindowsWindow::AddMenuSeparator(WindowMenu menu) const
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
 		{
@@ -164,6 +165,7 @@ namespace Flux {
 	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name, bool disabled) const
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP | (disabled ? MF_DISABLED : 0), (UINT_PTR)childMenu, name))
 		{
@@ -176,8 +178,17 @@ namespace Flux {
 	void WindowsWindow::SetVisible(bool visible) const
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
 
 		::ShowWindow(m_WindowHandle, visible ? SW_SHOWNA : SW_HIDE);
+	}
+
+	bool WindowsWindow::IsVisible() const
+	{
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
+
+		return ::IsWindowVisible(m_WindowHandle);
 	}
 
 	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
@@ -230,7 +241,7 @@ namespace Flux {
 		{
 			for (auto& callback : m_CloseCallbacks)
 				callback();
-			break;
+			return 0;
 		}
 		case WM_PAINT:
 		{

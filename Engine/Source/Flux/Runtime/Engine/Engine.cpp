@@ -99,8 +99,6 @@ namespace Flux {
 
 			using namespace std::chrono_literals;
 			std::this_thread::sleep_for(500ns);
-
-			m_Frames++;
 		}
 
 		OnExit();

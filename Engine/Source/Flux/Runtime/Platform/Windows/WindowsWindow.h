@@ -19,6 +19,7 @@ namespace Flux {
 		virtual bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "", bool disabled = false) const override;
 
 		virtual void SetVisible(bool visible) const override;
+		virtual bool IsVisible() const override;
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;

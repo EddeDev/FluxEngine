@@ -15,7 +15,23 @@ namespace Flux {
 	private:
 		void OnMenuCallback(WindowMenu menu, uint32 menuID);
 	private:
-		Unique<Window> m_AboutWindow;
+		enum MenuItem : uint32
+		{
+			// File
+			Menu_File_NewProject,
+			Menu_File_OpenProject,
+			Menu_File_SaveProject,
+			Menu_File_Restart,
+			Menu_File_Exit,
+
+			// Edit
+			Menu_Edit_Preferences,
+
+			// About
+			Menu_About_AboutFluxEngine
+		};
+
+		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
 	};
 
 }

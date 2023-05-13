@@ -3,22 +3,6 @@
 
 namespace Flux {
 
-	enum MenuItems : uint32
-	{
-		// File
-		Menu_File_NewProject,
-		Menu_File_OpenProject,
-		Menu_File_SaveProject,
-		Menu_File_Restart,
-		Menu_File_Exit,
-
-		// Edit
-		Menu_Edit_Preferences,
-
-		// About
-		Menu_About_AboutFluxEngine
-	};
-
 	void EditorEngine::OnInit()
 	{
 		SubmitToEventThread([this]()
@@ -35,7 +19,7 @@ namespace Flux {
 			m_Window->AddMenu(editMenu, Menu_Edit_Preferences, "Preferences");
 
 			WindowMenu aboutMenu = m_Window->CreateMenu();
-			m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine", true);
+			m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine");
 
 			WindowMenu menu = m_Window->CreateMenu();
 			m_Window->AddPopupMenu(menu, fileMenu, "File");
@@ -45,14 +29,35 @@ namespace Flux {
 			m_Window->SetMenu(menu);
 			m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
 
-			WindowCreateInfo aboutWindowCreateInfo;
-			aboutWindowCreateInfo.Width = 640;
-			aboutWindowCreateInfo.Height = 410;
-			aboutWindowCreateInfo.Title = "About Flux Engine";
-			aboutWindowCreateInfo.Resizable = false;
-			aboutWindowCreateInfo.ParentWindow = m_Window.get();
+			WindowCreateInfo windowCreateInfo;
+			windowCreateInfo.ParentWindow = m_Window.get();
 
-			m_AboutWindow = Window::Create(aboutWindowCreateInfo);
+			// Preferences
+			windowCreateInfo.Width = 960;
+			windowCreateInfo.Height = 540;
+			windowCreateInfo.Title = "Preferences";
+			windowCreateInfo.Resizable = true;
+			m_Windows[MenuItem::Menu_Edit_Preferences] = Window::Create(windowCreateInfo);
+
+			// About
+			windowCreateInfo.Width = 640;
+			windowCreateInfo.Height = 410;
+			windowCreateInfo.Title = "About Flux Engine";
+			windowCreateInfo.Resizable = false;
+			m_Windows[MenuItem::Menu_About_AboutFluxEngine] = Window::Create(windowCreateInfo);
+
+			for (auto& [type, window] : m_Windows)
+			{
+				if (window)
+				{
+					window->AddCloseCallback([this, type]()
+					{
+						auto it = m_Windows.find(type);
+						if (it != m_Windows.end())
+							it->second->SetVisible(false);
+					});
+				}
+			}
 		});
 	}
 
@@ -60,7 +65,7 @@ namespace Flux {
 	{
 		SubmitToEventThread([this]()
 		{
-			m_AboutWindow.reset();
+			m_Windows.clear();
 		});
 	}
 
@@ -89,9 +94,11 @@ namespace Flux {
 			SubmitToMainThread([this]() { Close(); });
 			break;
 		}
-		case Menu_About_AboutFluxEngine:
+		default:
 		{
-			m_AboutWindow->SetVisible(true);
+			auto it = m_Windows.find(static_cast<MenuItem>(itemID));
+			if (it != m_Windows.end())
+				it->second->SetVisible(true);
 			break;
 		}
 		}
