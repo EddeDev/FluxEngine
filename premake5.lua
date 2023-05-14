@@ -34,9 +34,30 @@ project "FluxEngine"
         "Engine/Libraries/glm"
     }
 
+    if VulkanSDK ~= nil then
+        includedirs "%{VulkanSDK}/Include"
+    end
+    
+    defines
+    {
+        "GLM_FORCE_DEPTH_ZERO_TO_ONE"
+    }
+
+    if VulkanSDK ~= nil then
+        links
+        {
+            "%{VulkanSDK}/Lib/vulkan-1.lib",
+            "%{VulkanSDK}/Lib/VkLayer_utils.lib"
+        }
+    end
+
     filter "system:windows"
         systemversion "latest"
         defines "FLUX_PLATFORM_WINDOWS"
+
+        if VulkanSDK ~= nil then
+            links "%{VulkanSDK}/Lib/dxcompiler.lib"
+        end
 
     filter "system:macosx"
         systemversion "latest"
@@ -52,11 +73,34 @@ project "FluxEngine"
         runtime "Debug"
         symbols "On"
 
+        if VulkanSDK ~= nil then
+            links
+            {
+                "%{VulkanSDK}/Lib/shaderc_sharedd.lib",
+
+                "%{VulkanSDK}/Lib/spirv-cross-cored.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-hlsld.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-glsld.lib",
+                "%{VulkanSDK}/Lib/SPIRV-Toolsd.lib"
+            }
+        end
+
     filter "configurations:Release"
         kind "ConsoleApp"
         defines { "FLUX_BUILD_RELEASE", "NDEBUG" }
         runtime "Release"
         optimize "On"
+
+        if VulkanSDK ~= nil then
+            links
+            {
+                "%{VulkanSDK}/Lib/shaderc_shared.lib",
+
+                "%{VulkanSDK}/Lib/spirv-cross-core.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-hlsl.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-glsl.lib"
+            }
+        end
 
     filter "configurations:Shipping"
         kind "WindowedApp"
@@ -64,3 +108,14 @@ project "FluxEngine"
         runtime "Release"
         optimize "On"
         symbols "Off"
+
+        if VulkanSDK ~= nil then
+            links
+            {
+                "%{VulkanSDK}/Lib/shaderc_shared.lib",
+
+                "%{VulkanSDK}/Lib/spirv-cross-core.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-hlsl.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-glsl.lib"
+            }
+        end

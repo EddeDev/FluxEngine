@@ -88,7 +88,7 @@ namespace Flux {
 			m_FrameCounter++;
 			if (time >= m_LastTime + 1.0f)
 			{
-				FLUX_TRACE("Frame time: {0:.1f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FrameCounter);
+				FLUX_TRACE("Frame time: {0:.2f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FrameCounter);
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
@@ -99,8 +99,7 @@ namespace Flux {
 
 			OnUpdate();
 
-			using namespace std::chrono_literals;
-			std::this_thread::sleep_for(500ns);
+			Platform::Sleep(0.001f);
 		}
 
 		OnExit();
