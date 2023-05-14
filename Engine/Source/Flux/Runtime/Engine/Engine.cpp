@@ -41,6 +41,8 @@ namespace Flux {
 		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
 
 		Ref<GraphicsContext> context = GraphicsContext::Create();
+		Ref<GraphicsAdapter> adapter = GraphicsAdapter::Create(context);
+		Ref<GraphicsDevice> device = GraphicsDevice::Create(adapter);
 	}
 
 	Engine::~Engine()

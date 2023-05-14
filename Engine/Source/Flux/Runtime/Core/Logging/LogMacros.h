@@ -14,6 +14,9 @@
 	#define FLUX_TRACE_CATEGORY(...)
 #endif
 
+#define FLUX_LOG(verbosity, ...) ::Flux::Logger::Log(verbosity, __VA_ARGS__)
+#define FLUX_LOG_CATEGORY(verbosity, category, ...) ::Flux::Logger::LogCategory(category, verbosity, __VA_ARGS__)
+
 #define FLUX_INFO(...)     ::Flux::Logger::Log(::Flux::LogVerbosity::Info,     __VA_ARGS__)
 #define FLUX_WARNING(...)  ::Flux::Logger::Log(::Flux::LogVerbosity::Warning,  __VA_ARGS__)
 #define FLUX_ERROR(...)    ::Flux::Logger::Log(::Flux::LogVerbosity::Error,    __VA_ARGS__)

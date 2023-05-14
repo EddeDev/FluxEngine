@@ -4,6 +4,14 @@
 
 namespace Flux {
 
-#define VK_CHECK(result) if (result != VK_SUCCESS) FLUX_VERIFY(false)
+#ifndef FLUX_BUILD_SHIPPING
+	#define FLUX_VK_CHECKS_ENABLED
+#endif
+
+#ifdef FLUX_VK_CHECKS_ENABLED
+	#define VK_CHECK(result) if (result != VK_SUCCESS) FLUX_VERIFY(false)
+#else
+	#define VK_CHECK(result) result
+#endif
 
 }

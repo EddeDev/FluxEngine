@@ -4,6 +4,7 @@
 #include "Flux/Runtime/Core/Thread.h"
 
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
+#include "Flux/Runtime/Renderer/GraphicsDevice.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
 
 namespace Flux {

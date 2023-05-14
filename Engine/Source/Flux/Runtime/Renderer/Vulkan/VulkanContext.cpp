@@ -13,6 +13,27 @@ namespace Flux {
 	static bool s_EnableValidationLayers = false;
 #endif
 
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT  messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData)
+	{
+		LogVerbosity verbosity = LogVerbosity::Trace;
+		switch (messageSeverity)
+		{
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:    verbosity = LogVerbosity::Info;    break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: verbosity = LogVerbosity::Warning; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   verbosity = LogVerbosity::Error;   break;
+		}
+
+		FLUX_LOG_CATEGORY(verbosity, "Vulkan", "{0}", pCallbackData->pMessage);
+		if (verbosity == LogVerbosity::Error)
+			FLUX_VERIFY(false);
+
+		return VK_FALSE;
+	}
+
 	VulkanContext::VulkanContext()
 	{
 		VkApplicationInfo applicationInfo = {};
@@ -74,18 +95,18 @@ namespace Flux {
 			VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data()));
 
 			for (const auto& extension : extensions)
-				m_SupportedInstanceExtension.push_back(extension.extensionName);
+				m_SupportedInstanceExtensions.push_back(extension.extensionName);
 		}
 
 		if (s_EnableValidationLayers)
 		{
-			if (std::find(m_SupportedInstanceExtension.begin(), m_SupportedInstanceExtension.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) != m_SupportedInstanceExtension.end())
+			if (std::find(m_SupportedInstanceExtensions.begin(), m_SupportedInstanceExtensions.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) != m_SupportedInstanceExtensions.end())
 				enabledInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
 
 		for (const char* extensionName : enabledInstanceExtensions)
 		{
-			if (std::find(m_SupportedInstanceExtension.begin(), m_SupportedInstanceExtension.end(), extensionName) == m_SupportedInstanceExtension.end())
+			if (std::find(m_SupportedInstanceExtensions.begin(), m_SupportedInstanceExtensions.end(), extensionName) == m_SupportedInstanceExtensions.end())
 				FLUX_VERIFY(false, "Requested instance extension '{0}' is not supported.", extensionName);
 		}
 
@@ -102,10 +123,28 @@ namespace Flux {
 		instanceCreateInfo.ppEnabledExtensionNames = enabledInstanceExtensions.data();
 
 		VK_CHECK(vkCreateInstance(&instanceCreateInfo, nullptr, &m_Instance));
+
+		if (s_EnableValidationLayers)
+		{
+			VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo = {};
+			messengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+			messengerCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+			messengerCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+			messengerCreateInfo.pfnUserCallback = DebugUtilsMessengerCallback;
+
+			auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT"));
+			VK_CHECK(vkCreateDebugUtilsMessengerEXT(m_Instance, &messengerCreateInfo, nullptr, &m_DebugUtilsMessenger));
+		}
 	}
 
 	VulkanContext::~VulkanContext()
 	{
+		if (m_DebugUtilsMessenger != VK_NULL_HANDLE)
+		{
+			auto vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT"));
+			vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugUtilsMessenger, nullptr);
+		}
+
 		vkDestroyInstance(m_Instance, nullptr);
 	}
 
