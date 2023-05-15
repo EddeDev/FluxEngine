@@ -56,59 +56,6 @@ namespace Flux {
 
 		m_QueueFamilyProperties.resize(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(m_SelectedDevice, &queueFamilyCount, m_QueueFamilyProperties.data());
-
-		VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT;
-
-		if (requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT)
-		{
-			m_QueueFamilyIndices.Graphics = GetQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT);
-
-			auto& createInfo = m_QueueCreateInfos.emplace_back();
-			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			createInfo.queueFamilyIndex = m_QueueFamilyIndices.Graphics;
-			createInfo.queueCount = 1;
-			createInfo.pQueuePriorities = &s_DefaultQueuePriority;
-		}
-		else
-		{
-			m_QueueFamilyIndices.Graphics = 0;
-		}
-
-		if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT)
-		{
-			m_QueueFamilyIndices.Compute = GetQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT);
-
-			if (m_QueueFamilyIndices.Compute != m_QueueFamilyIndices.Graphics)
-			{
-				auto& createInfo = m_QueueCreateInfos.emplace_back();
-				createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-				createInfo.queueFamilyIndex = m_QueueFamilyIndices.Compute;
-				createInfo.queueCount = 1;
-				createInfo.pQueuePriorities = &s_DefaultQueuePriority;
-			}
-		}
-		else
-		{
-			m_QueueFamilyIndices.Compute = m_QueueFamilyIndices.Graphics;
-		}
-
-		if (requestedQueueTypes & VK_QUEUE_TRANSFER_BIT)
-		{
-			m_QueueFamilyIndices.Transfer = GetQueueFamilyIndex(VK_QUEUE_TRANSFER_BIT);
-
-			if ((m_QueueFamilyIndices.Transfer != m_QueueFamilyIndices.Graphics) && (m_QueueFamilyIndices.Transfer != m_QueueFamilyIndices.Compute))
-			{
-				auto& createInfo = m_QueueCreateInfos.emplace_back();
-				createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-				createInfo.queueFamilyIndex = m_QueueFamilyIndices.Transfer;
-				createInfo.queueCount = 1;
-				createInfo.pQueuePriorities = &s_DefaultQueuePriority;
-			}
-		}
-		else
-		{
-			m_QueueFamilyIndices.Transfer = m_QueueFamilyIndices.Graphics;
-		}
 	}
 
 	uint32 VulkanAdapter::GetQueueFamilyIndex(VkQueueFlags queueFlags) const
@@ -144,17 +91,77 @@ namespace Flux {
 	VulkanDevice::VulkanDevice(Ref<GraphicsAdapter> adapter)
 		: m_Adapter(adapter.As<VulkanAdapter>())
 	{
-		const auto& queueCreateInfos = m_Adapter->GetQueueCreateInfos();
-		FLUX_VERIFY(!queueCreateInfos.empty());
+		std::vector<const char*> enabledDeviceExtensions = { 
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME 
+		};
+
+		VkPhysicalDeviceFeatures enabledFeatures = {};
+		enabledFeatures.samplerAnisotropy = VK_TRUE;
+
+		const VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT;
+
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+		if (requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT)
+		{
+			m_QueueFamilyIndices.Graphics = m_Adapter->GetQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT);
+
+			auto& createInfo = queueCreateInfos.emplace_back();
+			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			createInfo.queueFamilyIndex = m_QueueFamilyIndices.Graphics;
+			createInfo.queueCount = 1;
+			createInfo.pQueuePriorities = &s_DefaultQueuePriority;
+		}
+		else
+		{
+			m_QueueFamilyIndices.Graphics = 0;
+		}
+
+		if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT)
+		{
+			m_QueueFamilyIndices.Compute = m_Adapter->GetQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT);
+
+			if (m_QueueFamilyIndices.Compute != m_QueueFamilyIndices.Graphics)
+			{
+				auto& createInfo = queueCreateInfos.emplace_back();
+				createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+				createInfo.queueFamilyIndex = m_QueueFamilyIndices.Compute;
+				createInfo.queueCount = 1;
+				createInfo.pQueuePriorities = &s_DefaultQueuePriority;
+			}
+		}
+		else
+		{
+			m_QueueFamilyIndices.Compute = m_QueueFamilyIndices.Graphics;
+		}
+
+		if (requestedQueueTypes & VK_QUEUE_TRANSFER_BIT)
+		{
+			m_QueueFamilyIndices.Transfer = m_Adapter->GetQueueFamilyIndex(VK_QUEUE_TRANSFER_BIT);
+
+			if ((m_QueueFamilyIndices.Transfer != m_QueueFamilyIndices.Graphics) && (m_QueueFamilyIndices.Transfer != m_QueueFamilyIndices.Compute))
+			{
+				auto& createInfo = queueCreateInfos.emplace_back();
+				createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+				createInfo.queueFamilyIndex = m_QueueFamilyIndices.Transfer;
+				createInfo.queueCount = 1;
+				createInfo.pQueuePriorities = &s_DefaultQueuePriority;
+			}
+		}
+		else
+		{
+			m_QueueFamilyIndices.Transfer = m_QueueFamilyIndices.Graphics;
+		}
 
 		VkDeviceCreateInfo deviceCreateInfo = {};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+		deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(enabledDeviceExtensions.size());
+		deviceCreateInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
+		deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
 
 		VK_CHECK(vkCreateDevice(m_Adapter->GetPhysicalDevice(), &deviceCreateInfo, nullptr, &m_Device));
-
-		__debugbreak();
 	}
 
 	VulkanDevice::~VulkanDevice()
