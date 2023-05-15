@@ -91,6 +91,9 @@ namespace Flux {
 	VulkanDevice::VulkanDevice(Ref<GraphicsAdapter> adapter)
 		: m_Adapter(adapter.As<VulkanAdapter>())
 	{
+		FLUX_VERIFY(!s_Instance);
+		s_Instance = this;
+
 		std::vector<const char*> enabledDeviceExtensions = { 
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME 
 		};
@@ -167,6 +170,8 @@ namespace Flux {
 	VulkanDevice::~VulkanDevice()
 	{
 		vkDestroyDevice(m_Device, nullptr);
+
+		s_Instance = nullptr;
 	}
 
 }

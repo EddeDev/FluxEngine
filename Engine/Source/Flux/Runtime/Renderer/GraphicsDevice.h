@@ -9,6 +9,8 @@ namespace Flux {
 	public:
 		virtual ~GraphicsAdapter() {}
 
+		virtual Ref<GraphicsContext> GetContext() const = 0;
+
 		static Ref<GraphicsAdapter> Create(Ref<GraphicsContext> context);
 	};
 
@@ -16,6 +18,8 @@ namespace Flux {
 	{
 	public:
 		virtual ~GraphicsDevice() {}
+
+		virtual Ref<GraphicsAdapter> GetAdapter() const = 0;
 
 		static Ref<GraphicsDevice> Create(Ref<GraphicsAdapter> adapter);
 	};

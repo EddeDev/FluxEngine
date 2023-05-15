@@ -6,6 +6,7 @@
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsDevice.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
+#include "Flux/Runtime/Renderer/Swapchain.h"
 
 namespace Flux {
 
@@ -48,6 +49,11 @@ namespace Flux {
 		Unique<Thread> m_MainThread;
 
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::Vulkan;
+
+		Ref<GraphicsContext> m_Context;
+		Ref<GraphicsAdapter> m_Adapter;
+		Ref<GraphicsDevice> m_Device;
+		Ref<Swapchain> m_Swapchain;
 
 		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;

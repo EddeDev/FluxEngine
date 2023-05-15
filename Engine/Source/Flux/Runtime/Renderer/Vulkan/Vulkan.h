@@ -2,6 +2,10 @@
 
 #include <vulkan/vulkan.h>
 
+#ifdef FLUX_PLATFORM_WINDOWS
+	#include <vulkan/vulkan_win32.h>
+#endif
+
 namespace Flux {
 
 #ifndef FLUX_BUILD_SHIPPING

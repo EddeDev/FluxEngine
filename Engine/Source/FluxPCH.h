@@ -25,4 +25,6 @@
 #include <map>
 #include <functional>
 
+#include <glm/glm.hpp>
+
 #include "Flux/Runtime/Core/Core.h"

@@ -245,6 +245,9 @@ namespace Flux {
 		}
 		case WM_PAINT:
 		{
+			// TODO
+			break;
+
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(m_WindowHandle, &ps);
 

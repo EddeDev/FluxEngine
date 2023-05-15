@@ -121,6 +121,9 @@ namespace Flux {
 			return *m_Reference == other.m_Reference;
 		}
 
+		operator bool() { return m_Reference != nullptr; }
+		operator bool() const { return m_Reference != nullptr; }
+
 		T* operator->() { return m_Reference; }
 		const T* operator->() const { return m_Reference; }
 

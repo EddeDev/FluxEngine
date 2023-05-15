@@ -39,10 +39,6 @@ namespace Flux {
 
 		m_Window = Window::Create(windowCreateInfo);
 		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
-
-		Ref<GraphicsContext> context = GraphicsContext::Create();
-		Ref<GraphicsAdapter> adapter = GraphicsAdapter::Create(context);
-		Ref<GraphicsDevice> device = GraphicsDevice::Create(adapter);
 	}
 
 	Engine::~Engine()
@@ -76,6 +72,20 @@ namespace Flux {
 	{
 		OnInit();
 
+		m_Context = GraphicsContext::Create();
+		if (m_Context)
+		{
+			m_Adapter = GraphicsAdapter::Create(m_Context);
+			if (m_Adapter)
+			{
+				m_Device = GraphicsDevice::Create(m_Adapter);
+				if (m_Device)
+				{
+					m_Swapchain = Swapchain::Create(m_Window.get());
+				}
+			}
+		}
+
 		SubmitToEventThread([this]()
 		{
 			m_Window->SetVisible(true);
@@ -101,7 +111,8 @@ namespace Flux {
 
 			OnUpdate();
 
-			Platform::Sleep(0.001f);
+			m_Swapchain->BeginFrame();
+			m_Swapchain->Present();
 		}
 
 		OnExit();

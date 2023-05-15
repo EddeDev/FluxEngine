@@ -19,6 +19,8 @@ namespace Flux {
 		VulkanAdapter(Ref<GraphicsContext> context);
 		virtual ~VulkanAdapter() {}
 
+		virtual Ref<GraphicsContext> GetContext() const override { return m_Context; }
+
 		uint32 GetQueueFamilyIndex(VkQueueFlags queueFlags) const;
 
 		bool IsExtensionSupported(const char* extension) const
@@ -41,11 +43,18 @@ namespace Flux {
 	public:
 		VulkanDevice(Ref<GraphicsAdapter> adapter);
 		virtual ~VulkanDevice();
+
+		virtual Ref<GraphicsAdapter> GetAdapter() const override { return m_Adapter; }
+
+		VkDevice GetDevice() const { return m_Device; }
+
+		static Ref<VulkanDevice> Get() { return s_Instance; }
 	private:
+		inline static VulkanDevice* s_Instance = nullptr;
+
 		Ref<VulkanAdapter> m_Adapter;
 
 		VkDevice m_Device = VK_NULL_HANDLE;
-
 		QueueFamilyIndices m_QueueFamilyIndices;
 	};
 
