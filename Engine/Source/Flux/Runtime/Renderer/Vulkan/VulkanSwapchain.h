@@ -19,15 +19,21 @@ namespace Flux {
 		void CreateSwapchain();
 		void CreateImageViews();
 		void CreateRenderPass();
+		void CreateDepthStencilImage();
 		void CreateFramebuffer();
 		void CreateSemaphores();
+		void CreateCommandPool();
+		void CreateCommandBuffers();
 
 		void DestroySurface();
 		void DestroySwapchain();
 		void DestroyImageViews();
 		void DestroyRenderPass();
+		void DestroyDepthStencilImage();
 		void DestroyFramebuffer();
 		void DestroySemaphores();
+		void DestroyCommandPool();
+		void DestroyCommandBuffers();
 
 		void FindPresentQueue();
 		void FindColorFormat();
@@ -49,6 +55,10 @@ namespace Flux {
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		VkImage m_DepthStencilImage = VK_NULL_HANDLE;
+		VkDeviceMemory m_DepthStencilImageMemory = VK_NULL_HANDLE;
+		VkImageView m_DepthStencilImageView = VK_NULL_HANDLE;
 
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VkCommandPool m_GraphicsCommandPool = VK_NULL_HANDLE;

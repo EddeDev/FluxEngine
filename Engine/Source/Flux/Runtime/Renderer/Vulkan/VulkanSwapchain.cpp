@@ -26,33 +26,20 @@ namespace Flux {
 		CreateSwapchain();
 		CreateImageViews();
 		CreateRenderPass();
+		CreateDepthStencilImage();
 		CreateFramebuffer();
 		CreateSemaphores();
-
-		{
-			vkGetDeviceQueue(m_Device, m_PresentQueueIndex, 0, &m_GraphicsQueue);
-
-			VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-			commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			commandPoolCreateInfo.queueFamilyIndex = m_PresentQueueIndex;
-			VK_CHECK(vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_GraphicsCommandPool));
-
-			VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-			commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			commandBufferAllocateInfo.commandPool = m_GraphicsCommandPool;
-			commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			commandBufferAllocateInfo.commandBufferCount = m_ImageCount;
-
-			m_CommandBuffers.resize(m_ImageCount);
-			VK_CHECK(vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, m_CommandBuffers.data()));
-		}
+		CreateCommandPool();
+		CreateCommandBuffers();
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
+		DestroyCommandBuffers();
+		DestroyCommandPool();
 		DestroySemaphores();
 		DestroyFramebuffer();
+		DestroyDepthStencilImage();
 		DestroyRenderPass();
 		DestroyImageViews();
 		DestroySwapchain();
@@ -62,12 +49,16 @@ namespace Flux {
 	void VulkanSwapchain::BeginFrame()
 	{
 		VkResult result = vkAcquireNextImageKHR(m_Device, m_Swapchain, std::numeric_limits<uint64>::max(), m_PresentComplete, VK_NULL_HANDLE, &m_CurrentBufferIndex);
+
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
+			DestroyCommandBuffers();
+			DestroyCommandPool();
 			DestroySemaphores();
 			DestroyFramebuffer();
+			DestroyDepthStencilImage();
 			DestroyRenderPass();
 			DestroyImageViews();
 			DestroySwapchain();
@@ -75,8 +66,11 @@ namespace Flux {
 			CreateSwapchain();
 			CreateImageViews();
 			CreateRenderPass();
+			CreateDepthStencilImage();
 			CreateFramebuffer();
 			CreateSemaphores();
+			CreateCommandPool();
+			CreateCommandBuffers();
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 			return;
@@ -161,8 +155,11 @@ namespace Flux {
 		{
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
+			DestroyCommandBuffers();
+			DestroyCommandPool();
 			DestroySemaphores();
 			DestroyFramebuffer();
+			DestroyDepthStencilImage();
 			DestroyRenderPass();
 			DestroyImageViews();
 			DestroySwapchain();
@@ -170,8 +167,11 @@ namespace Flux {
 			CreateSwapchain();
 			CreateImageViews();
 			CreateRenderPass();
+			CreateDepthStencilImage();
 			CreateFramebuffer();
 			CreateSemaphores();
+			CreateCommandPool();
+			CreateCommandBuffers();
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
@@ -278,12 +278,9 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateRenderPass()
 	{
-#if 0
 		std::array<VkAttachmentDescription, 2> attachmentDescriptions;
-#else
-		std::array<VkAttachmentDescription, 1> attachmentDescriptions;
-#endif
 
+		// Color attachment
 		attachmentDescriptions[0].flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 		attachmentDescriptions[0].format = m_ColorFormat;
 		attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -294,7 +291,7 @@ namespace Flux {
 		attachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-#if 0
+		// Depthattachment
 		attachmentDescriptions[1].flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 		attachmentDescriptions[1].format = m_DepthFormat;
 		attachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -304,26 +301,20 @@ namespace Flux {
 		attachmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-#endif
 
 		VkAttachmentReference colorAttachmentReference = {};
 		colorAttachmentReference.attachment = 0;
 		colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-#if 0
 		VkAttachmentReference depthAttachmentReference = {};
 		depthAttachmentReference.attachment = 1;
 		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-#endif
 
 		VkSubpassDescription subpassDescription = {};
 		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpassDescription.colorAttachmentCount = 1;
 		subpassDescription.pColorAttachments = &colorAttachmentReference;
-
-#if 0
 		subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
-#endif
 
 		std::array<VkSubpassDependency, 2> subpassDependencies;
 
@@ -355,13 +346,78 @@ namespace Flux {
 		VK_CHECK(vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass));
 	}
 
+	void VulkanSwapchain::CreateDepthStencilImage()
+	{
+		VkImageCreateInfo imageCreateInfo = {};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = m_DepthFormat;
+		imageCreateInfo.extent = { m_Width, m_Height, 1 };
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		VK_CHECK(vkCreateImage(m_Device, &imageCreateInfo, nullptr, &m_DepthStencilImage));
+
+		VkMemoryRequirements memoryRequirments;
+		vkGetImageMemoryRequirements(m_Device, m_DepthStencilImage, &memoryRequirments);
+
+		uint32 memoryTypeIndex = 0;
+		const VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		// TODO: move to device class
+		{
+			VkPhysicalDeviceMemoryProperties memoryProperties;
+			vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memoryProperties);
+
+			uint32 typeBits = memoryRequirments.memoryTypeBits;
+			for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++)
+			{
+				if ((typeBits & 1) == 1)
+				{
+					if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+					{
+						memoryTypeIndex = i;
+						break;
+					}
+				}
+				typeBits >>= 1;
+			}
+		}
+
+		VkMemoryAllocateInfo memoryAllocateInfo = {};
+		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		memoryAllocateInfo.allocationSize = memoryRequirments.size;
+		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
+		VK_CHECK(vkAllocateMemory(m_Device, &memoryAllocateInfo, nullptr, &m_DepthStencilImageMemory));
+		VK_CHECK(vkBindImageMemory(m_Device, m_DepthStencilImage, m_DepthStencilImageMemory, 0));
+
+		VkImageViewCreateInfo imageViewCreateInfo = {};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.image = m_DepthStencilImage;
+		imageViewCreateInfo.format = m_DepthFormat;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		if (m_DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT)
+			imageViewCreateInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+		VK_CHECK(vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_DepthStencilImageView));
+	}
+
 	void VulkanSwapchain::CreateFramebuffer()
 	{
 		m_Framebuffers.resize(m_ImageCount);
 		for (uint32 i = 0; i < m_ImageCount; i++)
 		{
-			std::array<VkImageView, 1> attachments;
-			attachments[0] = m_SwapchainImageViews[0];
+			std::array<VkImageView, 2> attachments;
+			attachments[0] = m_SwapchainImageViews[i];
+			attachments[1] = m_DepthStencilImageView;
 
 			VkFramebufferCreateInfo framebufferCreateInfo = {};
 			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -382,6 +438,27 @@ namespace Flux {
 		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_PresentComplete));
 		VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderComplete));
+	}
+
+	void VulkanSwapchain::CreateCommandPool()
+	{
+		VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		commandPoolCreateInfo.queueFamilyIndex = m_PresentQueueIndex;
+		VK_CHECK(vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_GraphicsCommandPool));
+	}
+
+	void VulkanSwapchain::CreateCommandBuffers()
+	{
+		VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferAllocateInfo.commandPool = m_GraphicsCommandPool;
+		commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferAllocateInfo.commandBufferCount = m_ImageCount;
+
+		m_CommandBuffers.resize(m_ImageCount);
+		VK_CHECK(vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, m_CommandBuffers.data()));
 	}
 
 	void VulkanSwapchain::DestroySurface()
@@ -405,6 +482,13 @@ namespace Flux {
 		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 	}
 
+	void VulkanSwapchain::DestroyDepthStencilImage()
+	{
+		vkDestroyImageView(m_Device, m_DepthStencilImageView, nullptr);
+		vkFreeMemory(m_Device, m_DepthStencilImageMemory, nullptr);
+		vkDestroyImage(m_Device, m_DepthStencilImage, nullptr);
+	}
+
 	void VulkanSwapchain::DestroyFramebuffer()
 	{
 		for (uint32 i = 0; i < m_ImageCount; i++)
@@ -415,6 +499,16 @@ namespace Flux {
 	{
 		vkDestroySemaphore(m_Device, m_PresentComplete, nullptr);
 		vkDestroySemaphore(m_Device, m_RenderComplete, nullptr);
+	}
+
+	void VulkanSwapchain::DestroyCommandPool()
+	{
+		vkDestroyCommandPool(m_Device, m_GraphicsCommandPool, nullptr);
+	}
+
+	void VulkanSwapchain::DestroyCommandBuffers()
+	{
+		vkFreeCommandBuffers(m_Device, m_GraphicsCommandPool, static_cast<uint32>(m_CommandBuffers.size()), m_CommandBuffers.data());
 	}
 
 	void VulkanSwapchain::FindPresentQueue()
@@ -466,6 +560,8 @@ namespace Flux {
 		FLUX_VERIFY(graphicsQueueIndex == presentQueueIndex, "Separate graphics and presenting queues are not supported.");
 
 		m_PresentQueueIndex = presentQueueIndex;
+
+		vkGetDeviceQueue(m_Device, m_PresentQueueIndex, 0, &m_GraphicsQueue);
 	}
 
 	void VulkanSwapchain::FindColorFormat()
