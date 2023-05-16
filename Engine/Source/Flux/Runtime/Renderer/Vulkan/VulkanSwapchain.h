@@ -13,7 +13,7 @@ namespace Flux {
 		virtual ~VulkanSwapchain();
 
 		virtual void BeginFrame() override;
-		virtual void Present() override;
+		virtual void Present(int32 swapInterval) override;
 	private:
 		void CreateSurface();
 		void CreateSwapchain();
@@ -46,7 +46,7 @@ namespace Flux {
 	private:
 		Window* m_Window = nullptr;
 		uint32 m_Width = 0, m_Height = 0;
-		int32 m_SwapInterval = 0;
+		int32 m_SwapInterval = 1;
 
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;

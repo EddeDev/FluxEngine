@@ -112,7 +112,7 @@ namespace Flux {
 			OnUpdate();
 
 			m_Swapchain->BeginFrame();
-			m_Swapchain->Present();
+			m_Swapchain->Present(1);
 		}
 
 		OnExit();

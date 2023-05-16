@@ -52,6 +52,9 @@ namespace Flux {
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
+			if (result != VK_SUBOPTIMAL_KHR)
+				VK_CHECK(result);
+
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
 			DestroyCommandBuffers();
@@ -73,17 +76,16 @@ namespace Flux {
 			CreateCommandBuffers();
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
-			return;
 		}
-
-		if (result != VK_SUBOPTIMAL_KHR)
-			VK_CHECK(result);
 	}
 
-	void VulkanSwapchain::Present()
+	void VulkanSwapchain::Present(int32 swapInterval)
 	{
 		// Testing code
 		{
+			VkCommandBuffer commandBuffer = m_CommandBuffers[m_CurrentBufferIndex];
+			VkFramebuffer framebuffer = m_Framebuffers[m_CurrentBufferIndex];
+
 			VkClearValue clearValues[2];
 			clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
 			clearValues[1].depthStencil = { 1.0f, 0 };
@@ -97,13 +99,13 @@ namespace Flux {
 			renderPassBeginInfo.renderArea.extent.height = m_Height;
 			renderPassBeginInfo.clearValueCount = 2;
 			renderPassBeginInfo.pClearValues = clearValues;
-			renderPassBeginInfo.framebuffer = m_Framebuffers[m_CurrentBufferIndex];
+			renderPassBeginInfo.framebuffer = framebuffer;
 
 			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 			commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			VK_CHECK(vkBeginCommandBuffer(m_CommandBuffers[m_CurrentBufferIndex], &commandBufferBeginInfo));
+			VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-			vkCmdBeginRenderPass(m_CommandBuffers[m_CurrentBufferIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			VkViewport viewport;
 			viewport.x = 0.0f;
@@ -112,16 +114,16 @@ namespace Flux {
 			viewport.height = (float)m_Height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(m_CommandBuffers[m_CurrentBufferIndex], 0, 1, &viewport);
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 			VkRect2D scissor;
 			scissor.offset = { 0, 0 };
 			scissor.extent = { m_Width, m_Height };
-			vkCmdSetScissor(m_CommandBuffers[m_CurrentBufferIndex], 0, 1, &scissor);
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-			vkCmdEndRenderPass(m_CommandBuffers[m_CurrentBufferIndex]);
+			vkCmdEndRenderPass(commandBuffer);
 
-			VK_CHECK(vkEndCommandBuffer(m_CommandBuffers[m_CurrentBufferIndex]));
+			VK_CHECK(vkEndCommandBuffer(commandBuffer));
 
 			VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -133,7 +135,7 @@ namespace Flux {
 			submitInfo.signalSemaphoreCount = 1;
 			submitInfo.pSignalSemaphores = &m_RenderComplete;
 			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &m_CommandBuffers[m_CurrentBufferIndex];
+			submitInfo.pCommandBuffers = &commandBuffer;
 
 			VK_CHECK(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, nullptr));
 		}
@@ -151,6 +153,13 @@ namespace Flux {
 		}
 
 		VkResult result = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
+
+		if (m_SwapInterval != swapInterval)
+		{
+			m_SwapInterval = swapInterval;
+			result = VK_ERROR_OUT_OF_DATE_KHR;
+		}
+
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
@@ -174,9 +183,6 @@ namespace Flux {
 			CreateCommandBuffers();
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
-
-			if (result == VK_ERROR_OUT_OF_DATE_KHR)
-				return;
 		}
 
 		VK_CHECK(vkQueueWaitIdle(m_GraphicsQueue));
@@ -291,7 +297,7 @@ namespace Flux {
 		attachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		// Depthattachment
+		// Depth attachment
 		attachmentDescriptions[1].flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 		attachmentDescriptions[1].format = m_DepthFormat;
 		attachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
