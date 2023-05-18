@@ -4,6 +4,8 @@
 #include "Flux/Runtime/Core/Platform.h"
 #include "Flux/Runtime/Core/Window.h"
 
+#include "Flux/Runtime/Renderer/Renderer.h"
+
 namespace Flux {
 
 	namespace Utils {
@@ -70,8 +72,6 @@ namespace Flux {
 
 	void Engine::MT_MainLoop()
 	{
-		OnInit();
-
 		m_Context = GraphicsContext::Create();
 		if (m_Context)
 		{
@@ -85,6 +85,8 @@ namespace Flux {
 				}
 			}
 		}
+
+		OnInit();
 
 		SubmitToEventThread([this]()
 		{
@@ -112,8 +114,28 @@ namespace Flux {
 			OnUpdate();
 
 			m_Swapchain->BeginFrame();
+			{
+				Renderer::BeginFrame();
+
+				Renderer::BeginRenderPass();
+				Renderer::EndRenderPass();
+
+				Renderer::EndFrame();
+			}
 			m_Swapchain->Present(1);
 		}
+
+		FLUX_VERIFY(m_Swapchain->GetReferenceCount() == 1);
+		m_Swapchain = nullptr;
+
+		FLUX_VERIFY(m_Device->GetReferenceCount() == 1);
+		m_Device = nullptr;
+
+		FLUX_VERIFY(m_Adapter->GetReferenceCount() == 1);
+		m_Adapter = nullptr;
+
+		FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
+		m_Context = nullptr;
 
 		OnExit();
 	}

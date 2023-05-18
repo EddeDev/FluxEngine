@@ -25,6 +25,11 @@ namespace Flux {
 		void SetGraphicsAPI(GraphicsAPI api) { m_GraphicsAPI = api; }
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
 
+		Ref<GraphicsContext> GetGraphicsContext() const { return m_Context; }
+		Ref<GraphicsAdapter> GetGraphicsAdapter() const { return m_Adapter; }
+		Ref<GraphicsDevice> GetGraphicsDevice() const { return m_Device; }
+		Ref<Swapchain> GetSwapchain() const { return m_Swapchain; }
+
 		Unique<Window>& GetWindow() { return m_Window; }
 		const Unique<Window>& GetWindow() const { return m_Window; }
 

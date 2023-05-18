@@ -14,6 +14,14 @@ namespace Flux {
 
 		virtual void BeginFrame() override;
 		virtual void Present(int32 swapInterval) override;
+
+		virtual uint32 GetWidth() const override { return m_Width; }
+		virtual uint32 GetHeight() const override { return m_Height; }
+
+		VkRenderPass GetRenderPass() const { return m_RenderPass; }
+
+		VkCommandBuffer GetCommandBuffer() const { return m_CommandBuffers.at(m_CurrentBufferIndex); }
+		VkFramebuffer GetFramebuffer() const { return m_Framebuffers.at(m_CurrentBufferIndex); }
 	private:
 		void CreateSurface();
 		void CreateSwapchain();
@@ -22,7 +30,6 @@ namespace Flux {
 		void CreateDepthStencilImage();
 		void CreateFramebuffer();
 		void CreateSemaphores();
-		void CreateCommandPool();
 		void CreateCommandBuffers();
 
 		void DestroySurface();
@@ -32,7 +39,6 @@ namespace Flux {
 		void DestroyDepthStencilImage();
 		void DestroyFramebuffer();
 		void DestroySemaphores();
-		void DestroyCommandPool();
 		void DestroyCommandBuffers();
 
 		void FindPresentQueue();
@@ -61,7 +67,6 @@ namespace Flux {
 		VkImageView m_DepthStencilImageView = VK_NULL_HANDLE;
 
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
-		VkCommandPool m_GraphicsCommandPool = VK_NULL_HANDLE;
 		uint32 m_PresentQueueIndex = 0;
 
 		VkFormat m_ColorFormat = VK_FORMAT_UNDEFINED;
@@ -72,6 +77,7 @@ namespace Flux {
 		std::vector<VkFramebuffer> m_Framebuffers;
 
 		std::vector<VkCommandBuffer> m_CommandBuffers;
+		std::vector<VkCommandPool> m_CommandPools;
 
 		VkSemaphore m_PresentComplete = VK_NULL_HANDLE;
 		VkSemaphore m_RenderComplete = VK_NULL_HANDLE;

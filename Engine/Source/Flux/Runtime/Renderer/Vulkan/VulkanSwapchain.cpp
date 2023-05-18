@@ -29,14 +29,12 @@ namespace Flux {
 		CreateDepthStencilImage();
 		CreateFramebuffer();
 		CreateSemaphores();
-		CreateCommandPool();
 		CreateCommandBuffers();
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
 		DestroyCommandBuffers();
-		DestroyCommandPool();
 		DestroySemaphores();
 		DestroyFramebuffer();
 		DestroyDepthStencilImage();
@@ -58,7 +56,6 @@ namespace Flux {
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
 			DestroyCommandBuffers();
-			DestroyCommandPool();
 			DestroySemaphores();
 			DestroyFramebuffer();
 			DestroyDepthStencilImage();
@@ -72,73 +69,29 @@ namespace Flux {
 			CreateDepthStencilImage();
 			CreateFramebuffer();
 			CreateSemaphores();
-			CreateCommandPool();
 			CreateCommandBuffers();
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 		}
+
+		VK_CHECK(vkResetCommandPool(m_Device, m_CommandPools[m_CurrentBufferIndex], 0));
 	}
 
 	void VulkanSwapchain::Present(int32 swapInterval)
 	{
-		// Testing code
-		{
-			VkCommandBuffer commandBuffer = m_CommandBuffers[m_CurrentBufferIndex];
-			VkFramebuffer framebuffer = m_Framebuffers[m_CurrentBufferIndex];
+		VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-			VkClearValue clearValues[2];
-			clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-			clearValues[1].depthStencil = { 1.0f, 0 };
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask = &submitPipelineStages;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &m_PresentComplete;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &m_RenderComplete;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_CommandBuffers[m_CurrentBufferIndex];
 
-			VkRenderPassBeginInfo renderPassBeginInfo = {};
-			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassBeginInfo.renderPass = m_RenderPass;
-			renderPassBeginInfo.renderArea.offset.x = 0;
-			renderPassBeginInfo.renderArea.offset.y = 0;
-			renderPassBeginInfo.renderArea.extent.width = m_Width;
-			renderPassBeginInfo.renderArea.extent.height = m_Height;
-			renderPassBeginInfo.clearValueCount = 2;
-			renderPassBeginInfo.pClearValues = clearValues;
-			renderPassBeginInfo.framebuffer = framebuffer;
-
-			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-			commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-
-			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			VkViewport viewport;
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = (float)m_Width;
-			viewport.height = (float)m_Height;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-			VkRect2D scissor;
-			scissor.offset = { 0, 0 };
-			scissor.extent = { m_Width, m_Height };
-			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-			vkCmdEndRenderPass(commandBuffer);
-
-			VK_CHECK(vkEndCommandBuffer(commandBuffer));
-
-			VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-			VkSubmitInfo submitInfo = {};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.pWaitDstStageMask = &submitPipelineStages;
-			submitInfo.waitSemaphoreCount = 1;
-			submitInfo.pWaitSemaphores = &m_PresentComplete;
-			submitInfo.signalSemaphoreCount = 1;
-			submitInfo.pSignalSemaphores = &m_RenderComplete;
-			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &commandBuffer;
-
-			VK_CHECK(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, nullptr));
-		}
+		VK_CHECK(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, nullptr));
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -165,7 +118,6 @@ namespace Flux {
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
 			DestroyCommandBuffers();
-			DestroyCommandPool();
 			DestroySemaphores();
 			DestroyFramebuffer();
 			DestroyDepthStencilImage();
@@ -179,7 +131,6 @@ namespace Flux {
 			CreateDepthStencilImage();
 			CreateFramebuffer();
 			CreateSemaphores();
-			CreateCommandPool();
 			CreateCommandBuffers();
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
@@ -446,75 +397,114 @@ namespace Flux {
 		VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderComplete));
 	}
 
-	void VulkanSwapchain::CreateCommandPool()
+	void VulkanSwapchain::CreateCommandBuffers()
 	{
 		VkCommandPoolCreateInfo commandPoolCreateInfo = {};
 		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		commandPoolCreateInfo.queueFamilyIndex = m_PresentQueueIndex;
-		VK_CHECK(vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_GraphicsCommandPool));
-	}
 
-	void VulkanSwapchain::CreateCommandBuffers()
-	{
 		VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
 		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		commandBufferAllocateInfo.commandPool = m_GraphicsCommandPool;
 		commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		commandBufferAllocateInfo.commandBufferCount = m_ImageCount;
+		commandBufferAllocateInfo.commandBufferCount = 1;
 
+		m_CommandPools.resize(m_ImageCount);
 		m_CommandBuffers.resize(m_ImageCount);
-		VK_CHECK(vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, m_CommandBuffers.data()));
+		for (uint32 i = 0; i < m_ImageCount; i++)
+		{
+			VK_CHECK(vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_CommandPools[i]));
+			commandBufferAllocateInfo.commandPool = m_CommandPools[i];
+			VK_CHECK(vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, &m_CommandBuffers[i]));
+		}
 	}
 
 	void VulkanSwapchain::DestroySurface()
 	{
-		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+		if (m_Surface)
+		{
+			vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+			m_Surface = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanSwapchain::DestroySwapchain()
 	{
-		vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+		if (m_Swapchain)
+		{
+			vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+			m_Swapchain = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanSwapchain::DestroyImageViews()
 	{
-		for (uint32 i = 0; i < m_ImageCount; i++)
+		for (uint32 i = 0; i < static_cast<uint32>(m_SwapchainImageViews.size()); i++)
 			vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
+		m_SwapchainImageViews.clear();
 	}
 
 	void VulkanSwapchain::DestroyRenderPass()
 	{
-		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+		if (m_RenderPass)
+		{
+			vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+			m_RenderPass = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanSwapchain::DestroyDepthStencilImage()
 	{
-		vkDestroyImageView(m_Device, m_DepthStencilImageView, nullptr);
-		vkFreeMemory(m_Device, m_DepthStencilImageMemory, nullptr);
-		vkDestroyImage(m_Device, m_DepthStencilImage, nullptr);
+		if (m_DepthStencilImageView)
+		{
+			vkDestroyImageView(m_Device, m_DepthStencilImageView, nullptr);
+			m_DepthStencilImageView = VK_NULL_HANDLE;
+		}
+	
+		if (m_DepthStencilImageMemory)
+		{
+			vkFreeMemory(m_Device, m_DepthStencilImageMemory, nullptr);
+			m_DepthStencilImageMemory = VK_NULL_HANDLE;
+		}
+
+		if (m_DepthStencilImage)
+		{
+			vkDestroyImage(m_Device, m_DepthStencilImage, nullptr);
+			m_DepthStencilImage = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanSwapchain::DestroyFramebuffer()
 	{
-		for (uint32 i = 0; i < m_ImageCount; i++)
+		for (uint32 i = 0; i < static_cast<uint32>(m_Framebuffers.size()); i++)
 			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
+		m_Framebuffers.clear();
 	}
 
 	void VulkanSwapchain::DestroySemaphores()
 	{
-		vkDestroySemaphore(m_Device, m_PresentComplete, nullptr);
-		vkDestroySemaphore(m_Device, m_RenderComplete, nullptr);
-	}
+		if (m_PresentComplete)
+		{
+			vkDestroySemaphore(m_Device, m_PresentComplete, nullptr);
+			m_PresentComplete = VK_NULL_HANDLE;
+		}
 
-	void VulkanSwapchain::DestroyCommandPool()
-	{
-		vkDestroyCommandPool(m_Device, m_GraphicsCommandPool, nullptr);
+		if (m_RenderComplete)
+		{
+			vkDestroySemaphore(m_Device, m_RenderComplete, nullptr);
+			m_RenderComplete = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanSwapchain::DestroyCommandBuffers()
 	{
-		vkFreeCommandBuffers(m_Device, m_GraphicsCommandPool, static_cast<uint32>(m_CommandBuffers.size()), m_CommandBuffers.data());
+		for (uint32 i = 0; i < static_cast<uint32>(m_CommandBuffers.size()); i++)
+			vkFreeCommandBuffers(m_Device, m_CommandPools[i], 1, &m_CommandBuffers[i]);
+		m_CommandBuffers.clear();
+		
+		for (uint32 i = 0; i < static_cast<uint32>(m_CommandPools.size()); i++)
+			vkDestroyCommandPool(m_Device, m_CommandPools[i], nullptr);
+		m_CommandPools.clear();
 	}
 
 	void VulkanSwapchain::FindPresentQueue()
@@ -569,7 +559,7 @@ namespace Flux {
 
 		vkGetDeviceQueue(m_Device, m_PresentQueueIndex, 0, &m_GraphicsQueue);
 	}
-
+	
 	void VulkanSwapchain::FindColorFormat()
 	{
 		uint32 surfaceFormatCount;
