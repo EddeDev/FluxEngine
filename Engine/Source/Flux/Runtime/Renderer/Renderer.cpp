@@ -3,78 +3,55 @@
 
 #include "Flux/Runtime/Engine/Engine.h"
 
-#include "Vulkan/Vulkan.h"
-#include "Vulkan/VulkanSwapchain.h"
-
 namespace Flux {
+
+	struct RendererData
+	{
+		Ref<Framebuffer> ActiveFramebuffer;
+	};
+
+	static RendererData* s_Data = nullptr;
 
 	void Renderer::Init()
 	{
+		s_Data = new RendererData();
 	}
 
 	void Renderer::Shutdown()
 	{
+		s_Data = nullptr;
 	}
 
 	void Renderer::BeginFrame()
 	{
-
 	}
 
 	void Renderer::EndFrame()
 	{
 	}
 
-	void Renderer::BeginRenderPass()
+	void Renderer::BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<Framebuffer> framebuffer)
 	{
-		Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
-		VkCommandBuffer commandBuffer = swapchain->GetCommandBuffer();
+		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
+		FLUX_ASSERT(commandBuffer);
+		FLUX_ASSERT(framebuffer);
 
-		uint32 width = swapchain->GetWidth();
-		uint32 height = swapchain->GetHeight();
-
-		VkClearValue clearValues[2];
-		clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		VkRenderPassBeginInfo renderPassBeginInfo = {};
-		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.renderPass = swapchain->GetRenderPass();
-		renderPassBeginInfo.renderArea.offset.x = 0;
-		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = width;
-		renderPassBeginInfo.renderArea.extent.height = height;
-		renderPassBeginInfo.clearValueCount = 2;
-		renderPassBeginInfo.pClearValues = clearValues;
-		renderPassBeginInfo.framebuffer = swapchain->GetFramebuffer();
-
-		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-
-		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		VkViewport viewport;
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)width;
-		viewport.height = (float)height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor;
-		scissor.offset = { 0, 0 };
-		scissor.extent = { width, height };
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		s_Data->ActiveFramebuffer = framebuffer;
+		framebuffer->Bind(commandBuffer);
 	}
 
-	void Renderer::EndRenderPass()
+	void Renderer::EndRenderPass(Ref<CommandBuffer> commandBuffer)
 	{
-		Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
-		VkCommandBuffer commandBuffer = swapchain->GetCommandBuffer();
-		vkCmdEndRenderPass(commandBuffer);
-		VK_CHECK(vkEndCommandBuffer(commandBuffer));
+		FLUX_ASSERT(s_Data->ActiveFramebuffer);
+		FLUX_ASSERT(commandBuffer);
+
+		s_Data->ActiveFramebuffer->Unbind(commandBuffer);
+		s_Data->ActiveFramebuffer = nullptr;
+	}
+
+	uint32 Renderer::GetCurrentFrameIndex()
+	{
+		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
 	}
 
 }

@@ -18,10 +18,13 @@ namespace Flux {
 		virtual uint32 GetWidth() const override { return m_Width; }
 		virtual uint32 GetHeight() const override { return m_Height; }
 
+		virtual uint32 GetImageCount() const override { return m_ImageCount; }
+		virtual uint32 GetCurrentBufferIndex() const override { return m_CurrentBufferIndex; }
+
 		VkRenderPass GetRenderPass() const { return m_RenderPass; }
 
-		VkCommandBuffer GetCommandBuffer() const { return m_CommandBuffers.at(m_CurrentBufferIndex); }
-		VkFramebuffer GetFramebuffer() const { return m_Framebuffers.at(m_CurrentBufferIndex); }
+		VkCommandBuffer GetCommandBuffer(uint32 index) const { return m_CommandBuffers.at(index); }
+		VkFramebuffer GetFramebuffer(uint32 index) const { return m_Framebuffers.at(index); }
 	private:
 		void CreateSurface();
 		void CreateSwapchain();

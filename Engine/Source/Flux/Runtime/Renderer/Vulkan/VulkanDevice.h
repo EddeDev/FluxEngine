@@ -47,14 +47,17 @@ namespace Flux {
 		virtual Ref<GraphicsAdapter> GetAdapter() const override { return m_Adapter; }
 
 		VkDevice GetDevice() const { return m_Device; }
+		VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
+
+		const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
 		static Ref<VulkanDevice> Get() { return s_Instance; }
 	private:
 		inline static VulkanDevice* s_Instance = nullptr;
 
 		Ref<VulkanAdapter> m_Adapter;
-
 		VkDevice m_Device = VK_NULL_HANDLE;
+		VkQueue m_GraphicsQueue;
 		QueueFamilyIndices m_QueueFamilyIndices;
 	};
 

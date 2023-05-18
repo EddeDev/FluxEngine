@@ -1,0 +1,109 @@
+#include "FluxPCH.h"
+#include "VulkanCommandBuffer.h"
+
+#include "Flux/Runtime/Engine/Engine.h"
+#include "Flux/Runtime/Renderer/Renderer.h"
+
+#include "VulkanDevice.h"
+#include "VulkanSwapchain.h"
+
+namespace Flux {
+
+	VulkanCommandBuffer::VulkanCommandBuffer(const CommandBufferCreateInfo& createInfo)
+		: m_CreateInfo(createInfo)
+	{
+		if (!createInfo.CreateFromSwapchain)
+		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+
+			VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+			commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			if (createInfo.Transient)
+				commandPoolCreateInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+			commandPoolCreateInfo.queueFamilyIndex = VulkanDevice::Get()->GetQueueFamilyIndices().Graphics;
+			VK_CHECK(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &m_CommandPool));
+
+			Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
+			uint32 imageCount = swapchain->GetImageCount();
+
+			VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+			commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			commandBufferAllocateInfo.commandBufferCount = imageCount;
+
+			m_CommandBuffers.resize(static_cast<size_t>(imageCount));
+			VK_CHECK(vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, m_CommandBuffers.data()));
+
+			VkFenceCreateInfo fenceCreateInfo = {};
+			fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+			m_Fences.resize(static_cast<size_t>(imageCount));
+			for (uint32 i = 0; i < imageCount; i++)
+				VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &m_Fences[i]));
+		}
+	}
+
+	VulkanCommandBuffer::~VulkanCommandBuffer()
+	{
+		if (!m_CreateInfo.CreateFromSwapchain)
+		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+			vkDestroyCommandPool(device, m_CommandPool, nullptr);
+		}
+	}
+
+	void VulkanCommandBuffer::Begin()
+	{
+		FLUX_ASSERT(!m_ActiveCommandBuffer);
+
+		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+
+		VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+		if (m_CreateInfo.CreateFromSwapchain)
+		{
+			Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
+			commandBuffer = swapchain->GetCommandBuffer(frameIndex);
+		}
+		else
+		{
+			commandBuffer = m_CommandBuffers[frameIndex];
+		}
+		FLUX_ASSERT(commandBuffer);
+
+		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+		m_ActiveCommandBuffer = commandBuffer;
+	}
+
+	void VulkanCommandBuffer::End()
+	{
+		FLUX_ASSERT(m_ActiveCommandBuffer);
+		VK_CHECK(vkEndCommandBuffer(m_ActiveCommandBuffer));
+		m_ActiveCommandBuffer = VK_NULL_HANDLE;
+	}
+
+	void VulkanCommandBuffer::Submit()
+	{
+		if (!m_CreateInfo.CreateFromSwapchain)
+		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+
+			uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+
+			VkSubmitInfo submitInfo = {};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.commandBufferCount = static_cast<uint32>(m_CommandBuffers.size());
+			submitInfo.pCommandBuffers = &m_CommandBuffers[frameIndex];
+
+			VK_CHECK(vkWaitForFences(device, 1, &m_Fences[frameIndex], VK_TRUE, std::numeric_limits<uint64>::max()));
+			VK_CHECK(vkResetFences(device, 1, &m_Fences[frameIndex]));
+
+			VK_CHECK(vkQueueSubmit(VulkanDevice::Get()->GetGraphicsQueue(), 1, &submitInfo, m_Fences[frameIndex]));
+		}
+	}
+
+}

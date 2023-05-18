@@ -74,25 +74,27 @@ namespace Flux {
 	void Engine::MT_MainLoop()
 	{
 		m_Context = GraphicsContext::Create();
-		if (m_Context)
-		{
-			m_Adapter = GraphicsAdapter::Create(m_Context);
-			if (m_Adapter)
-			{
-				m_Device = GraphicsDevice::Create(m_Adapter);
-				if (m_Device)
-				{
-					m_Swapchain = Swapchain::Create(m_Window.get());
-				}
-			}
-		}
+		m_Adapter = GraphicsAdapter::Create(m_Context);
+		m_Device = GraphicsDevice::Create(m_Adapter);
+		m_Swapchain = Swapchain::Create(m_Window.get());
+
+		CommandBufferCreateInfo commandBufferCreateInfo;
+		commandBufferCreateInfo.CreateFromSwapchain = true;
+		m_SwapchainCommandBuffer = CommandBuffer::Create(commandBufferCreateInfo);
+
+		FramebufferCreateInfo framebufferCreateInfo;
+		framebufferCreateInfo.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+		framebufferCreateInfo.SwapchainTarget = true;
+		m_SwapchainFramebuffer = Framebuffer::Create(framebufferCreateInfo);
+
+		Renderer::Init();
 
 		OnInit();
 
 		SubmitToEventThread([this]()
-		{
-			m_Window->SetVisible(true);
-		});
+			{
+				m_Window->SetVisible(true);
+			});
 
 		while (m_Running)
 		{
@@ -120,14 +122,26 @@ namespace Flux {
 
 				Renderer::BeginFrame();
 
-				Renderer::BeginRenderPass();
-				Renderer::EndRenderPass();
+				m_SwapchainCommandBuffer->Begin();
+				Renderer::BeginRenderPass(m_SwapchainCommandBuffer, m_SwapchainFramebuffer);
+				Renderer::EndRenderPass(m_SwapchainCommandBuffer);
+				m_SwapchainCommandBuffer->End();
 
 				Renderer::EndFrame();
 
 				m_Swapchain->Present(1);
 			}
 		}
+
+		OnExit();
+
+		Renderer::Shutdown();
+
+		FLUX_VERIFY(m_SwapchainFramebuffer->GetReferenceCount() == 1);
+		m_SwapchainFramebuffer = nullptr;
+
+		FLUX_VERIFY(m_SwapchainCommandBuffer->GetReferenceCount() == 1);
+		m_SwapchainCommandBuffer = nullptr;
 
 		FLUX_VERIFY(m_Swapchain->GetReferenceCount() == 1);
 		m_Swapchain = nullptr;
@@ -140,8 +154,6 @@ namespace Flux {
 
 		FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
 		m_Context = nullptr;
-
-		OnExit();
 	}
 
 	void Engine::Close(bool restart)
@@ -155,9 +167,9 @@ namespace Flux {
 	void Engine::OnWindowClose()
 	{
 		SubmitToMainThread([this]()
-		{
-			Close();
-		});
+			{
+				Close();
+			});
 	}
 
 	void Engine::OnWindowResize(uint32 width, uint32 height)

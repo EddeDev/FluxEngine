@@ -7,6 +7,8 @@
 #include "Flux/Runtime/Renderer/GraphicsDevice.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
 #include "Flux/Runtime/Renderer/Swapchain.h"
+#include "Flux/Runtime/Renderer/CommandBuffer.h"
+#include "Flux/Runtime/Renderer/Framebuffer.h"
 
 namespace Flux {
 
@@ -42,8 +44,8 @@ namespace Flux {
 	private:
 		void MT_MainLoop();
 
-		void OnWindowCloseCallback();
-		void OnWindowSizeCallback(uint32 width, uint32 height);
+		void OnWindowClose();
+		void OnWindowResize(uint32 width, uint32 height);
 	protected:
 		virtual void OnInit() {}
 		virtual void OnExit() {}
@@ -60,6 +62,9 @@ namespace Flux {
 		Ref<GraphicsAdapter> m_Adapter;
 		Ref<GraphicsDevice> m_Device;
 		Ref<Swapchain> m_Swapchain;
+
+		Ref<CommandBuffer> m_SwapchainCommandBuffer;
+		Ref<Framebuffer> m_SwapchainFramebuffer;
 
 		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;

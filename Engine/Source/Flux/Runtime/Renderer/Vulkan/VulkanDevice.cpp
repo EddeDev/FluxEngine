@@ -165,6 +165,8 @@ namespace Flux {
 		deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
 
 		VK_CHECK(vkCreateDevice(m_Adapter->GetPhysicalDevice(), &deviceCreateInfo, nullptr, &m_Device));
+
+		vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.Graphics, 0, &m_GraphicsQueue);
 	}
 
 	VulkanDevice::~VulkanDevice()

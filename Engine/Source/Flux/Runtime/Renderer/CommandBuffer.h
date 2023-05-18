@@ -1,0 +1,23 @@
+#pragma once
+
+namespace Flux {
+
+	struct CommandBufferCreateInfo
+	{
+		bool Transient = true;
+		bool CreateFromSwapchain = false;
+	};
+
+	class CommandBuffer : public ReferenceCounted
+	{
+	public:
+		virtual ~CommandBuffer() {}
+
+		virtual void Begin() = 0;
+		virtual void End() = 0;
+		virtual void Submit() = 0;
+
+		static Ref<CommandBuffer> Create(const CommandBufferCreateInfo& createInfo);
+	};
+
+}
