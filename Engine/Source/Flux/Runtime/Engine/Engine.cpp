@@ -41,6 +41,7 @@ namespace Flux {
 
 		m_Window = Window::Create(windowCreateInfo);
 		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
+		m_Window->AddSizeCallback(FLUX_BIND_CALLBACK(OnWindowResize, this));
 	}
 
 	Engine::~Engine()
@@ -113,16 +114,19 @@ namespace Flux {
 
 			OnUpdate();
 
-			m_Swapchain->BeginFrame();
+			if (!m_Minimized)
 			{
+				m_Swapchain->BeginFrame();
+
 				Renderer::BeginFrame();
 
 				Renderer::BeginRenderPass();
 				Renderer::EndRenderPass();
 
 				Renderer::EndFrame();
+
+				m_Swapchain->Present(1);
 			}
-			m_Swapchain->Present(1);
 		}
 
 		FLUX_VERIFY(m_Swapchain->GetReferenceCount() == 1);
@@ -154,6 +158,17 @@ namespace Flux {
 		{
 			Close();
 		});
+	}
+
+	void Engine::OnWindowResize(uint32 width, uint32 height)
+	{
+		if (width == 0 || height == 0)
+		{
+			m_Minimized = true;
+			return;
+		}
+
+		m_Minimized = false;
 	}
 
 	void Engine::SubmitToEventThread(std::function<void()> function)

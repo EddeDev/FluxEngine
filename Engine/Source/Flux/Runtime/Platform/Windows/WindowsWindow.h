@@ -25,6 +25,9 @@ namespace Flux {
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
 
+		virtual uint32 GetWidth() const override { return m_Width; }
+		virtual uint32 GetHeight() const override { return m_Height; }
+
 		virtual WindowHandle GetNativeHandle() const override { return m_WindowHandle; }
 
 		int32 ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);

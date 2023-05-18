@@ -42,7 +42,8 @@ namespace Flux {
 	private:
 		void MT_MainLoop();
 
-		void OnWindowClose();
+		void OnWindowCloseCallback();
+		void OnWindowSizeCallback(uint32 width, uint32 height);
 	protected:
 		virtual void OnInit() {}
 		virtual void OnExit() {}
@@ -69,6 +70,7 @@ namespace Flux {
 		std::mutex m_MainThreadMutex;
 
 		std::atomic<bool> m_Running = true;
+		std::atomic<bool> m_Minimized = false;
 		
 		float m_FrameTime = 0.0f;
 		float m_LastFrameTime = 0.0f;

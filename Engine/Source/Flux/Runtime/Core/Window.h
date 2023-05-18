@@ -40,6 +40,9 @@ namespace Flux {
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) = 0;
+		
+		virtual uint32 GetWidth() const = 0;
+		virtual uint32 GetHeight() const = 0;
 
 		virtual WindowHandle GetNativeHandle() const = 0;
 
