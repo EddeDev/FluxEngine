@@ -13,8 +13,13 @@ namespace Flux {
 		virtual ~VulkanCommandBuffer();
 
 		virtual void Begin() override;
+		virtual void RT_Begin() override;
+
 		virtual void End() override;
+		virtual void RT_End() override;
+
 		virtual void Submit() override;
+		virtual void RT_Submit() override;
 
 		VkCommandBuffer GetCommandBuffer(uint32 frameIndex) const
 		{

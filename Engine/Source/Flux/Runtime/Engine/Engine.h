@@ -32,6 +32,9 @@ namespace Flux {
 		Ref<GraphicsDevice> GetGraphicsDevice() const { return m_Device; }
 		Ref<Swapchain> GetSwapchain() const { return m_Swapchain; }
 
+		ThreadID GetMainThreadID() const { return m_MainThreadID; }
+		ThreadID GetEventThreadID() const { return m_EventThreadID; }
+
 		Unique<Window>& GetWindow() { return m_Window; }
 		const Unique<Window>& GetWindow() const { return m_Window; }
 
@@ -84,6 +87,22 @@ namespace Flux {
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
 	};
+
+#ifdef FLUX_ENABLE_ASSERTS
+	#define FLUX_ASSERT_ON_MAIN_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetMainThreadID())
+	#define FLUX_ASSERT_ON_EVENT_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetEventThreadID())
+#else
+	#define FLUX_ASSERT_ON_MAIN_THREAD() (void)0
+	#define FLUX_ASSERT_ON_EVENT_THREAD() (void)0
+#endif
+
+#ifndef FLUX_BUILD_SHIPPING
+	#define FLUX_VERIFY_ON_MAIN_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetMainThreadID())
+	#define FLUX_VERIFY_ON_EVENT_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetEventThreadID())
+#else
+	#define FLUX_VERIFY_ON_MAIN_THREAD() (void)0
+	#define FLUX_VERIFY_ON_EVENT_THREAD() (void)0
+#endif
 
 #define FLUX_CURRENT_GRAPHICS_API Engine::Get().GetGraphicsAPI()
 

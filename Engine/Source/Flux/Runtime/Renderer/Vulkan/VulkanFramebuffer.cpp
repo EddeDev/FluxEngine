@@ -44,11 +44,20 @@ namespace Flux {
 
 	void VulkanFramebuffer::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
+		Ref<const VulkanFramebuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
+		{
+			instance->RT_Bind(commandBuffer);
+		});
+	}
+
+	void VulkanFramebuffer::RT_Bind(Ref<CommandBuffer> commandBuffer) const
+	{
 		VkCommandBuffer activeCommandBuffer = commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer();
 
 		VkClearValue clearValues[2];
 		clearValues[0].color = *(VkClearColorValue*)&m_CreateInfo.ClearColor[0];
-		clearValues[1].depthStencil = { m_CreateInfo.DepthClearValue, 0 };
+		clearValues[1].depthStencil = { m_CreateInfo.DepthClearValue, m_CreateInfo.StencilClearValue };
 
 		VkRenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -58,10 +67,10 @@ namespace Flux {
 		if (m_CreateInfo.SwapchainTarget)
 		{
 			Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
-		
+
 			uint32 width = swapchain->GetWidth();
 			uint32 height = swapchain->GetHeight();
-			
+
 			renderPassBeginInfo.renderArea.offset.x = 0;
 			renderPassBeginInfo.renderArea.offset.y = 0;
 			renderPassBeginInfo.renderArea.extent.width = width;
@@ -93,8 +102,16 @@ namespace Flux {
 
 	void VulkanFramebuffer::Unbind(Ref<CommandBuffer> commandBuffer) const
 	{
-		VkCommandBuffer activeCommandBuffer = commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer();
-		vkCmdEndRenderPass(activeCommandBuffer);
+		Ref<const VulkanFramebuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
+		{
+			instance->RT_Unbind(commandBuffer);
+		});
+	}
+
+	void VulkanFramebuffer::RT_Unbind(Ref<CommandBuffer> commandBuffer) const
+	{
+		vkCmdEndRenderPass(commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer());
 	}
 
 }

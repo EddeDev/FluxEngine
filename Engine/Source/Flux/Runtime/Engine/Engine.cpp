@@ -46,11 +46,15 @@ namespace Flux {
 
 	Engine::~Engine()
 	{
+		FLUX_ASSERT_ON_EVENT_THREAD();
+
 		s_Instance = nullptr;
 	}
 
 	void Engine::Run()
 	{
+		FLUX_ASSERT_ON_EVENT_THREAD();
+
 		ThreadCreateInfo mainThreadCreateInfo;
 		mainThreadCreateInfo.Name = "Main Thread";
 		mainThreadCreateInfo.Priority = ThreadPriority::Highest;
@@ -73,6 +77,8 @@ namespace Flux {
 
 	void Engine::MT_MainLoop()
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
 		m_Context = GraphicsContext::Create();
 		m_Adapter = GraphicsAdapter::Create(m_Context);
 		m_Device = GraphicsDevice::Create(m_Adapter);
@@ -92,9 +98,9 @@ namespace Flux {
 		OnInit();
 
 		SubmitToEventThread([this]()
-			{
-				m_Window->SetVisible(true);
-			});
+		{
+			m_Window->SetVisible(true);
+		});
 
 		while (m_Running)
 		{
@@ -127,6 +133,8 @@ namespace Flux {
 				Renderer::EndRenderPass(m_SwapchainCommandBuffer);
 				m_SwapchainCommandBuffer->End();
 
+				Renderer::FlushRenderCommands();
+
 				Renderer::EndFrame();
 
 				m_Swapchain->Present(1);
@@ -158,7 +166,7 @@ namespace Flux {
 
 	void Engine::Close(bool restart)
 	{
-		FLUX_ASSERT_ON_THREAD(m_MainThreadID);
+		FLUX_ASSERT_ON_MAIN_THREAD();
 
 		m_Running = false;
 		g_EngineRunning = restart;
@@ -166,14 +174,18 @@ namespace Flux {
 
 	void Engine::OnWindowClose()
 	{
+		FLUX_ASSERT_ON_EVENT_THREAD();
+
 		SubmitToMainThread([this]()
-			{
-				Close();
-			});
+		{
+			Close();
+		});
 	}
 
 	void Engine::OnWindowResize(uint32 width, uint32 height)
 	{
+		FLUX_ASSERT_ON_EVENT_THREAD();
+
 		if (width == 0 || height == 0)
 		{
 			m_Minimized = true;

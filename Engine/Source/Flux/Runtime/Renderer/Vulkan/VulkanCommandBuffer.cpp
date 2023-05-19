@@ -56,6 +56,15 @@ namespace Flux {
 
 	void VulkanCommandBuffer::Begin()
 	{
+		Ref<VulkanCommandBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		{
+			instance->RT_Begin();
+		});
+	}
+
+	void VulkanCommandBuffer::RT_Begin()
+	{
 		FLUX_ASSERT(!m_ActiveCommandBuffer);
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
@@ -81,12 +90,30 @@ namespace Flux {
 
 	void VulkanCommandBuffer::End()
 	{
+		Ref<VulkanCommandBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		{
+			instance->RT_End();
+		});
+	}
+
+	void VulkanCommandBuffer::RT_End()
+	{
 		FLUX_ASSERT(m_ActiveCommandBuffer);
 		VK_CHECK(vkEndCommandBuffer(m_ActiveCommandBuffer));
 		m_ActiveCommandBuffer = VK_NULL_HANDLE;
 	}
 
 	void VulkanCommandBuffer::Submit()
+	{
+		Ref<VulkanCommandBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		{
+			instance->RT_Submit();
+		});
+	}
+
+	void VulkanCommandBuffer::RT_Submit()
 	{
 		if (!m_CreateInfo.CreateFromSwapchain)
 		{

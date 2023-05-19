@@ -15,7 +15,10 @@ namespace Flux {
 		virtual void Resize(uint32 width, uint32 height, bool forceRecreate = false) override;
 
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const override;
+		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const override;
+
 		virtual void Unbind(Ref<CommandBuffer> commandBuffer) const override;
+		virtual void RT_Unbind(Ref<CommandBuffer> commandBuffer) const override;
 
 		virtual uint32 GetWidth() const override
 		{
