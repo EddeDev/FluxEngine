@@ -9,6 +9,10 @@
 #include "Flux/Runtime/Renderer/Swapchain.h"
 #include "Flux/Runtime/Renderer/CommandBuffer.h"
 #include "Flux/Runtime/Renderer/Framebuffer.h"
+#include "Flux/Runtime/Renderer/GraphicsPipeline.h"
+#include "Flux/Runtime/Renderer/Shader.h"
+#include "Flux/Runtime/Renderer/VertexBuffer.h"
+#include "Flux/Runtime/Renderer/IndexBuffer.h"
 
 namespace Flux {
 
@@ -68,6 +72,10 @@ namespace Flux {
 
 		Ref<CommandBuffer> m_SwapchainCommandBuffer;
 		Ref<Framebuffer> m_SwapchainFramebuffer;
+		Ref<GraphicsPipeline> m_Pipeline;
+		Ref<Shader> m_Shader;
+		Ref<VertexBuffer> m_VertexBuffer;
+		Ref<IndexBuffer> m_IndexBuffer;
 
 		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;

@@ -24,6 +24,8 @@
 #include <unordered_map>
 #include <map>
 #include <functional>
+#include <fstream>
+#include <filesystem>
 
 #include <glm/glm.hpp>
 

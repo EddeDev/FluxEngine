@@ -37,7 +37,7 @@ namespace Flux {
 			m_SelectedDevice = physicalDevices.front();
 
 		FLUX_VERIFY(m_SelectedDevice, "Failed to select physical device.");
-		
+
 		uint32 extensionCount;
 		vkEnumerateDeviceExtensionProperties(m_SelectedDevice, nullptr, &extensionCount, nullptr);
 		if (extensionCount > 0)
@@ -94,8 +94,8 @@ namespace Flux {
 		FLUX_VERIFY(!s_Instance);
 		s_Instance = this;
 
-		std::vector<const char*> enabledDeviceExtensions = { 
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME 
+		std::vector<const char*> enabledDeviceExtensions = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 		};
 
 		VkPhysicalDeviceFeatures enabledFeatures = {};
@@ -167,13 +167,92 @@ namespace Flux {
 		VK_CHECK(vkCreateDevice(m_Adapter->GetPhysicalDevice(), &deviceCreateInfo, nullptr, &m_Device));
 
 		vkGetDeviceQueue(m_Device, m_QueueFamilyIndices.Graphics, 0, &m_GraphicsQueue);
+
+		VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		commandPoolCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.Graphics;
+		VK_CHECK(vkCreateCommandPool(m_Device, &commandPoolCreateInfo, nullptr, &m_GraphicsCommandPool));
+
+		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		VK_CHECK(vkCreatePipelineCache(m_Device, &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
 	}
 
 	VulkanDevice::~VulkanDevice()
 	{
+		vkDestroyCommandPool(m_Device, m_GraphicsCommandPool, nullptr);
+		vkDestroyPipelineCache(m_Device, m_PipelineCache, nullptr);
 		vkDestroyDevice(m_Device, nullptr);
 
 		s_Instance = nullptr;
+	}
+
+	uint32 VulkanDevice::GetMemoryTypeIndex(uint32 typeBits, VkMemoryPropertyFlags propertyFlags) const
+	{
+		VkPhysicalDeviceMemoryProperties memoryProperties;
+		vkGetPhysicalDeviceMemoryProperties(m_Adapter->GetPhysicalDevice(), &memoryProperties);
+
+		for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++)
+		{
+			if ((typeBits & 1) == 1)
+			{
+				if ((memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+					return i;
+			}
+			typeBits >>= 1;
+		}
+
+		FLUX_VERIFY(false, "Could not find a matching memory type");
+		return 0;
+	}
+
+	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool begin) const
+	{
+		VkCommandBuffer commandBuffer;
+
+		VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferAllocateInfo.commandPool = m_GraphicsCommandPool;
+		commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferAllocateInfo.commandBufferCount = 1;
+
+		VK_CHECK(vkAllocateCommandBuffers(m_Device, &commandBufferAllocateInfo, &commandBuffer));
+
+		if (begin)
+		{
+			VkCommandBufferBeginInfo beginInfo = {};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+		}
+
+		return commandBuffer;
+	}
+
+	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer) const
+	{
+		FLUX_ASSERT(commandBuffer);
+		
+		VkDevice device = VulkanDevice::Get()->GetDevice();
+
+		VK_CHECK(vkEndCommandBuffer(commandBuffer));
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		VkFenceCreateInfo fenceCreateInfo = {};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+		VkFence fence;
+		VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &fence));
+
+		VK_CHECK(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, fence));
+		VK_CHECK(vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64>::max()));
+
+		vkDestroyFence(m_Device, fence, nullptr);
+		vkFreeCommandBuffers(device, m_GraphicsCommandPool, 1, &commandBuffer);
 	}
 
 }

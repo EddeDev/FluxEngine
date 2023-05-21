@@ -16,25 +16,37 @@ namespace Flux {
 
 	void Renderer::Init()
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
 		s_Data = new RendererData();
 	}
 
 	void Renderer::Shutdown()
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
+		for (uint32 frameIndex = 0; frameIndex < s_MaxReleaseQueueCount; frameIndex++)
+			FlushReleaseQueue(frameIndex);
+
 		s_Data = nullptr;
 	}
 
 	void Renderer::BeginFrame()
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
 		s_Data->FrameCount++;
 	}
 
 	void Renderer::EndFrame()
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
 	}
 
 	void Renderer::BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<Framebuffer> framebuffer)
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
 		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
 		FLUX_ASSERT(commandBuffer);
 		FLUX_ASSERT(framebuffer);
@@ -45,6 +57,8 @@ namespace Flux {
 
 	void Renderer::EndRenderPass(Ref<CommandBuffer> commandBuffer)
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
 		FLUX_ASSERT(s_Data->ActiveFramebuffer);
 		FLUX_ASSERT(commandBuffer);
 
@@ -52,38 +66,53 @@ namespace Flux {
 		s_Data->ActiveFramebuffer = nullptr;
 	}
 
-#define FLUX_RENDER_COMMAND_QUEUE_DEBUG 0
-
 #ifndef FLUX_BUILD_SHIPPING
 	void Renderer::SubmitRenderCommand(const char* functionName, RenderCommand command)
 	{
-		FLUX_VERIFY_ON_MAIN_THREAD();
-
-#if FLUX_RENDER_COMMAND_QUEUE_DEBUG
-		FLUX_TRACE_CATEGORY("Renderer", "Submitting render command from {0}...", functionName);
-#endif
+		FLUX_ASSERT_ON_MAIN_THREAD();
 
 		if (s_RenderCommandQueueLocked)
 		{
 			FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
 			FLUX_VERIFY(false);
 
-			// Should we return here or delaying the recursive call to the next frame?
+			// Should we return here or delay the recursive call to the next frame?
 			return;
 		}
 
 		s_RenderCommandQueue.push(std::move(command));
 	}
+
+	void Renderer::SubmitRenderCommandRelease(const char* functionName, RenderCommand command)
+	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
+		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+
+		if (s_ReleaseQueueLocked[frameIndex])
+		{
+			FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
+			FLUX_VERIFY(false);
+
+			// Should we return here or delay the recursive call to the next frame?
+			return;
+		}
+
+		s_ReleaseQueue[frameIndex].push(std::move(command));
+	}
 #else
 	void Renderer::SubmitRenderCommand(RenderCommand command)
 	{
-		FLUX_VERIFY_ON_MAIN_THREAD();
-
-#if FLUX_RENDER_COMMAND_QUEUE_DEBUG
-		FLUX_TRACE_CATEGORY("Renderer", "Submitting render command...");
-#endif
+		FLUX_ASSERT_ON_MAIN_THREAD();
 
 		s_RenderCommandQueue.push(std::move(command));
+	}
+
+	void Renderer::SubmitRenderCommandRelease(RenderCommand command)
+	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
+		s_ReleaseQueue.push(std::move(command));
 	}
 #endif
 
@@ -93,10 +122,6 @@ namespace Flux {
 		
 #ifndef FLUX_BUILD_SHIPPING
 		s_RenderCommandQueueLocked = true;
-#endif
-
-#if FLUX_RENDER_COMMAND_QUEUE_DEBUG
-		FLUX_WARNING_CATEGORY("Renderer", "Executing {0} render commands...", s_RenderCommandQueue.size());
 #endif
 
 		while (!s_RenderCommandQueue.empty())
@@ -111,8 +136,39 @@ namespace Flux {
 #endif
 	}
 
+	void Renderer::FlushReleaseQueue(uint32 frameIndex)
+	{
+		// FLUX_ASSERT_ON_RENDER_THREAD();
+
+#ifndef FLUX_BUILD_SHIPPING
+		s_ReleaseQueueLocked[frameIndex] = true;
+#endif
+
+		auto& queue = s_ReleaseQueue[frameIndex];
+		while (!queue.empty())
+		{
+			RenderCommand& command = queue.front();
+			command();
+			queue.pop();
+		}
+
+#ifndef FLUX_BUILD_SHIPPING
+		s_ReleaseQueueLocked[frameIndex] = false;
+#endif
+
+	}
+
 	uint32 Renderer::GetCurrentFrameIndex()
 	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
+		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
+	}
+
+	uint32 Renderer::RT_GetCurrentFrameIndex()
+	{
+		// FLUX_ASSERT_ON_RENDER_THREAD();
+
 		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
 	}
 

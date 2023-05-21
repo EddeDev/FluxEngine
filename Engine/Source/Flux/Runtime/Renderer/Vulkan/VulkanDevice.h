@@ -46,8 +46,14 @@ namespace Flux {
 
 		virtual Ref<GraphicsAdapter> GetAdapter() const override { return m_Adapter; }
 
+		uint32 GetMemoryTypeIndex(uint32 typeBits, VkMemoryPropertyFlags propertyFlags) const;
+
+		VkCommandBuffer GetCommandBuffer(bool begin) const;
+		void FlushCommandBuffer(VkCommandBuffer commandBuffer) const;
+
 		VkDevice GetDevice() const { return m_Device; }
 		VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
+		VkPipelineCache GetPipelineCache() const { return m_PipelineCache; }
 
 		const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
@@ -57,7 +63,9 @@ namespace Flux {
 
 		Ref<VulkanAdapter> m_Adapter;
 		VkDevice m_Device = VK_NULL_HANDLE;
-		VkQueue m_GraphicsQueue;
+		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
+		VkCommandPool m_GraphicsCommandPool = VK_NULL_HANDLE;
+		VkPipelineCache m_PipelineCache = VK_NULL_HANDLE;
 		QueueFamilyIndices m_QueueFamilyIndices;
 	};
 

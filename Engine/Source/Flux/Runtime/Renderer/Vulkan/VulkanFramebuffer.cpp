@@ -76,13 +76,13 @@ namespace Flux {
 			renderPassBeginInfo.renderArea.extent.width = width;
 			renderPassBeginInfo.renderArea.extent.height = height;
 			renderPassBeginInfo.renderPass = swapchain->GetRenderPass();
-			renderPassBeginInfo.framebuffer = swapchain->GetFramebuffer(Renderer::GetCurrentFrameIndex());
+			renderPassBeginInfo.framebuffer = swapchain->GetFramebuffer(Renderer::RT_GetCurrentFrameIndex());
 
 			VkViewport viewport;
 			viewport.x = 0.0f;
-			viewport.y = 0.0f;
+			viewport.y = (float)height;
 			viewport.width = (float)width;
-			viewport.height = (float)height;
+			viewport.height = -(float)height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 			vkCmdSetViewport(activeCommandBuffer, 0, 1, &viewport);
@@ -112,6 +112,27 @@ namespace Flux {
 	void VulkanFramebuffer::RT_Unbind(Ref<CommandBuffer> commandBuffer) const
 	{
 		vkCmdEndRenderPass(commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer());
+	}
+
+	uint32 VulkanFramebuffer::GetWidth() const
+	{
+		if (m_CreateInfo.SwapchainTarget)
+			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetWidth();
+		return m_Width;
+	}
+
+	uint32 VulkanFramebuffer::GetHeight() const
+	{
+		if (m_CreateInfo.SwapchainTarget)
+			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetHeight();
+		return m_Height;
+	}
+
+	VkRenderPass VulkanFramebuffer::GetRenderPass() const
+	{
+		if (m_CreateInfo.SwapchainTarget)
+			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetRenderPass();
+		return m_RenderPass;
 	}
 
 }

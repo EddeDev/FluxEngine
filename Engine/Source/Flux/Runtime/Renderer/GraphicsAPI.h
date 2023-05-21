@@ -10,4 +10,18 @@ namespace Flux {
 		Vulkan
 	};
 
+	namespace GraphicsAPIUtils {
+
+		inline static const char* ToString(GraphicsAPI api)
+		{
+			switch (api)
+			{
+			case GraphicsAPI::Vulkan: return "Vulkan";
+			}
+			FLUX_VERIFY(false, "Unknown Graphics API.");
+			return "";
+		}
+
+	}
+
 }

@@ -305,6 +305,8 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateDepthStencilImage()
 	{
+		Ref<VulkanDevice> device = VulkanDevice::Get();
+
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -321,32 +323,10 @@ namespace Flux {
 		VkMemoryRequirements memoryRequirments;
 		vkGetImageMemoryRequirements(m_Device, m_DepthStencilImage, &memoryRequirments);
 
-		uint32 memoryTypeIndex = 0;
-		const VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		// TODO: move to device class
-		{
-			VkPhysicalDeviceMemoryProperties memoryProperties;
-			vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memoryProperties);
-
-			uint32 typeBits = memoryRequirments.memoryTypeBits;
-			for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++)
-			{
-				if ((typeBits & 1) == 1)
-				{
-					if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
-					{
-						memoryTypeIndex = i;
-						break;
-					}
-				}
-				typeBits >>= 1;
-			}
-		}
-
 		VkMemoryAllocateInfo memoryAllocateInfo = {};
 		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		memoryAllocateInfo.allocationSize = memoryRequirments.size;
-		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
+		memoryAllocateInfo.memoryTypeIndex = device->GetMemoryTypeIndex(memoryRequirments.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		VK_CHECK(vkAllocateMemory(m_Device, &memoryAllocateInfo, nullptr, &m_DepthStencilImageMemory));
 		VK_CHECK(vkBindImageMemory(m_Device, m_DepthStencilImage, m_DepthStencilImageMemory, 0));
 

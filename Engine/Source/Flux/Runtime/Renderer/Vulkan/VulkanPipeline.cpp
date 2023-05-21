@@ -1,0 +1,278 @@
+#include "FluxPCH.h"
+#include "VulkanPipeline.h"
+
+#include "Flux/Runtime/Renderer/Renderer.h"
+
+#include "VulkanDevice.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanShader.h"
+#include "VulkanFramebuffer.h"
+
+namespace Flux {
+
+	namespace Utils {
+
+		VkShaderStageFlagBits VulkanShaderStage(ShaderStage stage)
+		{
+			switch (stage)
+			{
+			case ShaderStage::Vertex:   return VK_SHADER_STAGE_VERTEX_BIT;
+			case ShaderStage::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case ShaderStage::Compute:  return VK_SHADER_STAGE_COMPUTE_BIT;
+			}
+			FLUX_VERIFY(false, "Unknown shader stage");
+			return static_cast<VkShaderStageFlagBits>(0);
+		}
+
+
+		VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology topology)
+		{
+			switch (topology)
+			{
+			case PrimitiveTopology::Triangles: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			case PrimitiveTopology::Lines:     return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			case PrimitiveTopology::Points:    return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+			}
+			FLUX_VERIFY(false, "Unknown primitive topology");
+			return static_cast<VkPrimitiveTopology>(0);
+		}
+
+		VkCompareOp VulkanCompareOp(CompareOp compareOp)
+		{
+			switch (compareOp)
+			{
+			case CompareOp::Never:          return VK_COMPARE_OP_NEVER;
+			case CompareOp::Less:           return VK_COMPARE_OP_LESS;
+			case CompareOp::Equal:          return VK_COMPARE_OP_EQUAL;
+			case CompareOp::LessOrEqual:    return VK_COMPARE_OP_LESS_OR_EQUAL;
+			case CompareOp::Greater:        return VK_COMPARE_OP_GREATER;
+			case CompareOp::NotEqual:       return VK_COMPARE_OP_NOT_EQUAL;
+			case CompareOp::GreaterOrEqual: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+			case CompareOp::Always:         return VK_COMPARE_OP_ALWAYS;
+			}
+			FLUX_VERIFY(false, "Unknown comparison function");
+			return static_cast<VkCompareOp>(0);
+		}
+
+	}
+
+	VulkanPipeline::VulkanPipeline(const GraphicsPipelineCreateInfo& createInfo)
+		: m_CreateInfo(createInfo)
+	{
+		FLUX_VERIFY(createInfo.Shader);
+		FLUX_VERIFY(createInfo.Framebuffer);
+
+		Invalidate();
+	}
+
+	VulkanPipeline::~VulkanPipeline()
+	{
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([pipelineLayout = m_PipelineLayout, pipeline = m_Pipeline]()
+		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+			
+			vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+			vkDestroyPipeline(device, pipeline, nullptr);
+		});
+	}
+
+	void VulkanPipeline::Invalidate()
+	{
+		Ref<VulkanPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		{
+			instance->RT_Invalidate();
+		});
+	}
+
+	void VulkanPipeline::RT_Invalidate()
+	{
+		VkDevice device = VulkanDevice::Get()->GetDevice();
+		VkPipelineCache pipelineCache = VulkanDevice::Get()->GetPipelineCache();
+
+		Ref<VulkanFramebuffer> framebuffer = m_CreateInfo.Framebuffer.As<VulkanFramebuffer>();
+
+		// TODO: Release function?
+		if (m_PipelineLayout)
+			vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
+		if (m_Pipeline)
+			vkDestroyPipeline(device, m_Pipeline, nullptr);
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		// TODO: Push constants
+		VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
+
+		Ref<VulkanShader> shader = m_CreateInfo.Shader.As<VulkanShader>();
+
+		std::vector<VkPipelineShaderStageCreateInfo> stageCreateInfos;
+		for (auto& [stage, shaderModule] : shader->GetShaderModules())
+		{
+			auto& createInfo = stageCreateInfos.emplace_back();
+			createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			createInfo.stage = Utils::VulkanShaderStage(stage);
+			createInfo.module = shaderModule;
+			createInfo.pName = "main";
+		}
+
+		std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions;
+		vertexBindingDescriptions.emplace_back() = {
+			.binding = 0,
+			.stride = sizeof(glm::vec3) + sizeof(glm::vec4),
+			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+		};
+
+		std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions;
+		vertexAttributeDescriptions.emplace_back() = {
+			.location = 0,
+			.binding = 0,
+			.format = VK_FORMAT_R32G32B32_SFLOAT,
+			.offset = 0
+		};
+		vertexAttributeDescriptions.emplace_back() = {
+			.location = 1,
+			.binding = 0,
+			.format = VK_FORMAT_R32G32B32A32_SFLOAT,
+			.offset = sizeof(glm::vec3)
+		};
+
+		VkPipelineVertexInputStateCreateInfo vertexInputState = {};
+		vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInputState.vertexBindingDescriptionCount = static_cast<uint32>(vertexBindingDescriptions.size());
+		vertexInputState.pVertexBindingDescriptions = vertexBindingDescriptions.data();
+		vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32>(vertexAttributeDescriptions.size());
+		vertexInputState.pVertexAttributeDescriptions = vertexAttributeDescriptions.data();
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
+		inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssemblyState.topology = Utils::VulkanPrimitiveTopology(m_CreateInfo.Topology);
+		inputAssemblyState.primitiveRestartEnable = VK_FALSE;
+		
+		VkViewport viewport;
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)m_CreateInfo.Framebuffer->GetWidth();
+		viewport.height = (float)m_CreateInfo.Framebuffer->GetHeight();
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor;
+		scissor.offset = { 0, 0 };
+		scissor.extent = { m_CreateInfo.Framebuffer->GetWidth(), m_CreateInfo.Framebuffer->GetHeight() };
+
+		VkPipelineViewportStateCreateInfo viewportState = {};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.viewportCount = 1;
+		viewportState.pViewports = &viewport;
+		viewportState.scissorCount = 1;
+		viewportState.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterizationState = {};
+		rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizationState.depthClampEnable = VK_FALSE;
+		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
+		rasterizationState.polygonMode = m_CreateInfo.Wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+		rasterizationState.cullMode = m_CreateInfo.BackfaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizationState.depthBiasClamp = VK_FALSE;
+		rasterizationState.depthBiasSlopeFactor = 0.0f;
+		rasterizationState.lineWidth = m_CreateInfo.LineWidth;
+
+		VkPipelineMultisampleStateCreateInfo multisampleState = {};
+		multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampleState.minSampleShading = 1.0f;
+
+		VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
+		depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencilState.depthTestEnable = m_CreateInfo.DepthTest;
+		depthStencilState.depthWriteEnable = m_CreateInfo.DepthWrite;
+		depthStencilState.depthCompareOp = Utils::VulkanCompareOp(m_CreateInfo.DepthCompareOp);
+		depthStencilState.depthBoundsTestEnable = VK_FALSE;
+		depthStencilState.stencilTestEnable = VK_FALSE;
+		// depthStencilState.front
+		// depthStencilState.back
+		depthStencilState.minDepthBounds = 0.0f;
+		depthStencilState.maxDepthBounds = 1.0f;
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_FALSE;
+
+		VkPipelineColorBlendStateCreateInfo colorBlendState = {};
+		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlendState.logicOpEnable = VK_FALSE;
+		colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+		colorBlendState.attachmentCount = 1;
+		colorBlendState.pAttachments = &colorBlendAttachment;
+
+		const std::vector<VkDynamicState> dynamicStates = {
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_SCISSOR
+		};
+
+		VkPipelineDynamicStateCreateInfo dynamicState = {};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicState.dynamicStateCount = static_cast<uint32>(dynamicStates.size());
+		dynamicState.pDynamicStates = dynamicStates.data();
+
+		VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
+		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineCreateInfo.stageCount = static_cast<uint32>(stageCreateInfos.size());
+		pipelineCreateInfo.pStages = stageCreateInfos.data();
+		pipelineCreateInfo.pVertexInputState = &vertexInputState;
+		pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+		pipelineCreateInfo.pViewportState = &viewportState;
+		pipelineCreateInfo.pRasterizationState = &rasterizationState;
+		pipelineCreateInfo.pMultisampleState = &multisampleState;
+		pipelineCreateInfo.pDepthStencilState = &depthStencilState;
+		pipelineCreateInfo.pColorBlendState = &colorBlendState;
+		pipelineCreateInfo.pDynamicState = &dynamicState;
+		pipelineCreateInfo.layout = m_PipelineLayout;
+		pipelineCreateInfo.basePipelineIndex = -1;
+		pipelineCreateInfo.renderPass = framebuffer->GetRenderPass();
+		pipelineCreateInfo.subpass = 0;
+
+		VK_CHECK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &m_Pipeline));
+	}
+
+	void VulkanPipeline::Bind(Ref<CommandBuffer> commandBuffer) const
+	{
+		Ref<const VulkanPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
+		{
+			instance->RT_Bind(commandBuffer);
+		});
+	}
+
+	void VulkanPipeline::RT_Bind(Ref<CommandBuffer> commandBuffer) const
+	{
+		vkCmdBindPipeline(
+			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
+			VK_PIPELINE_BIND_POINT_GRAPHICS, 
+			m_Pipeline
+		);
+	}
+
+	void VulkanPipeline::DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
+	{
+		Ref<const VulkanPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer, indexCount, startIndexLocation, baseVertexLocation]()
+		{
+			instance->RT_DrawIndexed(commandBuffer, indexCount, startIndexLocation, baseVertexLocation);
+		});
+	}
+
+	void VulkanPipeline::RT_DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
+	{
+		vkCmdDrawIndexed(
+			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
+			indexCount,
+			1,
+			startIndexLocation * sizeof(uint32), /* TODO: IndexBufferDataType */
+			baseVertexLocation,
+			0
+		);
+	}
+
+}

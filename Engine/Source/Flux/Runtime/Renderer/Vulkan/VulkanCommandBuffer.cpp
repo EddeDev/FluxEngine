@@ -14,34 +14,38 @@ namespace Flux {
 	{
 		if (!createInfo.CreateFromSwapchain)
 		{
-			VkDevice device = VulkanDevice::Get()->GetDevice();
+			Ref<VulkanCommandBuffer> instance = this;
+			FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+			{
+				VkDevice device = VulkanDevice::Get()->GetDevice();
 
-			VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-			commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			if (createInfo.Transient)
-				commandPoolCreateInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-			commandPoolCreateInfo.queueFamilyIndex = VulkanDevice::Get()->GetQueueFamilyIndices().Graphics;
-			VK_CHECK(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &m_CommandPool));
+				VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+				commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+				commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+				if (instance->m_CreateInfo.Transient)
+					commandPoolCreateInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+				commandPoolCreateInfo.queueFamilyIndex = VulkanDevice::Get()->GetQueueFamilyIndices().Graphics;
+				VK_CHECK(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &instance->m_CommandPool));
 
-			Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
-			uint32 imageCount = swapchain->GetImageCount();
+				Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
+				uint32 imageCount = swapchain->GetImageCount();
 
-			VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-			commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			commandBufferAllocateInfo.commandBufferCount = imageCount;
+				VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+				commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+				commandBufferAllocateInfo.commandBufferCount = imageCount;
 
-			m_CommandBuffers.resize(static_cast<size_t>(imageCount));
-			VK_CHECK(vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, m_CommandBuffers.data()));
+				instance->m_CommandBuffers.resize(static_cast<size_t>(imageCount));
+				VK_CHECK(vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, instance->m_CommandBuffers.data()));
 
-			VkFenceCreateInfo fenceCreateInfo = {};
-			fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+				VkFenceCreateInfo fenceCreateInfo = {};
+				fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+				fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-			m_Fences.resize(static_cast<size_t>(imageCount));
-			for (uint32 i = 0; i < imageCount; i++)
-				VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &m_Fences[i]));
+				instance->m_Fences.resize(static_cast<size_t>(imageCount));
+				for (uint32 i = 0; i < imageCount; i++)
+					VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &instance->m_Fences[i]));
+			});
 		}
 	}
 
@@ -49,8 +53,11 @@ namespace Flux {
 	{
 		if (!m_CreateInfo.CreateFromSwapchain)
 		{
-			VkDevice device = VulkanDevice::Get()->GetDevice();
-			vkDestroyCommandPool(device, m_CommandPool, nullptr);
+			FLUX_SUBMIT_RENDER_COMMAND_RELEASE([commandPool = m_CommandPool]()
+			{
+				VkDevice device = VulkanDevice::Get()->GetDevice();
+				vkDestroyCommandPool(device, commandPool, nullptr);
+			});
 		}
 	}
 
@@ -67,7 +74,7 @@ namespace Flux {
 	{
 		FLUX_ASSERT(!m_ActiveCommandBuffer);
 
-		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+		uint32 frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 		VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
 		if (m_CreateInfo.CreateFromSwapchain)
@@ -119,7 +126,7 @@ namespace Flux {
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();
 
-			uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+			uint32 frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			VkSubmitInfo submitInfo = {};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

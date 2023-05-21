@@ -20,23 +20,18 @@ namespace Flux {
 		virtual void Unbind(Ref<CommandBuffer> commandBuffer) const override;
 		virtual void RT_Unbind(Ref<CommandBuffer> commandBuffer) const override;
 
-		virtual uint32 GetWidth() const override
-		{
-			FLUX_ASSERT(!m_CreateInfo.SwapchainTarget);
-			return m_Width;
-		}
+		virtual uint32 GetWidth() const override;
+		virtual uint32 GetHeight() const override;
 
-		virtual uint32 GetHeight() const override
-		{
-			FLUX_ASSERT(!m_CreateInfo.SwapchainTarget);
-			return m_Height;
-		}
+		VkRenderPass GetRenderPass() const;
 	private:
 		void Invalidate();
 	private:
 		FramebufferCreateInfo m_CreateInfo;
 		uint32 m_Width = 0;
 		uint32 m_Height = 0;
+
+		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 	};
 
 }

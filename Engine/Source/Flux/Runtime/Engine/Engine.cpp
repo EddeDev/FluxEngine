@@ -42,6 +42,8 @@ namespace Flux {
 		m_Window = Window::Create(windowCreateInfo);
 		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
 		m_Window->AddSizeCallback(FLUX_BIND_CALLBACK(OnWindowResize, this));
+
+		FLUX_INFO("Graphics API: {0}", GraphicsAPIUtils::ToString(m_GraphicsAPI));
 	}
 
 	Engine::~Engine()
@@ -84,17 +86,54 @@ namespace Flux {
 		m_Device = GraphicsDevice::Create(m_Adapter);
 		m_Swapchain = Swapchain::Create(m_Window.get());
 
-		CommandBufferCreateInfo commandBufferCreateInfo;
-		commandBufferCreateInfo.CreateFromSwapchain = true;
-		m_SwapchainCommandBuffer = CommandBuffer::Create(commandBufferCreateInfo);
-
-		FramebufferCreateInfo framebufferCreateInfo;
-		framebufferCreateInfo.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-		framebufferCreateInfo.SwapchainTarget = true;
-		m_SwapchainFramebuffer = Framebuffer::Create(framebufferCreateInfo);
-
 		Renderer::Init();
 
+		{
+			CommandBufferCreateInfo commandBufferCreateInfo;
+			commandBufferCreateInfo.CreateFromSwapchain = true;
+			m_SwapchainCommandBuffer = CommandBuffer::Create(commandBufferCreateInfo);
+
+			FramebufferCreateInfo framebufferCreateInfo;
+			framebufferCreateInfo.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+			framebufferCreateInfo.SwapchainTarget = true;
+			m_SwapchainFramebuffer = Framebuffer::Create(framebufferCreateInfo);
+
+			m_Shader = Shader::Create("Resources/Shaders/Shader.glsl");
+
+			GraphicsPipelineCreateInfo pipelineCreateInfo;
+			pipelineCreateInfo.Shader = m_Shader;
+			pipelineCreateInfo.Framebuffer = m_SwapchainFramebuffer;
+			m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
+
+			struct Vertex
+			{
+				glm::vec3 Position;
+				glm::vec4 Color;
+			};
+
+			Vertex vertices[4];
+
+			vertices[0].Position = { -0.5f, -0.5f, 0.0f };
+			vertices[0].Color = { 0.8f, 0.2f, 0.2f, 1.0f };
+
+			vertices[1].Position = { 0.5f, -0.5f, 0.0f };
+			vertices[1].Color = { 0.2f, 0.8f, 0.2f, 1.0f };
+
+			vertices[2].Position = { 0.5f, 0.5f, 0.0f };
+			vertices[2].Color = { 0.2f, 0.2f, 0.8f, 1.0f };
+
+			vertices[3].Position = { -0.5f, 0.5f, 0.0f };
+			vertices[3].Color = { 0.2f, 0.2f, 0.8f, 1.0f };
+
+			uint32 indices[6] = {
+				0, 1, 2,
+				2, 3, 0
+			};
+
+			m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(Vertex) * 4);
+			m_IndexBuffer = IndexBuffer::Create(indices, sizeof(uint32) * 6);
+		}
+	
 		OnInit();
 
 		SubmitToEventThread([this]()
@@ -120,21 +159,31 @@ namespace Flux {
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
 
-			OnUpdate();
-
 			if (!m_Minimized)
 			{
+				Renderer::FlushReleaseQueue(Renderer::GetCurrentFrameIndex());
+
 				m_Swapchain->BeginFrame();
 
 				Renderer::BeginFrame();
 
-				m_SwapchainCommandBuffer->Begin();
-				Renderer::BeginRenderPass(m_SwapchainCommandBuffer, m_SwapchainFramebuffer);
-				Renderer::EndRenderPass(m_SwapchainCommandBuffer);
-				m_SwapchainCommandBuffer->End();
+				OnUpdate();
+
+				{
+					m_SwapchainCommandBuffer->Begin();
+					Renderer::BeginRenderPass(m_SwapchainCommandBuffer, m_SwapchainFramebuffer);
+
+					m_VertexBuffer->Bind(m_SwapchainCommandBuffer);
+					m_Pipeline->Bind(m_SwapchainCommandBuffer);
+					m_IndexBuffer->Bind(m_SwapchainCommandBuffer);
+
+					m_Pipeline->DrawIndexed(m_SwapchainCommandBuffer, 6);
+
+					Renderer::EndRenderPass(m_SwapchainCommandBuffer);
+					m_SwapchainCommandBuffer->End();
+				}
 
 				Renderer::FlushRenderCommands();
-
 				Renderer::EndFrame();
 
 				m_Swapchain->Present(1);
@@ -143,13 +192,27 @@ namespace Flux {
 
 		OnExit();
 
+		{
+			FLUX_VERIFY(m_VertexBuffer->GetReferenceCount() == 1);
+			m_VertexBuffer = nullptr;
+
+			FLUX_VERIFY(m_IndexBuffer->GetReferenceCount() == 1);
+			m_IndexBuffer = nullptr;
+
+			FLUX_VERIFY(m_Pipeline->GetReferenceCount() == 1);
+			m_Pipeline = nullptr;
+
+			FLUX_VERIFY(m_Shader->GetReferenceCount() == 1);
+			m_Shader = nullptr;
+
+			FLUX_VERIFY(m_SwapchainFramebuffer->GetReferenceCount() == 1);
+			m_SwapchainFramebuffer = nullptr;
+
+			FLUX_VERIFY(m_SwapchainCommandBuffer->GetReferenceCount() == 1);
+			m_SwapchainCommandBuffer = nullptr;
+		}
+
 		Renderer::Shutdown();
-
-		FLUX_VERIFY(m_SwapchainFramebuffer->GetReferenceCount() == 1);
-		m_SwapchainFramebuffer = nullptr;
-
-		FLUX_VERIFY(m_SwapchainCommandBuffer->GetReferenceCount() == 1);
-		m_SwapchainCommandBuffer = nullptr;
 
 		FLUX_VERIFY(m_Swapchain->GetReferenceCount() == 1);
 		m_Swapchain = nullptr;
