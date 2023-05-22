@@ -12,12 +12,17 @@ struct VertexOutput
 
 layout(location = 0) out VertexOutput Output;
 
+layout(push_constant) uniform Constants
+{
+	mat4 ProjectionMatrix;
+} u_Constants;
+
 void main()
 {
     Output.Position = a_Position;
     Output.Color = a_Color;
 
-    gl_Position = vec4(a_Position, 1.0);
+    gl_Position = u_Constants.ProjectionMatrix * vec4(a_Position, 1.0);
 }
 
 #stage fragment

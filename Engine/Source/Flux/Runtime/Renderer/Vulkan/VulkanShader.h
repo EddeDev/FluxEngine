@@ -15,6 +15,7 @@ namespace Flux {
 		virtual void Reload() override;
 
 		virtual const VertexInputLayout& GetInputLayout() const { return m_InputLayout; }
+		virtual const PushConstantMap& GetPushConstants() const { return m_PushConstants; }
 
 		const std::unordered_map<ShaderStage, VkShaderModule>& GetShaderModules() const { return m_ShaderModules; }
 	private:
@@ -26,6 +27,7 @@ namespace Flux {
 		std::filesystem::path m_Path;
 		ShaderBinaryMap m_Binaries;
 		VertexInputLayout m_InputLayout;
+		PushConstantMap m_PushConstants;
 		std::unordered_map<ShaderStage, VkShaderModule> m_ShaderModules;
 	};
 

@@ -159,6 +159,8 @@ namespace Flux {
 	void VulkanShader::Reload()
 	{
 		m_Binaries.clear();
+		m_InputLayout = {};
+		m_PushConstants = {};
 
 		std::string source;
 		if (!Utils::LoadFileToString(source, m_Path))
@@ -271,6 +273,35 @@ namespace Flux {
 				}
 
 				m_InputLayout.Stride = offset;
+			}
+
+			for (const auto& resource : resources.push_constant_buffers)
+			{
+				auto& pushConstant = m_PushConstants[stage];
+				pushConstant.Stage = stage;
+				pushConstant.Offset = compiler.get_decoration(resource.id, spv::DecorationOffset);
+
+				pushConstant.Name = compiler.get_name(resource.id);
+				if (pushConstant.Name.empty())
+					pushConstant.Name = compiler.get_fallback_name(resource.id);
+
+				const auto& bufferType = compiler.get_type(resource.base_type_id);
+				pushConstant.Size = compiler.get_declared_struct_size(bufferType);
+
+				for (uint32 i = 0; i < static_cast<uint32>(bufferType.member_types.size()); i++)
+				{
+					std::string memberName = compiler.get_member_name(bufferType.self, i);
+					if (memberName.empty())
+						memberName = compiler.get_fallback_member_name(i);
+					FLUX_ASSERT(!memberName.empty());
+
+					std::string fullName = fmt::format("{}.{}", pushConstant.Name, memberName);
+
+					auto& member = pushConstant.Members[fullName];
+					member.Name = memberName;
+					member.Size = compiler.get_declared_struct_member_size(bufferType, i);
+					member.Offset = compiler.type_struct_member_offset(bufferType, i);
+				}
 			}
 		}
 	}

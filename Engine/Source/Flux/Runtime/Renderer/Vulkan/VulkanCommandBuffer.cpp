@@ -122,6 +122,8 @@ namespace Flux {
 
 	void VulkanCommandBuffer::RT_Submit()
 	{
+		FLUX_ASSERT(!m_CreateInfo.CreateFromSwapchain);
+
 		if (!m_CreateInfo.CreateFromSwapchain)
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();

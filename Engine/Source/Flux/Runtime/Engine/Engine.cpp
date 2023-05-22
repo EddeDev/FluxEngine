@@ -111,27 +111,93 @@ namespace Flux {
 				glm::vec4 Color;
 			};
 
-			Vertex vertices[4];
+			const uint32 maxQuads = 100;
+			const uint32 maxQuadVertices = 100 * 4;
+			const uint32 maxQuadIndices = 100 * 6;
 
-			vertices[0].Position = { -0.5f, -0.5f, 0.0f };
-			vertices[0].Color = { 0.8f, 0.2f, 0.2f, 1.0f };
+			Vertex* vertices = new Vertex[maxQuadVertices];
+			memset(vertices, 0, sizeof(Vertex) * maxQuadVertices);
 
-			vertices[1].Position = { 0.5f, -0.5f, 0.0f };
-			vertices[1].Color = { 0.2f, 0.8f, 0.2f, 1.0f };
+			Vertex* vertexPtr = vertices;
 
-			vertices[2].Position = { 0.5f, 0.5f, 0.0f };
-			vertices[2].Color = { 0.2f, 0.2f, 0.8f, 1.0f };
+			m_QuadIndexCount = 0;
 
-			vertices[3].Position = { -0.5f, 0.5f, 0.0f };
-			vertices[3].Color = { 0.2f, 0.2f, 0.8f, 1.0f };
+			auto addRect = [&](float minX, float minY, float maxX, float maxY, const glm::vec4& color = glm::vec4(1.0f))
+			{
+				vertexPtr->Position = { minX, minY, 0.0f };
+				vertexPtr->Color = color;
+				vertexPtr++;
 
-			uint32 indices[6] = {
-				0, 1, 2,
-				2, 3, 0
+				vertexPtr->Position = { maxX, minY, 0.0f };
+				vertexPtr->Color = color;
+				vertexPtr++;
+
+				vertexPtr->Position = { maxX, maxY, 0.0f };
+				vertexPtr->Color = color;
+				vertexPtr++;
+
+				vertexPtr->Position = { minX, maxY, 0.0f };
+				vertexPtr->Color = color;
+				vertexPtr++;
+
+				m_QuadIndexCount += 6;
 			};
 
-			m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(Vertex) * 4);
-			m_IndexBuffer = IndexBuffer::Create(indices, sizeof(uint32) * 6);
+			const float xPadding = 8.0f;
+			const float yPadding = 6.0f;
+			const float spacing = 6.0f;
+
+			const float windowWidth = 1280.0f;
+			const float windowHeight = 720.0f;
+
+			float xs = 57.0f;
+			float ys = 18.0f;
+			float menuBarHeight = 20.0f;
+			addRect(
+				xPadding,
+				windowHeight - menuBarHeight - ys - yPadding, 
+				xs + xPadding, 
+				windowHeight - menuBarHeight - yPadding,
+				{ 0.22f, 0.22f, 0.22f, 1.0f }
+			);
+
+			float xs2 = 32.0f;
+			addRect(
+				xPadding + xs + spacing,
+				windowHeight - menuBarHeight - ys - yPadding,
+				xPadding + xs + spacing + xs2,
+				windowHeight - menuBarHeight - yPadding,
+				{ 0.22f, 0.22f, 0.22f, 1.0f }
+			);
+			
+			addRect(50.0f, 50.0f, 200.0f, 100.0f, { 0.82f, 0.22f, 0.22f, 1.0f });
+			addRect(300.0f, 300.0f, 400.0f, 400.0f, { 0.82f, 0.82f, 0.22f, 1.0f });
+
+			uint32 dataSize = (uint8*)vertexPtr - (uint8*)vertices;
+
+			m_VertexBuffer = VertexBuffer::Create(vertices, dataSize);
+
+			delete[] vertices;
+
+			uint32* indices = new uint32[maxQuadIndices];
+
+			uint32 offset = 0;
+			for (uint32 i = 0; i < maxQuadIndices; i += 6)
+			{
+				indices[i + 0] = offset + 0;
+				indices[i + 1] = offset + 1;
+				indices[i + 2] = offset + 2;
+
+				indices[i + 3] = offset + 2;
+				indices[i + 4] = offset + 3;
+				indices[i + 5] = offset + 0;
+
+				offset += 4;
+			}
+
+			m_IndexBuffer = IndexBuffer::Create(indices, sizeof(uint32) * m_QuadIndexCount);
+
+			delete[] indices;
 		}
 	
 		OnInit();
@@ -177,7 +243,13 @@ namespace Flux {
 					m_Pipeline->Bind(m_SwapchainCommandBuffer);
 					m_IndexBuffer->Bind(m_SwapchainCommandBuffer);
 
-					m_Pipeline->DrawIndexed(m_SwapchainCommandBuffer, m_IndexBuffer->GetCount());
+					glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)m_SwapchainFramebuffer->GetWidth(), 0.0f, (float)m_SwapchainFramebuffer->GetHeight());
+					FLUX_SUBMIT_RENDER_COMMAND([commandBuffer = m_SwapchainCommandBuffer, pipeline = m_Pipeline, projectionMatrix]()
+					{
+						pipeline->RT_SetPushConstant(commandBuffer, ShaderStage::Vertex, &(projectionMatrix[0].x), 64);
+					});
+
+					m_Pipeline->DrawIndexed(m_SwapchainCommandBuffer, m_QuadIndexCount);
 
 					Renderer::EndRenderPass(m_SwapchainCommandBuffer);
 					m_SwapchainCommandBuffer->End();

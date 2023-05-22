@@ -76,6 +76,7 @@ namespace Flux {
 		Ref<Shader> m_Shader;
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
+		uint32 m_QuadIndexCount = 0;
 
 		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;

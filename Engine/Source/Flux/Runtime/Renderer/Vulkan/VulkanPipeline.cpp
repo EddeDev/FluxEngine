@@ -119,12 +119,22 @@ namespace Flux {
 		if (m_Pipeline)
 			vkDestroyPipeline(device, m_Pipeline, nullptr);
 
+		Ref<VulkanShader> shader = m_CreateInfo.Shader.As<VulkanShader>();
+
+		std::vector<VkPushConstantRange> pushConstantRanges;
+		for (auto& [stage, pushConstant] : shader->GetPushConstants())
+		{
+			auto& pushConstantRange = pushConstantRanges.emplace_back();
+			pushConstantRange.stageFlags = Utils::VulkanShaderStage(stage);
+			pushConstantRange.size = pushConstant.Size;
+			pushConstantRange.offset = pushConstant.Offset;
+		}
+
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		// TODO: Push constants
+		pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32>(pushConstantRanges.size());
+		pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
 		VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
-
-		Ref<VulkanShader> shader = m_CreateInfo.Shader.As<VulkanShader>();
 
 		std::vector<VkPipelineShaderStageCreateInfo> stageCreateInfos;
 		for (auto& [stage, shaderModule] : shader->GetShaderModules())
@@ -270,6 +280,18 @@ namespace Flux {
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
 			VK_PIPELINE_BIND_POINT_GRAPHICS, 
 			m_Pipeline
+		);
+	}
+
+	void VulkanPipeline::RT_SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset) const
+	{
+		vkCmdPushConstants(
+			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
+			m_PipelineLayout, 
+			Utils::VulkanShaderStage(stage), 
+			offset, 
+			size, 
+			data
 		);
 	}
 
