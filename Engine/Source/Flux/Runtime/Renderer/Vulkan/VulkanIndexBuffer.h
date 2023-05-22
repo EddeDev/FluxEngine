@@ -14,7 +14,11 @@ namespace Flux {
 
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const override;
 		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const override;
+
+		virtual uint32 GetCount() const override { return m_Size / sizeof(uint32); }
 	private:
+		uint32 m_Size = 0;
+
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
 		VkBuffer m_StagingBuffer = VK_NULL_HANDLE;
 		VkDeviceMemory m_BufferMemory = VK_NULL_HANDLE;

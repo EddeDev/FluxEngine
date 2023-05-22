@@ -12,6 +12,8 @@ namespace Flux {
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const = 0;
 		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const = 0;
 
+		virtual uint32 GetCount() const = 0;
+
 		static Ref<IndexBuffer> Create(const void* data, uint32 size);
 	};
 

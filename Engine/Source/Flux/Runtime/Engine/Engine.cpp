@@ -177,7 +177,7 @@ namespace Flux {
 					m_Pipeline->Bind(m_SwapchainCommandBuffer);
 					m_IndexBuffer->Bind(m_SwapchainCommandBuffer);
 
-					m_Pipeline->DrawIndexed(m_SwapchainCommandBuffer, 6);
+					m_Pipeline->DrawIndexed(m_SwapchainCommandBuffer, m_IndexBuffer->GetCount());
 
 					Renderer::EndRenderPass(m_SwapchainCommandBuffer);
 					m_SwapchainCommandBuffer->End();

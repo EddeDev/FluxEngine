@@ -53,6 +53,60 @@ namespace Flux {
 			return static_cast<shaderc_shader_kind>(0);
 		}
 
+		static ShaderDataType SPIRTypeToShaderDataType(const spirv_cross::SPIRType& type)
+		{
+			switch (type.basetype)
+			{
+			case spirv_cross::SPIRType::Float:
+			{
+				switch (type.vecsize)
+				{
+				case 1: return ShaderDataType::Float;
+				case 2: return ShaderDataType::Float2;
+				case 3: return ShaderDataType::Float3;
+				case 4: return ShaderDataType::Float4;
+				}
+				break;
+			}
+			case spirv_cross::SPIRType::Int:
+			{
+				switch (type.vecsize)
+				{
+				case 1: return ShaderDataType::Int;
+				case 2: return ShaderDataType::Int2;
+				case 3: return ShaderDataType::Int3;
+				case 4: return ShaderDataType::Int4;
+				}
+				break;
+			}
+			case spirv_cross::SPIRType::UInt:
+			{
+				switch (type.vecsize)
+				{
+				case 1: return ShaderDataType::UInt;
+				case 2: return ShaderDataType::UInt2;
+				case 3: return ShaderDataType::UInt3;
+				case 4: return ShaderDataType::UInt4;
+				}
+				break;
+			}
+			}
+			FLUX_VERIFY(false);
+			return ShaderDataType::None;
+		}
+
+		static uint32 SPIRTypeSize(const spirv_cross::SPIRType& type)
+		{
+			switch (type.basetype)
+			{
+			case spirv_cross::SPIRType::Float: return sizeof(float) * type.vecsize;
+			case spirv_cross::SPIRType::Int:   return sizeof(int32) * type.vecsize;
+			case spirv_cross::SPIRType::UInt:  return sizeof(uint32) * type.vecsize;
+			}
+			FLUX_VERIFY(false);
+			return 0;
+		}
+
 	}
 
 	static std::unordered_map<ShaderStage, std::string> Preprocess(const std::string& source)
@@ -127,6 +181,8 @@ namespace Flux {
 			return;
 		}
 
+		Reflect();
+
 		Ref<VulkanShader> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
 		{
@@ -138,20 +194,19 @@ namespace Flux {
 	{
 		ShaderBinaryMap binaries;
 
+		shaderc::Compiler compiler;
+		shaderc::CompileOptions compileOptions;
+		compileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
+		compileOptions.SetOptimizationLevel(shaderc_optimization_level_performance);
+		compileOptions.SetWarningsAsErrors();
+
+#ifdef FLUX_BUILD_DEBUG
+		compileOptions.SetGenerateDebugInfo();
+#endif
+
 		// TODO: cache shaders
 		for (auto& [stage, source] : sources)
 		{
-			shaderc::CompileOptions compileOptions;
-			compileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
-			compileOptions.SetOptimizationLevel(shaderc_optimization_level_performance);
-			compileOptions.SetWarningsAsErrors();
-
-#ifdef FLUX_BUILD_DEBUG
-			compileOptions.SetGenerateDebugInfo();
-#endif
-
-
-			shaderc::Compiler compiler;
 			shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, Utils::ShaderStageToShaderC(stage), m_Path.string().c_str(), compileOptions);
 			if (result.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
@@ -169,7 +224,7 @@ namespace Flux {
 	{
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 
-		for (auto&& [stage, binary] : m_Binaries)
+		for (const auto& [stage, binary] : m_Binaries)
 		{
 			auto it = m_ShaderModules.find(stage);
 			if (it != m_ShaderModules.end())
@@ -184,6 +239,39 @@ namespace Flux {
 			createInfo.pCode = binary.data();
 
 			VK_CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &m_ShaderModules[stage]));
+		}
+	}
+
+	void VulkanShader::Reflect()
+	{
+		for (const auto& [stage, binary] : m_Binaries)
+		{
+			spirv_cross::Compiler compiler(binary);
+			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+			if (stage == ShaderStage::Vertex)
+			{
+				uint32 offset = 0;
+
+				for (const auto& resource : resources.stage_inputs)
+				{
+					auto& attribute = m_InputLayout.Attributes.emplace_back();
+					auto& type = compiler.get_type(resource.base_type_id);
+
+					attribute.Name = compiler.get_name(resource.id);
+					if (attribute.Name.empty())
+						attribute.Name = compiler.get_fallback_name(resource.id);
+
+					attribute.Location = compiler.get_decoration(resource.id, spv::DecorationLocation);
+					attribute.Binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+					attribute.Offset = offset;
+					attribute.Type = Utils::SPIRTypeToShaderDataType(type);
+
+					offset += Utils::SPIRTypeSize(type);
+				}
+
+				m_InputLayout.Stride = offset;
+			}
 		}
 	}
 

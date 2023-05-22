@@ -9,6 +9,7 @@
 namespace Flux {
 
 	VulkanIndexBuffer::VulkanIndexBuffer(const void* data, uint32 size)
+		: m_Size(size)
 	{
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 

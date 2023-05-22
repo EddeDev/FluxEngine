@@ -12,12 +12,6 @@ namespace Flux {
 		Points
 	};
 
-	enum class WindingOrder : uint8
-	{
-		CounterClockwise = 0,
-		Clockwise,
-	};
-
 	enum class CompareOp : uint8
 	{
 		Never = 0,
@@ -35,10 +29,10 @@ namespace Flux {
 		Ref<Shader> Shader;
 		Ref<Framebuffer> Framebuffer;
 		PrimitiveTopology Topology = PrimitiveTopology::Triangles;
-		WindingOrder FrontFace = WindingOrder::CounterClockwise;
 		CompareOp DepthCompareOp = CompareOp::Less;
 		bool DepthTest = true;
 		bool DepthWrite = true;
+		bool FrontCounterClockwise = true;
 		bool BackfaceCulling = false;
 		bool Wireframe = false;
 		float LineWidth = 1.0f;

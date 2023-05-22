@@ -11,14 +11,45 @@ namespace Flux {
 		Compute
 	};
 
-	typedef std::vector<uint32> SPIRVBinary;
-	typedef std::unordered_map<ShaderStage, SPIRVBinary> ShaderBinaryMap;
+	enum class ShaderDataType : uint8
+	{
+		None = 0,
+		Float, Float2, Float3, Float4,
+		Int, Int2, Int3, Int4,
+		UInt, UInt2, UInt3, UInt4,
+		Mat3, Mat4
+	};
+
+	struct VertexInputAttribute
+	{
+		std::string Name;
+		uint32 Location = 0;
+		uint32 Binding = 0;
+		uint32 Offset = 0;
+		ShaderDataType Type = ShaderDataType::None;
+	};
+
+	struct VertexInputLayout
+	{
+		uint32 Stride = 0;
+		std::vector<VertexInputAttribute> Attributes;
+
+		std::vector<VertexInputAttribute>::iterator begin() { return Attributes.begin(); }
+		std::vector<VertexInputAttribute>::iterator end() { return Attributes.end(); }
+		std::vector<VertexInputAttribute>::const_iterator begin() const { return Attributes.cbegin(); }
+		std::vector<VertexInputAttribute>::const_iterator end() const { return Attributes.cend(); }
+	};
+
+	typedef std::vector<uint32> ShaderBinary;
+	typedef std::unordered_map<ShaderStage, ShaderBinary> ShaderBinaryMap;
 	typedef std::unordered_map<ShaderStage, std::string> ShaderSourceMap;
 
 	class Shader : public ReferenceCounted
 	{
 	public:
 		virtual void Reload() = 0;
+
+		virtual const VertexInputLayout& GetInputLayout() const = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path& path);
 	};

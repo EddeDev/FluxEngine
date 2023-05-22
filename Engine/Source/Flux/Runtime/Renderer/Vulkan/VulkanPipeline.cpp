@@ -54,6 +54,27 @@ namespace Flux {
 			return static_cast<VkCompareOp>(0);
 		}
 
+		VkFormat VulkanShaderDataType(ShaderDataType type)
+		{
+			switch (type)
+			{
+			case ShaderDataType::Float:  return VK_FORMAT_R32_SFLOAT;
+			case ShaderDataType::Float2: return VK_FORMAT_R32G32_SFLOAT;
+			case ShaderDataType::Float3: return VK_FORMAT_R32G32B32_SFLOAT;
+			case ShaderDataType::Float4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ShaderDataType::Int:    return VK_FORMAT_R32_SINT;
+			case ShaderDataType::Int2:   return VK_FORMAT_R32G32_SINT;
+			case ShaderDataType::Int3:   return VK_FORMAT_R32G32B32_SINT;
+			case ShaderDataType::Int4:   return VK_FORMAT_R32G32B32A32_SINT;
+			case ShaderDataType::UInt:   return VK_FORMAT_R32_UINT;
+			case ShaderDataType::UInt2:  return VK_FORMAT_R32G32_UINT;
+			case ShaderDataType::UInt3:  return VK_FORMAT_R32G32B32_UINT;
+			case ShaderDataType::UInt4:  return VK_FORMAT_R32G32B32A32_UINT;
+			}
+			FLUX_VERIFY(false, "Unknown shader data type");
+			return VK_FORMAT_UNDEFINED;
+		}
+
 	}
 
 	VulkanPipeline::VulkanPipeline(const GraphicsPipelineCreateInfo& createInfo)
@@ -115,26 +136,24 @@ namespace Flux {
 			createInfo.pName = "main";
 		}
 
+		auto& inputLayout = shader->GetInputLayout();
+
 		std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions;
 		vertexBindingDescriptions.emplace_back() = {
 			.binding = 0,
-			.stride = sizeof(glm::vec3) + sizeof(glm::vec4),
+			.stride = inputLayout.Stride,
 			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
 		};
 
 		std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions;
-		vertexAttributeDescriptions.emplace_back() = {
-			.location = 0,
-			.binding = 0,
-			.format = VK_FORMAT_R32G32B32_SFLOAT,
-			.offset = 0
-		};
-		vertexAttributeDescriptions.emplace_back() = {
-			.location = 1,
-			.binding = 0,
-			.format = VK_FORMAT_R32G32B32A32_SFLOAT,
-			.offset = sizeof(glm::vec3)
-		};
+		for (const auto& attribute : inputLayout)
+		{
+			auto& description = vertexAttributeDescriptions.emplace_back();
+			description.location = attribute.Location;
+			description.binding = attribute.Binding;
+			description.format = Utils::VulkanShaderDataType(attribute.Type);
+			description.offset = attribute.Offset;
+		}
 
 		VkPipelineVertexInputStateCreateInfo vertexInputState = {};
 		vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -173,7 +192,7 @@ namespace Flux {
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 		rasterizationState.polygonMode = m_CreateInfo.Wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
 		rasterizationState.cullMode = m_CreateInfo.BackfaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
-		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizationState.frontFace = m_CreateInfo.FrontCounterClockwise ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
 		rasterizationState.depthBiasClamp = VK_FALSE;
 		rasterizationState.depthBiasSlopeFactor = 0.0f;
 		rasterizationState.lineWidth = m_CreateInfo.LineWidth;
