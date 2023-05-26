@@ -66,6 +66,17 @@ namespace Flux {
 		s_Data->ActiveFramebuffer = nullptr;
 	}
 
+	void Renderer::RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<GraphicsPipeline> pipeline, Ref<Shader> shader, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer)
+	{
+		FLUX_ASSERT_ON_MAIN_THREAD();
+
+		vertexBuffer->Bind(commandBuffer);
+		pipeline->Bind(commandBuffer);
+		indexBuffer->Bind(commandBuffer);
+
+		pipeline->DrawIndexed(commandBuffer, indexBuffer->GetCount());
+	}
+
 #ifndef FLUX_BUILD_SHIPPING
 	void Renderer::SubmitRenderCommand(const char* functionName, RenderCommand command)
 	{

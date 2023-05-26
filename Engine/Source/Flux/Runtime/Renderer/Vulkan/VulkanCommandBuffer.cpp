@@ -32,6 +32,7 @@ namespace Flux {
 
 				VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
 				commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				commandBufferAllocateInfo.commandPool = instance->m_CommandPool;
 				commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 				commandBufferAllocateInfo.commandBufferCount = imageCount;
 
@@ -53,9 +54,11 @@ namespace Flux {
 	{
 		if (!m_CreateInfo.CreateFromSwapchain)
 		{
-			FLUX_SUBMIT_RENDER_COMMAND_RELEASE([commandPool = m_CommandPool]()
+			FLUX_SUBMIT_RENDER_COMMAND_RELEASE([commandPool = m_CommandPool, fences = m_Fences]()
 			{
 				VkDevice device = VulkanDevice::Get()->GetDevice();
+				for (auto& fence : fences)
+					vkDestroyFence(device, fence, nullptr);
 				vkDestroyCommandPool(device, commandPool, nullptr);
 			});
 		}

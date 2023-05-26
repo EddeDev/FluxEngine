@@ -3,6 +3,11 @@
 #include "CommandBuffer.h"
 #include "Framebuffer.h"
 
+#include "GraphicsPipeline.h"
+#include "Shader.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+
 namespace Flux {
 
 	using RenderCommand = std::function<void()>;
@@ -18,6 +23,8 @@ namespace Flux {
 
 		static void BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<Framebuffer> framebuffer);
 		static void EndRenderPass(Ref<CommandBuffer> commandBuffer);
+		
+		static void RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<GraphicsPipeline> pipeline, Ref<Shader> shader, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer);
 
 #ifndef FLUX_BUILD_SHIPPING
 		static void SubmitRenderCommand(const char* functionName, RenderCommand command);
@@ -54,6 +61,5 @@ namespace Flux {
 #else
 	#define FLUX_SUBMIT_RENDER_COMMAND_RELEASE(...) Renderer::SubmitRenderCommandRelease(__VA_ARGS__);
 #endif
-
 
 }

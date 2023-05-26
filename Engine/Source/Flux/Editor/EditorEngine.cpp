@@ -1,6 +1,8 @@
 #include "FluxPCH.h"
 #include "EditorEngine.h"
 
+#include "EditorUI.h"
+
 namespace Flux {
 
 	void EditorEngine::OnInit()
@@ -59,10 +61,14 @@ namespace Flux {
 				}
 			}
 		});
+
+		UI::Init();
 	}
 
 	void EditorEngine::OnExit()
 	{
+		UI::Shutdown();
+
 		SubmitToEventThread([this]()
 		{
 			m_Windows.clear();
@@ -71,6 +77,8 @@ namespace Flux {
 
 	void EditorEngine::OnUpdate()
 	{
+		UI::BeginFrame();
+		UI::EndFrame();
 	}
 
 	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 itemID)
