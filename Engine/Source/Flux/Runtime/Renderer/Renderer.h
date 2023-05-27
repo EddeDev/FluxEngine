@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ResourceAllocator.h"
 #include "CommandBuffer.h"
 #include "Framebuffer.h"
 
@@ -38,6 +39,15 @@ namespace Flux {
 
 		static uint32 GetCurrentFrameIndex();
 		static uint32 RT_GetCurrentFrameIndex();
+
+		static uint32 GetFramesInFlight();
+
+		template<typename T>
+		static T& GetResourceAllocator()
+		{
+			FLUX_ASSERT(s_ResourceAllocator, "Resource allocator is NULL");
+			return *(T*)s_ResourceAllocator;
+		}
 	private:
 		inline static constexpr uint32 s_MaxReleaseQueueCount = 3;
 
@@ -48,6 +58,8 @@ namespace Flux {
 		inline static std::atomic<bool> s_RenderCommandQueueLocked = false;
 		inline static std::atomic<bool> s_ReleaseQueueLocked[s_MaxReleaseQueueCount];
 #endif
+
+		inline static ResourceAllocator* s_ResourceAllocator = nullptr;
 	};
 
 #ifndef FLUX_BUILD_SHIPPING

@@ -3,7 +3,7 @@
 #define FLUX_EDITOR
 
 #ifdef FLUX_EDITOR
-#include "Flux/Editor/EditorEngine.h"
+	#include "Flux/Editor/EditorEngine.h"
 #endif
 
 namespace Flux {

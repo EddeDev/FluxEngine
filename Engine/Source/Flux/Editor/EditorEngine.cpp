@@ -63,10 +63,15 @@ namespace Flux {
 		});
 
 		UI::Init();
+
+		m_UIRenderer = Ref<UIRenderer>::Create();
 	}
 
 	void EditorEngine::OnExit()
 	{
+		FLUX_VERIFY(m_UIRenderer->GetReferenceCount() == 1);
+		m_UIRenderer = nullptr;
+
 		UI::Shutdown();
 
 		SubmitToEventThread([this]()
@@ -79,6 +84,9 @@ namespace Flux {
 	{
 		UI::BeginFrame();
 		UI::EndFrame();
+
+		m_UIRenderer->BeginRendering();
+		m_UIRenderer->EndRendering();
 	}
 
 	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 itemID)

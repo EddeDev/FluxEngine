@@ -3,6 +3,8 @@
 
 #include "Flux/Runtime/Engine/Engine.h"
 
+#include "Vulkan/VulkanResourceAllocator.h"
+
 namespace Flux {
 
 	struct RendererData
@@ -14,11 +16,22 @@ namespace Flux {
 
 	static RendererData* s_Data = nullptr;
 
+	static ResourceAllocator* CreateResourceAllocator()
+	{
+		switch (FLUX_CURRENT_GRAPHICS_API)
+		{
+		case GraphicsAPI::Vulkan: return new VulkanResourceAllocator();
+		}
+		FLUX_VERIFY(false, "Unknown Graphics API.");
+		return nullptr;
+	}
+
 	void Renderer::Init()
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
 
 		s_Data = new RendererData();
+		s_ResourceAllocator = CreateResourceAllocator();
 	}
 
 	void Renderer::Shutdown()
@@ -28,6 +41,10 @@ namespace Flux {
 		for (uint32 frameIndex = 0; frameIndex < s_MaxReleaseQueueCount; frameIndex++)
 			FlushReleaseQueue(frameIndex);
 
+		delete s_ResourceAllocator;
+		s_ResourceAllocator = nullptr;
+		
+		delete s_Data;
 		s_Data = nullptr;
 	}
 
@@ -173,7 +190,7 @@ namespace Flux {
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
 
-		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
+		return 0; // Engine::Get().GetSwapchain()->GetCurrentBufferIndex()
 	}
 
 	uint32 Renderer::RT_GetCurrentFrameIndex()
@@ -181,6 +198,11 @@ namespace Flux {
 		// FLUX_ASSERT_ON_RENDER_THREAD();
 
 		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
+	}
+
+	uint32 Renderer::GetFramesInFlight()
+	{
+		return 1;
 	}
 
 }

@@ -2,6 +2,8 @@
 
 #include "Flux/Runtime/Engine/Engine.h"
 
+#include "UIRenderer.h"
+
 namespace Flux {
 
 	class EditorEngine : public Engine
@@ -32,6 +34,8 @@ namespace Flux {
 		};
 
 		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
+
+		Ref<UIRenderer> m_UIRenderer;
 	};
 
 }

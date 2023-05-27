@@ -7,12 +7,6 @@
 #include "Flux/Runtime/Renderer/GraphicsDevice.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
 #include "Flux/Runtime/Renderer/Swapchain.h"
-#include "Flux/Runtime/Renderer/CommandBuffer.h"
-#include "Flux/Runtime/Renderer/Framebuffer.h"
-#include "Flux/Runtime/Renderer/GraphicsPipeline.h"
-#include "Flux/Runtime/Renderer/Shader.h"
-#include "Flux/Runtime/Renderer/VertexBuffer.h"
-#include "Flux/Runtime/Renderer/IndexBuffer.h"
 
 namespace Flux {
 
@@ -69,14 +63,6 @@ namespace Flux {
 		Ref<GraphicsAdapter> m_Adapter;
 		Ref<GraphicsDevice> m_Device;
 		Ref<Swapchain> m_Swapchain;
-
-		Ref<CommandBuffer> m_SwapchainCommandBuffer;
-		Ref<Framebuffer> m_SwapchainFramebuffer;
-		Ref<GraphicsPipeline> m_Pipeline;
-		Ref<Shader> m_Shader;
-		Ref<VertexBuffer> m_VertexBuffer;
-		Ref<IndexBuffer> m_IndexBuffer;
-		uint32 m_QuadIndexCount = 0;
 
 		ThreadID m_EventThreadID;
 		std::queue<std::function<void()>> m_EventThreadQueue;

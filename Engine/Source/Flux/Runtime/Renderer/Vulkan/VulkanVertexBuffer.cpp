@@ -8,74 +8,101 @@
 
 namespace Flux {
 
-	VulkanVertexBuffer::VulkanVertexBuffer(const void* data, uint32 size)
+	VulkanVertexBuffer::VulkanVertexBuffer(uint32 size)
+		: m_Size(size)
 	{
-		VkDevice device = VulkanDevice::Get()->GetDevice();
+		m_Storage = new uint8[size];
+		memset(m_Storage, 0, size);
 
-		// Create staging buffer
+		Ref<VulkanVertexBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
 		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+
+			auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+
 			VkBufferCreateInfo bufferCreateInfo = {};
 			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferCreateInfo.size = size;
-			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			VK_CHECK(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &m_StagingBuffer));
+			bufferCreateInfo.size = instance->m_Size;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-			VkMemoryRequirements memoryRequirments;
-			vkGetBufferMemoryRequirements(device, m_StagingBuffer, &memoryRequirments);
+			instance->m_Allocation = allocator.CreateBuffer(bufferCreateInfo, ResourceMemoryUsage::CpuToGpu, instance->m_Buffer);
+		});
+	}
 
-			VkMemoryAllocateInfo memoryAllocateInfo = {};
-			memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			memoryAllocateInfo.allocationSize = memoryRequirments.size;
-			memoryAllocateInfo.memoryTypeIndex = VulkanDevice::Get()->GetMemoryTypeIndex(memoryRequirments.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-			VK_CHECK(vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &m_StagingBufferMemory));
-			VK_CHECK(vkBindBufferMemory(device, m_StagingBuffer, m_StagingBufferMemory, 0));
+	VulkanVertexBuffer::VulkanVertexBuffer(const void* data, uint32 size)
+		: m_Size(size)
+	{
+		m_Storage = new uint8[size];
+		memcpy(m_Storage, data, size);
 
-			void* dstData;
-			VK_CHECK(vkMapMemory(device, m_StagingBufferMemory, 0, memoryAllocateInfo.allocationSize, 0, &dstData));
-			memcpy(dstData, data, size);
-			vkUnmapMemory(device, m_StagingBufferMemory);
-		}
-
-		// Create local buffer
+		Ref<VulkanVertexBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
 		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+
+			auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+
+			VkBufferCreateInfo stagingBufferCreateInfo = {};
+			stagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			stagingBufferCreateInfo.size = instance->m_Size;
+			stagingBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			stagingBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkBuffer stagingBuffer;
+			ResourceAllocation stagingBufferAllocation = allocator.CreateBuffer(stagingBufferCreateInfo, ResourceMemoryUsage::CpuToGpu, stagingBuffer);
+	
+			uint8* memory = allocator.MapMemory<uint8>(stagingBufferAllocation);
+			memcpy(memory, instance->m_Storage, instance->m_Size);
+			allocator.UnmapMemory(stagingBufferAllocation);
+
 			VkBufferCreateInfo bufferCreateInfo = {};
 			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferCreateInfo.size = size;
+			bufferCreateInfo.size = instance->m_Size;
 			bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-			VK_CHECK(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &m_Buffer));
 
-			VkMemoryRequirements memoryRequirments;
-			vkGetBufferMemoryRequirements(device, m_Buffer, &memoryRequirments);
-
-			VkMemoryAllocateInfo memoryAllocateInfo = {};
-			memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			memoryAllocateInfo.allocationSize = memoryRequirments.size;
-			memoryAllocateInfo.memoryTypeIndex = VulkanDevice::Get()->GetMemoryTypeIndex(memoryRequirments.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			VK_CHECK(vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &m_BufferMemory));
-			VK_CHECK(vkBindBufferMemory(device, m_Buffer, m_BufferMemory, 0));
+			instance->m_Allocation = allocator.CreateBuffer(bufferCreateInfo, ResourceMemoryUsage::GpuOnly, instance->m_Buffer);
 
 			VkCommandBuffer commandBuffer = VulkanDevice::Get()->GetCommandBuffer(true);
-			
+
 			VkBufferCopy copyRegion = {};
-			copyRegion.size = size;
-			vkCmdCopyBuffer(commandBuffer, m_StagingBuffer, m_Buffer, 1, &copyRegion);
+			copyRegion.size = instance->m_Size;
+			vkCmdCopyBuffer(commandBuffer, stagingBuffer, instance->m_Buffer, 1, &copyRegion);
 
 			VulkanDevice::Get()->FlushCommandBuffer(commandBuffer);
-		}
+
+			allocator.DestroyBuffer(stagingBuffer, stagingBufferAllocation);
+		});
 	}
 
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([buffer = m_Buffer, bufferMemory = m_BufferMemory, stagingBuffer = m_StagingBuffer, stagingBufferMemory = m_StagingBufferMemory]()
-		{
-			VkDevice device = VulkanDevice::Get()->GetDevice();
-			
-			vkDestroyBuffer(device, buffer, nullptr);
-			vkFreeMemory(device, bufferMemory, nullptr);
+		delete[] m_Storage;
 
-			vkDestroyBuffer(device, stagingBuffer, nullptr);
-			vkFreeMemory(device, stagingBufferMemory, nullptr);
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([buffer = m_Buffer, allocation = m_Allocation]()
+		{
+			auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+			allocator.DestroyBuffer(buffer, allocation);
 		});
+	}
+
+	void VulkanVertexBuffer::SetData(Ref<CommandBuffer> commandBuffer, const void* data, uint32 size, uint32 offset)
+	{
+		memcpy(m_Storage, (uint8*)data + offset, size);
+
+		Ref<VulkanVertexBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer, size, offset]() mutable
+		{
+			instance->RT_SetData(commandBuffer, instance->m_Storage, size, offset);
+		});
+	}
+
+	void VulkanVertexBuffer::RT_SetData(Ref<CommandBuffer> commandBuffer, const void* data, uint32 size, uint32 offset)
+	{
+		auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+		uint8* memory = allocator.MapMemory<uint8>(m_Allocation);
+		memcpy(memory, (uint8*)data + offset, size);
+		allocator.UnmapMemory(m_Allocation);
 	}
 
 	void VulkanVertexBuffer::Bind(Ref<CommandBuffer> commandBuffer) const

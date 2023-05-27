@@ -3,6 +3,7 @@
 #include "Flux/Runtime/Renderer/IndexBuffer.h"
 
 #include "Vulkan.h"
+#include "VulkanResourceAllocator.h"
 
 namespace Flux {
 
@@ -15,14 +16,13 @@ namespace Flux {
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const override;
 		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const override;
 
-		virtual uint32 GetCount() const override { return m_Size / sizeof(uint32); }
+		virtual uint32 GetCount() const override { return m_Count; }
 	private:
-		uint32 m_Size = 0;
+		uint8* m_Storage = nullptr;
+		uint32 m_Size = 0, m_Count = 0;
 
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
-		VkBuffer m_StagingBuffer = VK_NULL_HANDLE;
-		VkDeviceMemory m_BufferMemory = VK_NULL_HANDLE;
-		VkDeviceMemory m_StagingBufferMemory = VK_NULL_HANDLE;
+		ResourceAllocation m_Allocation = nullptr;
 	};
 
 }
