@@ -140,7 +140,8 @@ namespace Flux {
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
 
-		s_ReleaseQueue.push(std::move(command));
+		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+		s_ReleaseQueue[frameIndex].push(std::move(command));
 	}
 #endif
 
