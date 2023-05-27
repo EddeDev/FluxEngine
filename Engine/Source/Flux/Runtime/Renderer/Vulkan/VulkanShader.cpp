@@ -286,7 +286,7 @@ namespace Flux {
 					pushConstant.Name = compiler.get_fallback_name(resource.id);
 
 				const auto& bufferType = compiler.get_type(resource.base_type_id);
-				pushConstant.Size = compiler.get_declared_struct_size(bufferType);
+				pushConstant.Size = static_cast<uint32>(compiler.get_declared_struct_size(bufferType));
 
 				for (uint32 i = 0; i < static_cast<uint32>(bufferType.member_types.size()); i++)
 				{
@@ -299,7 +299,7 @@ namespace Flux {
 
 					auto& member = pushConstant.Members[fullName];
 					member.Name = memberName;
-					member.Size = compiler.get_declared_struct_member_size(bufferType, i);
+					member.Size = static_cast<uint32>(compiler.get_declared_struct_member_size(bufferType, i));
 					member.Offset = compiler.type_struct_member_offset(bufferType, i);
 				}
 			}

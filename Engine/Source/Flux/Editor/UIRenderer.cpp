@@ -77,8 +77,8 @@ namespace Flux {
 			const float yPadding = 6.0f;
 			const float spacing = 6.0f;
 
-			const float windowWidth = 1280.0f;
-			const float windowHeight = 720.0f;
+			const float windowWidth = (float)m_SwapchainFramebuffer->GetWidth();
+			const float windowHeight = (float)m_SwapchainFramebuffer->GetHeight();
 
 			float xs = 57.0f;
 			float ys = 18.0f;
@@ -100,8 +100,10 @@ namespace Flux {
 				{ 0.22f, 0.22f, 0.22f, 1.0f }
 			);
 
+			float x = glm::cos(Platform::GetTime()) * 100.0f;
+
 			DrawRect(50.0f, 50.0f, 200.0f, 100.0f, { 0.82f, 0.22f, 0.22f, 1.0f });
-			DrawRect(300.0f, 300.0f, 400.0f, 400.0f, { 0.82f, 0.82f, 0.22f, 1.0f });
+			DrawRect(x + 300.0f, x + 300.0f, x + 400.0f, x + 400.0f, { 0.82f, 0.82f, 0.22f, 1.0f });
 		}
 	}
 
@@ -114,7 +116,7 @@ namespace Flux {
 
 		if (m_IndexCount > 0)
 		{
-			uint32 dataSize = (uint8*)m_VertexPointer - (uint8*)m_VertexStorage[frameIndex];
+			uint32 dataSize = static_cast<uint32>((uint8*)m_VertexPointer - (uint8*)m_VertexStorage[frameIndex]);
 			m_VertexBuffer[frameIndex]->SetData(m_CommandBuffer, m_VertexStorage[frameIndex], dataSize);
 
 			m_VertexBuffer[frameIndex]->Bind(m_CommandBuffer);
