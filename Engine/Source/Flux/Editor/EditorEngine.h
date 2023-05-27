@@ -2,7 +2,7 @@
 
 #include "Flux/Runtime/Engine/Engine.h"
 
-#include "UIRenderer.h"
+#include "BatchRenderer.h"
 
 namespace Flux {
 
@@ -35,7 +35,7 @@ namespace Flux {
 
 		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
 
-		Ref<UIRenderer> m_UIRenderer;
+		Ref<BatchRenderer> m_BatchRenderer;
 	};
 
 }

@@ -1,8 +1,6 @@
 #include "FluxPCH.h"
 #include "EditorEngine.h"
 
-#include "EditorUI.h"
-
 namespace Flux {
 
 	void EditorEngine::OnInit()
@@ -62,17 +60,13 @@ namespace Flux {
 			}
 		});
 
-		UI::Init();
-
-		m_UIRenderer = Ref<UIRenderer>::Create();
+		m_BatchRenderer = Ref<BatchRenderer>::Create();
 	}
 
 	void EditorEngine::OnExit()
 	{
-		FLUX_VERIFY(m_UIRenderer->GetReferenceCount() == 1);
-		m_UIRenderer = nullptr;
-
-		UI::Shutdown();
+		FLUX_VERIFY(m_BatchRenderer->GetReferenceCount() == 1);
+		m_BatchRenderer = nullptr;
 
 		SubmitToEventThread([this]()
 		{
@@ -82,11 +76,49 @@ namespace Flux {
 
 	void EditorEngine::OnUpdate()
 	{
-		UI::BeginFrame();
-		UI::EndFrame();
+		m_BatchRenderer->BeginRendering();
 
-		m_UIRenderer->BeginRendering();
-		m_UIRenderer->EndRendering();
+		{
+			const float xPadding = 8.0f;
+			const float yPadding = 6.0f;
+			const float spacing = 6.0f;
+
+			const float windowWidth = (float)m_Swapchain->GetWidth();
+			const float windowHeight = (float)m_Swapchain->GetHeight();
+
+			float xs = 57.0f;
+			float ys = 18.0f;
+			float menuBarHeight = 20.0f;
+			m_BatchRenderer->DrawRect(
+				xPadding,
+				windowHeight - menuBarHeight - ys - yPadding,
+				xs + xPadding,
+				windowHeight - menuBarHeight - yPadding,
+				{ 0.22f, 0.22f, 0.22f, 1.0f }
+			);
+
+			float xs2 = 32.0f;
+			m_BatchRenderer->DrawRect(
+				xPadding + xs + spacing,
+				windowHeight - menuBarHeight - ys - yPadding,
+				xPadding + xs + spacing + xs2,
+				windowHeight - menuBarHeight - yPadding,
+				{ 0.22f, 0.22f, 0.22f, 1.0f }
+			);
+
+			float x = glm::cos(Platform::GetTime()) * 100.0f;
+
+			m_BatchRenderer->DrawRect(50.0f, 50.0f, 200.0f, 100.0f, { 0.82f, 0.22f, 0.22f, 1.0f });
+			m_BatchRenderer->DrawRect(x + 300.0f, x + 300.0f, x + 400.0f, x + 400.0f, { 0.82f, 0.82f, 0.22f, 1.0f });
+		}
+		
+		{
+			m_BatchRenderer->DrawRect(600.0f, 100.0f, 1000, 400.0f, { 0.16f, 0.16f, 0.16f, 1.0f });
+		}
+
+		m_BatchRenderer->DrawQuad({ 0.0f, 0.0f, 0.0f }, { 50.0f, 50.0f }, { 0.22f, 0.72f, 0.62f, 1.0f });
+
+		m_BatchRenderer->EndRendering();
 	}
 
 	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 itemID)
