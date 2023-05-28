@@ -11,6 +11,7 @@ namespace Flux {
 	{
 		Ref<Framebuffer> ActiveFramebuffer;
 
+		uint32 CurrentFrameIndex = 0;
 		uint32 FrameCount = 0;
 	};
 
@@ -52,12 +53,14 @@ namespace Flux {
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
 
-		s_Data->FrameCount++;
 	}
 
 	void Renderer::EndFrame()
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
+
+		s_Data->CurrentFrameIndex = (s_Data->CurrentFrameIndex + 1) % Renderer::GetFramesInFlight();
+		s_Data->FrameCount++;
 	}
 
 	void Renderer::BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<Framebuffer> framebuffer)
@@ -191,7 +194,7 @@ namespace Flux {
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
 
-		return 0; // Engine::Get().GetSwapchain()->GetCurrentBufferIndex()
+		return s_Data->CurrentFrameIndex;
 	}
 
 	uint32 Renderer::RT_GetCurrentFrameIndex()
@@ -203,7 +206,7 @@ namespace Flux {
 
 	uint32 Renderer::GetFramesInFlight()
 	{
-		return 1;
+		return Engine::Get().GetSwapchain()->GetImageCount();
 	}
 
 }

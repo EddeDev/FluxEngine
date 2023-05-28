@@ -112,9 +112,7 @@ namespace Flux {
 			m_BatchRenderer->DrawRect(x + 300.0f, x + 300.0f, x + 400.0f, x + 400.0f, { 0.82f, 0.82f, 0.22f, 1.0f });
 		}
 		
-		{
-			m_BatchRenderer->DrawRect(600.0f, 100.0f, 1000, 400.0f, { 0.16f, 0.16f, 0.16f, 1.0f });
-		}
+		m_BatchRenderer->DrawRect(600.0f, 100.0f, 1000, 400.0f, { 0.16f, 0.16f, 0.16f, 1.0f });
 
 		m_BatchRenderer->DrawQuad({ 0.0f, 0.0f, 0.0f }, { 50.0f, 50.0f }, { 0.22f, 0.72f, 0.62f, 1.0f });
 

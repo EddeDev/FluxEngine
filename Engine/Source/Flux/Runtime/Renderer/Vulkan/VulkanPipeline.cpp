@@ -24,7 +24,6 @@ namespace Flux {
 			return static_cast<VkShaderStageFlagBits>(0);
 		}
 
-
 		VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology topology)
 		{
 			switch (topology)
