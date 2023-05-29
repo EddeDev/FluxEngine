@@ -12,6 +12,14 @@ namespace Flux {
 	VulkanCommandBuffer::VulkanCommandBuffer(const CommandBufferCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
+		FLUX_INFO("Creating command buffer: {0}", createInfo.DebugLabel);
+		if (!createInfo.CreateFromSwapchain)
+		{
+			FLUX_INFO("  Count: {0}", createInfo.Count);
+			FLUX_INFO("  Transient: {0}", createInfo.Transient);
+		}
+		FLUX_INFO("  Created from Swapchain: {0}", createInfo.CreateFromSwapchain);
+
 		if (!createInfo.CreateFromSwapchain)
 		{
 			Ref<VulkanCommandBuffer> instance = this;
@@ -27,24 +35,21 @@ namespace Flux {
 				commandPoolCreateInfo.queueFamilyIndex = VulkanDevice::Get()->GetQueueFamilyIndices().Graphics;
 				VK_CHECK(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &instance->m_CommandPool));
 
-				Ref<VulkanSwapchain> swapchain = Engine::Get().GetSwapchain().As<VulkanSwapchain>();
-				uint32 imageCount = swapchain->GetImageCount();
-
 				VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
 				commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 				commandBufferAllocateInfo.commandPool = instance->m_CommandPool;
 				commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-				commandBufferAllocateInfo.commandBufferCount = imageCount;
+				commandBufferAllocateInfo.commandBufferCount = instance->m_CreateInfo.Count;
 
-				instance->m_CommandBuffers.resize(static_cast<size_t>(imageCount));
+				instance->m_CommandBuffers.resize(static_cast<size_t>(instance->m_CreateInfo.Count));
 				VK_CHECK(vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, instance->m_CommandBuffers.data()));
 
 				VkFenceCreateInfo fenceCreateInfo = {};
 				fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 				fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-				instance->m_Fences.resize(static_cast<size_t>(imageCount));
-				for (uint32 i = 0; i < imageCount; i++)
+				instance->m_Fences.resize(static_cast<size_t>(instance->m_CreateInfo.Count));
+				for (uint32 i = 0; i < instance->m_CreateInfo.Count; i++)
 					VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &instance->m_Fences[i]));
 			});
 		}

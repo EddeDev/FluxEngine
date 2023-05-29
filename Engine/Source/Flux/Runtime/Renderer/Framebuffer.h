@@ -1,8 +1,40 @@
 #pragma once
 
 #include "Flux/Runtime/Renderer/CommandBuffer.h"
+#include "Flux/Runtime/Renderer/Image.h"
 
 namespace Flux {
+
+	struct FramebufferImageInfo
+	{
+		PixelFormat Format = PixelFormat::None;
+
+		FramebufferImageInfo() = default;
+		FramebufferImageInfo(PixelFormat format)
+			: Format(format) {}
+	};
+
+	struct FramebufferAttachmentInfo
+	{
+		std::vector<FramebufferImageInfo> Attachments;
+
+		FramebufferAttachmentInfo() = default;
+		FramebufferAttachmentInfo(const std::initializer_list<FramebufferImageInfo>& attachments)
+			: Attachments(attachments) {}
+	};
+
+	struct ExistingImage
+	{
+		Ref<Image2D> Image = nullptr;
+		uint32 Layer = 0;
+		bool IsLayered = false;
+
+		ExistingImage() = default;
+		ExistingImage(Ref<Image2D> image)
+			: Image(image) {}
+		ExistingImage(Ref<Image2D> image, uint32 layer)
+			: Image(image), Layer(layer), IsLayered(true) {}
+	};
 
 	struct FramebufferCreateInfo
 	{
@@ -14,6 +46,11 @@ namespace Flux {
 		uint32 StencilClearValue = 0;
 
 		bool SwapchainTarget = false;
+
+		FramebufferAttachmentInfo Attachments;
+		std::unordered_map<uint32, ExistingImage> ExistingImages;
+
+		std::string DebugLabel = "Framebuffer";
 	};
 
 	class Framebuffer : public ReferenceCounted

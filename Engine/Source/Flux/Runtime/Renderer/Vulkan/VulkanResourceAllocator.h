@@ -13,7 +13,9 @@ namespace Flux {
 		virtual ~VulkanResourceAllocator();
 
 		ResourceAllocation CreateBuffer(const VkBufferCreateInfo& createInfo, ResourceMemoryUsage usage, VkBuffer& outBuffer);
+		ResourceAllocation CreateImage(const VkImageCreateInfo& createInfo, ResourceMemoryUsage usage, VkImage& outImage);
 		void DestroyBuffer(VkBuffer buffer, ResourceAllocation allocation);
+		void DestroyImage(VkImage image, ResourceAllocation allocation);
 
 		void MapMemory(ResourceAllocation allocation, void** outData) const;
 

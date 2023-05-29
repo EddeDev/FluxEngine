@@ -79,8 +79,7 @@ namespace Flux {
 	VulkanPipeline::VulkanPipeline(const GraphicsPipelineCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
-		FLUX_VERIFY(createInfo.Shader);
-		FLUX_VERIFY(createInfo.Framebuffer);
+		FLUX_VERIFY(createInfo.IsValid());
 
 		Invalidate();
 	}

@@ -4,8 +4,10 @@ namespace Flux {
 
 	struct CommandBufferCreateInfo
 	{
+		uint32 Count = 1;
 		bool Transient = true;
 		bool CreateFromSwapchain = false;
+		std::string DebugLabel;
 	};
 
 	class CommandBuffer : public ReferenceCounted

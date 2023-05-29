@@ -12,6 +12,7 @@ namespace Flux {
 		uint32 framesInFlight = Renderer::GetFramesInFlight();
 
 		CommandBufferCreateInfo commandBufferCreateInfo;
+		commandBufferCreateInfo.Count = framesInFlight;
 		commandBufferCreateInfo.CreateFromSwapchain = true;
 		m_CommandBuffer = CommandBuffer::Create(commandBufferCreateInfo);
 

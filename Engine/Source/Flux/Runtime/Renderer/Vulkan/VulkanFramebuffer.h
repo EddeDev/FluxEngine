@@ -26,12 +26,16 @@ namespace Flux {
 		VkRenderPass GetRenderPass() const;
 	private:
 		void Invalidate();
+		void RT_Invalidate();
 	private:
 		FramebufferCreateInfo m_CreateInfo;
 		uint32 m_Width = 0;
 		uint32 m_Height = 0;
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		std::vector<Ref<Image2D>> m_ColorAttachments;
+		Ref<Image2D> m_DepthAttachment;
 	};
 
 }

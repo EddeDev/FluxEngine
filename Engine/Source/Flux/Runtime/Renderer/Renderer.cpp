@@ -52,12 +52,13 @@ namespace Flux {
 	void Renderer::BeginFrame()
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
-
+		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
 	}
 
 	void Renderer::EndFrame()
 	{
 		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
 
 		s_Data->CurrentFrameIndex = (s_Data->CurrentFrameIndex + 1) % Renderer::GetFramesInFlight();
 		s_Data->FrameCount++;

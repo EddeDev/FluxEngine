@@ -46,12 +46,39 @@ namespace Flux {
 		return allocation;
 	}
 
+	ResourceAllocation VulkanResourceAllocator::CreateImage(const VkImageCreateInfo& createInfo, ResourceMemoryUsage usage, VkImage& outImage)
+	{
+		FLUX_ASSERT(m_Allocator);
+
+		VmaAllocationCreateInfo allocationCreateInfo = {};
+		allocationCreateInfo.usage = (VmaMemoryUsage)usage;
+
+		VmaAllocation allocation;
+
+		VkResult result = vmaCreateImage((VmaAllocator)m_Allocator, &createInfo, &allocationCreateInfo, &outImage, &allocation, nullptr);
+		if (result != VK_SUCCESS)
+		{
+			FLUX_VERIFY(false);
+			return nullptr;
+		}
+
+		return allocation;
+	}
+
 	void VulkanResourceAllocator::DestroyBuffer(VkBuffer buffer, ResourceAllocation allocation)
 	{
 		FLUX_ASSERT(m_Allocator);
 		FLUX_ASSERT(allocation);
 
 		vmaDestroyBuffer((VmaAllocator)m_Allocator, buffer, (VmaAllocation)allocation);
+	}
+
+	void VulkanResourceAllocator::DestroyImage(VkImage image, ResourceAllocation allocation)
+	{
+		FLUX_ASSERT(m_Allocator);
+		FLUX_ASSERT(allocation);
+
+		vmaDestroyImage((VmaAllocator)m_Allocator, image, (VmaAllocation)allocation);
 	}
 
 	void VulkanResourceAllocator::MapMemory(ResourceAllocation allocation, void** outData) const
