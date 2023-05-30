@@ -3,8 +3,6 @@
 #include "Flux/Runtime/Engine/Engine.h"
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
 
-#include "BatchRenderer.h"
-
 namespace Flux {
 
 	class EditorEngine : public Engine
@@ -35,8 +33,6 @@ namespace Flux {
 		};
 
 		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
-
-		Ref<BatchRenderer> m_BatchRenderer;
 
 		Ref<RenderPipeline> m_RenderPipeline;
 	};

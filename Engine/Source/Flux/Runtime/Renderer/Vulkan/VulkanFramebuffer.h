@@ -33,6 +33,7 @@ namespace Flux {
 		uint32 m_Height = 0;
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+		VkFramebuffer m_Framebuffer = VK_NULL_HANDLE;
 
 		std::vector<Ref<Image2D>> m_ColorAttachments;
 		Ref<Image2D> m_DepthAttachment;

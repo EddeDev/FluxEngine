@@ -13,7 +13,7 @@ namespace Flux {
 
 	namespace Utils {
 
-		bool LoadFileToString(std::string& outString, const std::filesystem::path& path)
+		static bool LoadFileToString(std::string& outString, const std::filesystem::path& path)
 		{
 			std::ifstream in(path, std::ios::in | std::ios::binary);
 			if (!in)
@@ -29,7 +29,7 @@ namespace Flux {
 			return true;
 		}
 
-		ShaderStage ShaderStageFromString(const std::string& stageName)
+		static ShaderStage ShaderStageFromString(const std::string& stageName)
 		{
 			if (stageName == "vertex")
 				return ShaderStage::Vertex;
@@ -41,7 +41,7 @@ namespace Flux {
 			return ShaderStage::None;
 		}
 
-		shaderc_shader_kind ShaderStageToShaderC(ShaderStage stage)
+		static shaderc_shader_kind ShaderStageToShaderC(ShaderStage stage)
 		{
 			switch (stage)
 			{

@@ -60,16 +60,11 @@ namespace Flux {
 			}
 		});
 
-		m_BatchRenderer = Ref<BatchRenderer>::Create();
-
 		m_RenderPipeline = Ref<ForwardRenderPipeline>::Create();
 	}
 
 	void EditorEngine::OnExit()
 	{
-		FLUX_VERIFY(m_BatchRenderer->GetReferenceCount() == 1);
-		m_BatchRenderer = nullptr;
-
 		FLUX_VERIFY(m_RenderPipeline->GetReferenceCount() == 1);
 		m_RenderPipeline = nullptr;
 
@@ -81,47 +76,38 @@ namespace Flux {
 
 	void EditorEngine::OnUpdate()
 	{
-		m_BatchRenderer->BeginRendering();
+		float width = Engine::Get().GetSwapchain()->GetWidth();
+		float height = Engine::Get().GetSwapchain()->GetHeight();
 
+		m_RenderPipeline->BeginRendering2D();
+
+		float scale = 20.0f;
+		float x = (width / 2.0f) - (scale / 2.0f);
+		float y = (height / 2.0f) - (scale / 2.0f);
+
+		int32 skip = 0;
+
+		for (float xa = -width * 0.5f; xa < width + width * 1.5f; xa += width / 20.0f)
 		{
-			const float xPadding = 8.0f;
-			const float yPadding = 6.0f;
-			const float spacing = 6.0f;
+			skip = 0;
 
-			const float windowWidth = (float)m_Swapchain->GetWidth();
-			const float windowHeight = (float)m_Swapchain->GetHeight();
+			for (float ya = -height * 0.5f; ya < height + height * 1.5f; ya += height / 20.0f)
+			{
+				float xo = xa + scale * 0.5f;
+				float yo = ya + scale * 0.5f;
 
-			float xs = 57.0f;
-			float ys = 18.0f;
-			float menuBarHeight = 20.0f;
-			m_BatchRenderer->DrawRect(
-				xPadding,
-				windowHeight - menuBarHeight - ys - yPadding,
-				xs + xPadding,
-				windowHeight - menuBarHeight - yPadding,
-				{ 0.22f, 0.22f, 0.22f, 1.0f }
-			);
+				xo += glm::sin(Platform::GetTime() * 2.0f) * ya * 0.1f;
+				yo += glm::cos(Platform::GetTime() * 2.0f) * xa * 0.1f;
 
-			float xs2 = 32.0f;
-			m_BatchRenderer->DrawRect(
-				xPadding + xs + spacing,
-				windowHeight - menuBarHeight - ys - yPadding,
-				xPadding + xs + spacing + xs2,
-				windowHeight - menuBarHeight - yPadding,
-				{ 0.22f, 0.22f, 0.22f, 1.0f }
-			);
-
-			float x = glm::cos(Platform::GetTime()) * 100.0f;
-
-			m_BatchRenderer->DrawRect(50.0f, 50.0f, 200.0f, 100.0f, { 0.82f, 0.22f, 0.22f, 1.0f });
-			m_BatchRenderer->DrawRect(x + 300.0f, x + 300.0f, x + 400.0f, x + 400.0f, { 0.82f, 0.82f, 0.22f, 1.0f });
+				skip++;
+				if (skip < 5)
+					m_RenderPipeline->DrawQuad({ xo, yo, 0.0f }, { scale, scale }, { xa / x, ya / y, (xa + ya) / (x + y), 1.0f });
+				if (skip > 10)
+					skip = 0;
+			}
 		}
 
-		m_BatchRenderer->DrawRect(600.0f, 100.0f, 1000, 400.0f, { 0.16f, 0.16f, 0.16f, 1.0f });
-
-		m_BatchRenderer->DrawQuad({ 0.0f, 0.0f, 0.0f }, { 50.0f, 50.0f }, { 0.22f, 0.72f, 0.62f, 1.0f });
-
-		m_BatchRenderer->EndRendering();
+		m_RenderPipeline->EndRendering2D();
 	}
 
 	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 itemID)

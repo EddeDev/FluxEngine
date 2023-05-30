@@ -12,7 +12,7 @@ namespace Flux {
 
 	namespace Utils {
 
-		VkShaderStageFlagBits VulkanShaderStage(ShaderStage stage)
+		static VkShaderStageFlagBits VulkanShaderStage(ShaderStage stage)
 		{
 			switch (stage)
 			{
@@ -24,7 +24,7 @@ namespace Flux {
 			return static_cast<VkShaderStageFlagBits>(0);
 		}
 
-		VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology topology)
+		static VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology topology)
 		{
 			switch (topology)
 			{
@@ -36,7 +36,7 @@ namespace Flux {
 			return static_cast<VkPrimitiveTopology>(0);
 		}
 
-		VkCompareOp VulkanCompareOp(CompareOp compareOp)
+		static 	VkCompareOp VulkanCompareOp(CompareOp compareOp)
 		{
 			switch (compareOp)
 			{
@@ -53,7 +53,7 @@ namespace Flux {
 			return static_cast<VkCompareOp>(0);
 		}
 
-		VkFormat VulkanShaderDataType(ShaderDataType type)
+		static VkFormat VulkanShaderDataType(ShaderDataType type)
 		{
 			switch (type)
 			{

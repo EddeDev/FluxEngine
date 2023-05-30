@@ -9,27 +9,9 @@ namespace Flux {
 
 	namespace Utils {
 
-		VkFormat VulkanPixelFormat(PixelFormat format)
+		static VkImageUsageFlags VulkanImageUsage(const ImageCreateInfo& createInfo)
 		{
-			switch (format)
-			{
-			case PixelFormat::RGBA:                 return VK_FORMAT_R8G8B8A8_UNORM;
-			case PixelFormat::RGBA16F:              return VK_FORMAT_R16G16B16A16_SFLOAT;
-			case PixelFormat::RGBA32F:              return VK_FORMAT_R32G32B32A32_SFLOAT;
-			case PixelFormat::Depth24Stencil8:      return VK_FORMAT_D24_UNORM_S8_UINT;
-			case PixelFormat::Depth32FStencil8UInt: return VK_FORMAT_D32_SFLOAT_S8_UINT;
-			case PixelFormat::Depth32F:             return VK_FORMAT_D32_SFLOAT;
-			}
-			FLUX_VERIFY(false, "Unknown pixel format");
-			return VK_FORMAT_UNDEFINED;
-		}
-
-		VkImageUsageFlags VulkanImageUsage(const ImageCreateInfo& createInfo)
-		{
-			VkImageUsageFlags flags = 0;
-
-			// TODO
-			flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+			VkImageUsageFlags flags = VK_IMAGE_USAGE_SAMPLED_BIT;
 
 			if (createInfo.Usage == ImageUsage::Attachment)
 			{
@@ -39,8 +21,6 @@ namespace Flux {
 					flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 			}
 
-			// VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-			// VK_IMAGE_USAGE_TRANSFER_DST_BIT
 			if (createInfo.Usage == ImageUsage::Storage)
 				flags |= VK_IMAGE_USAGE_STORAGE_BIT;
 
@@ -98,27 +78,30 @@ namespace Flux {
 		imageCreateInfo.usage = Utils::VulkanImageUsage(m_CreateInfo);
 
 		m_Allocation = allocator.CreateImage(imageCreateInfo, ResourceMemoryUsage::GpuOnly, m_Image);
-
-		__debugbreak();
 	}
 
 	void VulkanImage2D::Release()
 	{
 		delete[] m_Storage;
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([]()
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([image = m_Image, allocation = m_Allocation]()
 		{
-			VkDevice device = VulkanDevice::Get()->GetDevice();
-
-			auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+			if (image)
+			{
+				auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+				allocator.DestroyImage(image, allocation);
+			}
 		});
 	}
 
 	void VulkanImage2D::RT_Release()
 	{
-		VkDevice device = VulkanDevice::Get()->GetDevice();
-
-		auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+		if (m_Image)
+		{
+			auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+			allocator.DestroyImage(m_Image, m_Allocation);
+			m_Image = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanImage2D::AttachToFramebuffer(uint32 attachmentIndex)
@@ -132,7 +115,44 @@ namespace Flux {
 
 	void VulkanImage2D::RT_AttachToFramebuffer(uint32 attachmentIndex)
 	{
-		FLUX_VERIFY(false, "Not implemented");
+		FLUX_VERIFY(m_CreateInfo.Usage == ImageUsage::Attachment);
+
+		VkDevice device = VulkanDevice::Get()->GetDevice();
+
+		VkImageAspectFlags aspectMask = 0;
+		if (Utils::IsDepthFormat(m_CreateInfo.Format))
+		{
+			aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+
+			if (Utils::IsStencilFormat(m_CreateInfo.Format))
+				aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+		else
+		{
+			aspectMask |= VK_IMAGE_ASPECT_COLOR_BIT;
+		}
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = aspectMask;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = m_CreateInfo.MipLevels;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = m_CreateInfo.ArrayLayers;
+
+		VkImageViewCreateInfo imageViewCreateInfo = {};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.image = m_Image;
+		imageViewCreateInfo.viewType = m_CreateInfo.ArrayLayers > 0 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = Utils::VulkanPixelFormat(m_CreateInfo.Format);
+		imageViewCreateInfo.subresourceRange = subresourceRange;
+
+		if (m_AttachmentView)
+		{
+			FLUX_WARNING_CATEGORY("Vulkan Image", "Overriding attachment... (index {0})", attachmentIndex);
+			vkDestroyImageView(device, m_AttachmentView, nullptr);
+		}
+
+		VK_CHECK(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_AttachmentView));
 	}
 
 	void VulkanImage2D::AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer)
@@ -146,7 +166,44 @@ namespace Flux {
 
 	void VulkanImage2D::RT_AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer)
 	{
-		FLUX_VERIFY(false, "Not implemented");
+		FLUX_VERIFY(m_CreateInfo.Usage == ImageUsage::Attachment);
+
+		VkDevice device = VulkanDevice::Get()->GetDevice();
+
+		VkImageAspectFlags aspectMask = 0;
+		if (Utils::IsDepthFormat(m_CreateInfo.Format))
+		{
+			aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+
+			if (Utils::IsStencilFormat(m_CreateInfo.Format))
+				aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+		else
+		{
+			aspectMask |= VK_IMAGE_ASPECT_COLOR_BIT;
+		}
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = aspectMask;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = m_CreateInfo.MipLevels;
+		subresourceRange.baseArrayLayer = layer;
+		subresourceRange.layerCount = m_CreateInfo.ArrayLayers;
+
+		VkImageViewCreateInfo imageViewCreateInfo = {};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.image = m_Image;
+		imageViewCreateInfo.viewType = m_CreateInfo.ArrayLayers > 0 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = Utils::VulkanPixelFormat(m_CreateInfo.Format);
+		imageViewCreateInfo.subresourceRange = subresourceRange;
+
+		if (m_AttachmentView)
+		{
+			FLUX_WARNING_CATEGORY("Vulkan Image", "Overriding attachment... (index {0}, layer {1})", attachmentIndex, layer);
+			vkDestroyImageView(device, m_AttachmentView, nullptr);
+		}
+
+		VK_CHECK(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_AttachmentView));
 	}
 
 }

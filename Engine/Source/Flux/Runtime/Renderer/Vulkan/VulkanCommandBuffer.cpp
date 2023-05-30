@@ -115,6 +115,7 @@ namespace Flux {
 	void VulkanCommandBuffer::RT_End()
 	{
 		FLUX_ASSERT(m_ActiveCommandBuffer);
+
 		VK_CHECK(vkEndCommandBuffer(m_ActiveCommandBuffer));
 		m_ActiveCommandBuffer = VK_NULL_HANDLE;
 	}
@@ -130,7 +131,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::RT_Submit()
 	{
-		FLUX_ASSERT(!m_CreateInfo.CreateFromSwapchain);
+		// FLUX_ASSERT(!m_CreateInfo.CreateFromSwapchain);
 
 		if (!m_CreateInfo.CreateFromSwapchain)
 		{

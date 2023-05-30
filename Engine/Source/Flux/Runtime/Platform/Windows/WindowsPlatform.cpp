@@ -157,14 +157,14 @@ namespace Flux {
 	float Platform::GetTime()
 	{
 		uint64 value = 0;
-		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
+		QueryPerformanceCounter((LARGE_INTEGER*)&value);
 		return static_cast<float>(value - s_TimerOffset) / static_cast<float>(s_TimerFrequency);
 	}
 
 	uint64 Platform::GetNanoTime()
 	{
 		uint64 value = 0;
-		FLUX_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&value));
+		QueryPerformanceCounter((LARGE_INTEGER*)&value);
 		constexpr uint64 nsPerSecond = 1000 * 1000 * 1000;
 		return value * (nsPerSecond / s_TimerFrequency);
 	}
