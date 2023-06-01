@@ -42,6 +42,7 @@ namespace Flux {
 		m_Window = Window::Create(windowCreateInfo);
 		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
 		m_Window->AddSizeCallback(FLUX_BIND_CALLBACK(OnWindowResize, this));
+		m_Window->AddMinimizeCallback(FLUX_BIND_CALLBACK(OnWindowMinimize, this));
 
 		FLUX_INFO("Graphics API: {0}", GraphicsAPIUtils::ToString(m_GraphicsAPI));
 	}
@@ -128,6 +129,10 @@ namespace Flux {
 
 				m_Swapchain->Present(1);
 			}
+			else
+			{
+				Platform::Sleep(0.2f);
+			}
 		}
 
 		OnExit();
@@ -176,6 +181,13 @@ namespace Flux {
 		}
 
 		m_Minimized = false;
+	}
+
+	void Engine::OnWindowMinimize(bool minimized)
+	{
+		FLUX_ASSERT_ON_EVENT_THREAD();
+
+		m_Minimized = minimized;
 	}
 
 	void Engine::SubmitToEventThread(std::function<void()> function)

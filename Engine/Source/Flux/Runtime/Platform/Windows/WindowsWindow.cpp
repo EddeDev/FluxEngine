@@ -198,6 +198,13 @@ namespace Flux {
 		m_CloseCallbacks.push_back(callback);
 	}
 
+	void WindowsWindow::AddMinimizeCallback(const WindowMinimizeCallback& callback)
+	{
+		FLUX_ASSERT_ON_THREAD(m_ThreadID);
+
+		m_MinimizeCallbacks.push_back(callback);
+	}
+
 	void WindowsWindow::AddSizeCallback(const WindowSizeCallback& callback)
 	{
 		FLUX_ASSERT_ON_THREAD(m_ThreadID);
@@ -226,6 +233,16 @@ namespace Flux {
 		{
 			const uint32 width = LOWORD(lParam);
 			const uint32 height = HIWORD(lParam);
+
+			const bool minimized = wParam == SIZE_MINIMIZED;
+
+			if (m_Minimized != minimized)
+			{
+				m_Minimized = minimized;
+				
+				for (auto& callback : m_MinimizeCallbacks)
+					callback(minimized);
+			}
 
 			if (width != m_Width || height != m_Height)
 			{

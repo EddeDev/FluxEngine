@@ -47,6 +47,7 @@ namespace Flux {
 
 		void OnWindowClose();
 		void OnWindowResize(uint32 width, uint32 height);
+		void OnWindowMinimize(bool minimized);
 	protected:
 		virtual void OnInit() {}
 		virtual void OnExit() {}

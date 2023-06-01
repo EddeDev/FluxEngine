@@ -50,26 +50,30 @@ namespace Flux {
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			if (result != VK_SUBOPTIMAL_KHR)
-				VK_CHECK(result);
-
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
-			DestroyCommandBuffers();
-			DestroySemaphores();
-			DestroyFramebuffer();
-			DestroyDepthStencilImage();
-			DestroyRenderPass();
-			DestroyImageViews();
-			DestroySwapchain();
+			VkSurfaceCapabilitiesKHR surfaceCapabilities;
+			VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &surfaceCapabilities));
 
-			CreateSwapchain();
-			CreateImageViews();
-			CreateRenderPass();
-			CreateDepthStencilImage();
-			CreateFramebuffer();
-			CreateSemaphores();
-			CreateCommandBuffers();
+			VkExtent2D extent = ChooseExtent(surfaceCapabilities);
+			if (extent.width > 0 && extent.height > 0)
+			{
+				DestroyCommandBuffers();
+				DestroySemaphores();
+				DestroyFramebuffer();
+				DestroyDepthStencilImage();
+				DestroyRenderPass();
+				DestroyImageViews();
+				DestroySwapchain();
+
+				CreateSwapchain();
+				CreateImageViews();
+				CreateRenderPass();
+				CreateDepthStencilImage();
+				CreateFramebuffer();
+				CreateSemaphores();
+				CreateCommandBuffers();
+			}
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 		}
@@ -79,6 +83,13 @@ namespace Flux {
 
 	void VulkanSwapchain::Present(int32 swapInterval)
 	{
+		VkSurfaceCapabilitiesKHR surfaceCapabilities;
+		VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &surfaceCapabilities));
+
+		VkExtent2D extent = ChooseExtent(surfaceCapabilities);
+		if (extent.width == 0 || extent.height == 0)
+			return;
+
 		VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 		VkSubmitInfo submitInfo = {};
@@ -117,21 +128,28 @@ namespace Flux {
 		{
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 
-			DestroyCommandBuffers();
-			DestroySemaphores();
-			DestroyFramebuffer();
-			DestroyDepthStencilImage();
-			DestroyRenderPass();
-			DestroyImageViews();
-			DestroySwapchain();
+			VkSurfaceCapabilitiesKHR surfaceCapabilities;
+			VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &surfaceCapabilities));
 
-			CreateSwapchain();
-			CreateImageViews();
-			CreateRenderPass();
-			CreateDepthStencilImage();
-			CreateFramebuffer();
-			CreateSemaphores();
-			CreateCommandBuffers();
+			VkExtent2D extent = ChooseExtent(surfaceCapabilities);
+			if (extent.width > 0 && extent.height > 0)
+			{
+				DestroyCommandBuffers();
+				DestroySemaphores();
+				DestroyFramebuffer();
+				DestroyDepthStencilImage();
+				DestroyRenderPass();
+				DestroyImageViews();
+				DestroySwapchain();
+
+				CreateSwapchain();
+				CreateImageViews();
+				CreateRenderPass();
+				CreateDepthStencilImage();
+				CreateFramebuffer();
+				CreateSemaphores();
+				CreateCommandBuffers();
+			}
 
 			VK_CHECK(vkDeviceWaitIdle(m_Device));
 		}

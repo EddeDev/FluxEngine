@@ -22,6 +22,7 @@ namespace Flux {
 		virtual bool IsVisible() const override;
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
+		virtual void AddMinimizeCallback(const WindowMinimizeCallback& callback) override;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
 
@@ -34,13 +35,17 @@ namespace Flux {
 	private:
 		HWND m_WindowHandle = NULL;
 
-		uint32 m_Width = 0;
-		uint32 m_Height = 0;
+		std::atomic<uint32> m_Width = 0;
+		std::atomic<uint32> m_Height = 0;
+
 		std::string m_Title;
+
+		std::atomic<bool> m_Minimized = false;
 		
 		ThreadID m_ThreadID;
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
+		std::vector<WindowMinimizeCallback> m_MinimizeCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;
 		std::vector<WindowMenuCallback> m_MenuCallbacks;
 

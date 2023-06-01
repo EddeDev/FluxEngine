@@ -20,6 +20,7 @@ namespace Flux {
 	using WindowMenu = void*;
 
 	typedef std::function<void()> WindowCloseCallback;
+	typedef std::function<void(bool)> WindowMinimizeCallback;
 	typedef std::function<void(uint32, uint32)> WindowSizeCallback;
 	typedef std::function<void(WindowMenu, uint32)> WindowMenuCallback;
 
@@ -38,6 +39,7 @@ namespace Flux {
 		virtual bool IsVisible() const = 0;
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
+		virtual void AddMinimizeCallback(const WindowMinimizeCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) = 0;
 		
