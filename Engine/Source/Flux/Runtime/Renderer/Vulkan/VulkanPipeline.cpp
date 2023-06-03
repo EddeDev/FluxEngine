@@ -36,7 +36,7 @@ namespace Flux {
 			return static_cast<VkPrimitiveTopology>(0);
 		}
 
-		static 	VkCompareOp VulkanCompareOp(CompareOp compareOp)
+		static VkCompareOp VulkanCompareOp(CompareOp compareOp)
 		{
 			switch (compareOp)
 			{
@@ -86,6 +86,9 @@ namespace Flux {
 
 	VulkanPipeline::~VulkanPipeline()
 	{
+		for (auto& [stage, storage] : m_PushConstantStorage)
+			delete[] storage;
+
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([pipelineLayout = m_PipelineLayout, pipeline = m_Pipeline]()
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();
@@ -279,6 +282,36 @@ namespace Flux {
 			VK_PIPELINE_BIND_POINT_GRAPHICS, 
 			m_Pipeline
 		);
+	}
+
+	void VulkanPipeline::SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset)
+	{
+		if (m_PushConstantStorage.find(stage) == m_PushConstantStorage.end())
+		{
+			auto& pushConstants = m_CreateInfo.Shader->GetPushConstants();
+
+			auto it = pushConstants.find(stage);
+			if (it != pushConstants.end())
+				m_PushConstantStorage[stage] = new uint8[it->second.Size];
+			else
+				FLUX_VERIFY(false);
+		}
+
+		uint8* destData = m_PushConstantStorage.at(stage);
+		if (!destData)
+		{
+			FLUX_VERIFY(false);
+			return;
+		}
+
+		// TODO: validate
+		memcpy(destData, (uint8*)data + offset, size);
+
+		Ref<const VulkanPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer, stage, destData, size, offset]()
+		{
+			instance->RT_SetPushConstant(commandBuffer, stage, destData, size, offset);
+		});
 	}
 
 	void VulkanPipeline::RT_SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset) const

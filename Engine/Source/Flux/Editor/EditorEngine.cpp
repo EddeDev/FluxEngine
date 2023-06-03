@@ -81,31 +81,9 @@ namespace Flux {
 
 		m_RenderPipeline->BeginRendering2D();
 
-		float scale = 20.0f;
-		float x = (width / 2.0f) - (scale / 2.0f);
-		float y = (height / 2.0f) - (scale / 2.0f);
-
-		int32 skip = 0;
-
-		for (float xa = -width * 0.5f; xa < width + width * 1.5f; xa += width / 20.0f)
-		{
-			skip = 0;
-
-			for (float ya = -height * 0.5f; ya < height + height * 1.5f; ya += height / 20.0f)
-			{
-				float xo = xa + scale * 0.5f;
-				float yo = ya + scale * 0.5f;
-
-				xo += glm::sin(Platform::GetTime() * 2.0f) * ya * 0.1f;
-				yo += glm::cos(Platform::GetTime() * 2.0f) * xa * 0.1f;
-
-				skip++;
-				if (skip < 5)
-					m_RenderPipeline->DrawQuad({ xo, yo, 0.0f }, { scale, scale }, { xa / x, ya / y, (xa + ya) / (x + y), 1.0f });
-				if (skip > 10)
-					skip = 0;
-			}
-		}
+		static float rotation = 0.0f;
+		rotation += m_FrameTime * 10.0f;
+		m_RenderPipeline->DrawQuad({ 0.0f, 0.0f, -2.0f }, rotation, { 1.0f, 1.0f }, glm::vec4(1.0f));
 
 		m_RenderPipeline->EndRendering2D();
 	}

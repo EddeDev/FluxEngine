@@ -41,6 +41,18 @@ namespace Flux {
 			return ShaderStage::None;
 		}
 
+		static const char* ShaderStageToString(ShaderStage stage)
+		{
+			switch (stage)
+			{
+			case ShaderStage::Vertex:   return "Vertex";
+			case ShaderStage::Fragment: return "Fragment";
+			case ShaderStage::Compute:  return "Compute";
+			}
+			FLUX_VERIFY(false, "Unknown shader stage");
+			return "";
+		}
+
 		static shaderc_shader_kind ShaderStageToShaderC(ShaderStage stage)
 		{
 			switch (stage)
@@ -230,10 +242,7 @@ namespace Flux {
 		{
 			auto it = m_ShaderModules.find(stage);
 			if (it != m_ShaderModules.end())
-			{
 				vkDestroyShaderModule(device, it->second, nullptr);
-				m_ShaderModules.erase(it);
-			}
 
 			VkShaderModuleCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -246,14 +255,18 @@ namespace Flux {
 
 	void VulkanShader::Reflect()
 	{
+		FLUX_TRACE("Shader Reflection - {0}", m_Path.string());
+
 		for (const auto& [stage, binary] : m_Binaries)
 		{
+			FLUX_TRACE("  {0} shader", Utils::ShaderStageToString(stage));
+
 			spirv_cross::Compiler compiler(binary);
 			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
 			if (stage == ShaderStage::Vertex)
 			{
-				uint32 offset = 0;
+				uint32 size = 0;
 
 				for (const auto& resource : resources.stage_inputs)
 				{
@@ -266,13 +279,23 @@ namespace Flux {
 
 					attribute.Location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 					attribute.Binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-					attribute.Offset = offset;
+					attribute.Offset = size;
 					attribute.Type = Utils::SPIRTypeToShaderDataType(type);
 
-					offset += Utils::SPIRTypeSize(type);
+					size += Utils::SPIRTypeSize(type);
 				}
 
-				m_InputLayout.Stride = offset;
+				m_InputLayout.Stride = size;
+			}
+
+			if (stage == ShaderStage::Fragment)
+			{
+				for (const auto& resource : resources.stage_inputs)
+				{
+					std::string name = compiler.get_name(resource.id);
+					if (name.empty())
+						name = compiler.get_fallback_name(resource.id);
+				}
 			}
 
 			for (const auto& resource : resources.push_constant_buffers)
@@ -288,6 +311,8 @@ namespace Flux {
 				const auto& bufferType = compiler.get_type(resource.base_type_id);
 				pushConstant.Size = static_cast<uint32>(compiler.get_declared_struct_size(bufferType));
 
+				FLUX_TRACE("    Push constant: {0} (size = {1}, offset = {2})", pushConstant.Name, pushConstant.Size, pushConstant.Offset);
+
 				for (uint32 i = 0; i < static_cast<uint32>(bufferType.member_types.size()); i++)
 				{
 					std::string memberName = compiler.get_member_name(bufferType.self, i);
@@ -302,6 +327,35 @@ namespace Flux {
 					member.Size = static_cast<uint32>(compiler.get_declared_struct_member_size(bufferType, i));
 					member.Offset = compiler.type_struct_member_offset(bufferType, i);
 				}
+			}
+
+			if (!resources.sampled_images.empty() || !resources.storage_images.empty())
+				FLUX_TRACE("    Resources:");
+
+			for (const auto& resource : resources.sampled_images)
+			{
+				auto& type = compiler.get_type(resource.base_type_id);
+
+				std::string name = compiler.get_name(resource.id);
+				if (name.empty())
+					name = compiler.get_fallback_name(resource.id);
+
+				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+				FLUX_TRACE("      {0} (set = {0}, binding = {1})", name, descriptorSet, binding);
+			}
+
+			for (const auto& resource : resources.storage_images)
+			{
+				std::string name = compiler.get_name(resource.id);
+				if (name.empty())
+					name = compiler.get_fallback_name(resource.id);
+
+				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+				FLUX_TRACE("      {0} (set = {0}, binding = {1})", name, descriptorSet, binding);
 			}
 		}
 	}

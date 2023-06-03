@@ -42,7 +42,7 @@ namespace Flux {
 
 		static uint32 GetFramesInFlight();
 
-		template<typename T>
+		template<typename T = ResourceAllocator>
 		static T& GetResourceAllocator()
 		{
 			FLUX_ASSERT(s_ResourceAllocator, "Resource allocator is NULL");

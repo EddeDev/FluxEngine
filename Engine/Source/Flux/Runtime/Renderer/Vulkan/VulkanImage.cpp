@@ -147,10 +147,7 @@ namespace Flux {
 		imageViewCreateInfo.subresourceRange = subresourceRange;
 
 		if (m_AttachmentView)
-		{
-			FLUX_WARNING_CATEGORY("Vulkan Image", "Overriding attachment... (index {0})", attachmentIndex);
 			vkDestroyImageView(device, m_AttachmentView, nullptr);
-		}
 
 		VK_CHECK(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_AttachmentView));
 	}
@@ -198,10 +195,7 @@ namespace Flux {
 		imageViewCreateInfo.subresourceRange = subresourceRange;
 
 		if (m_AttachmentView)
-		{
-			FLUX_WARNING_CATEGORY("Vulkan Image", "Overriding attachment... (index {0}, layer {1})", attachmentIndex, layer);
 			vkDestroyImageView(device, m_AttachmentView, nullptr);
-		}
 
 		VK_CHECK(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_AttachmentView));
 	}

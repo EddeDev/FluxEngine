@@ -29,7 +29,6 @@ namespace Flux {
 			PixelFormat::Depth24Stencil8
 		};
 		framebufferCreateInfo.SwapchainTarget = s_SwapchainTarget;
-		framebufferCreateInfo.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 		framebufferCreateInfo.DebugLabel = "Main FB";
 		m_Framebuffer = Framebuffer::Create(framebufferCreateInfo);
 
@@ -115,11 +114,11 @@ namespace Flux {
 			m_QuadPipeline->Bind(m_CommandBuffer);
 			m_QuadIndexBuffer->Bind(m_CommandBuffer);
 
-			glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)m_Framebuffer->GetWidth(), 0.0f, (float)m_Framebuffer->GetHeight());
-			FLUX_SUBMIT_RENDER_COMMAND([commandBuffer = m_CommandBuffer, pipeline = m_QuadPipeline, projectionMatrix]()
-			{
-				pipeline->RT_SetPushConstant(commandBuffer, ShaderStage::Vertex, &(projectionMatrix[0].x), 64);
-			});
+			float aspectRatio = (float)m_Framebuffer->GetWidth() / (float)m_Framebuffer->GetHeight();
+
+			// glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)m_Framebuffer->GetWidth(), 0.0f, (float)m_Framebuffer->GetHeight());
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), aspectRatio, 0.01f, 1000.0f);
+			m_QuadPipeline->SetPushConstant(m_CommandBuffer, ShaderStage::Vertex, &(projectionMatrix[0].x), 64);
 
 			m_QuadPipeline->DrawIndexed(m_CommandBuffer, m_QuadIndexCount);
 		}
