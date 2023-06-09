@@ -1,23 +1,16 @@
 #include "FluxPCH.h"
 
-#define FLUX_EDITOR
+#include "Flux/Runtime/Core/Engine.h"
 
-#ifdef FLUX_EDITOR
-	#include "Flux/Editor/EditorEngine.h"
+#define FLUX_EDITOR 1
+
+#if FLUX_EDITOR
+	#include "Flux/Editor/EditorApplication.h"
 #endif
 
 namespace Flux {
 
 	bool g_EngineRunning = true;
-
-	Engine* CreateEngine()
-	{
-#ifdef FLUX_EDITOR
-		return new EditorEngine();
-#endif
-
-		return nullptr;
-	}
 
 	int32 Main()
 	{
@@ -29,7 +22,11 @@ namespace Flux {
 			FLUX_INFO("Flux Engine");
 			FLUX_INFO("Initializing...");
 
-			Engine* engine = CreateEngine();
+			Engine* engine = new Engine;
+#if FLUX_EDITOR
+			engine->SetApplication<EditorApplication>();
+#endif
+
 			if (engine)
 				engine->Run();
 			else

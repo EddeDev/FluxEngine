@@ -1,7 +1,7 @@
 #include "FluxPCH.h"
 #include "IndexBuffer.h"
 
-#include "Flux/Runtime/Engine/Engine.h"
+#include "Flux/Runtime/Core/Engine.h"
 
 #include "Vulkan/VulkanIndexBuffer.h"
 

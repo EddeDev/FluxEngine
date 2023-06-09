@@ -1,8 +1,7 @@
 #include "FluxPCH.h"
 #include "Engine.h"
 
-#include "Flux/Runtime/Core/Platform.h"
-#include "Flux/Runtime/Core/Window.h"
+#include "Platform.h"
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
@@ -65,6 +64,7 @@ namespace Flux {
 		m_MainThread = Thread::Create(mainThreadCreateInfo);
 		m_MainThreadID = m_MainThread->GetID();
 
+		m_Running = true;
 		m_MainThread->Submit(FLUX_BIND_CALLBACK(MT_MainLoop, this));
 
 		while (m_Running)
@@ -76,6 +76,12 @@ namespace Flux {
 		}
 
 		m_MainThread.reset();
+
+		if (m_Application)
+		{
+			delete m_Application;
+			m_Application = nullptr;
+		}
 	}
 
 	void Engine::MT_MainLoop()
@@ -89,7 +95,8 @@ namespace Flux {
 
 		Renderer::Init();
 	
-		OnInit();
+		if (m_Application)
+			m_Application->OnInit();
 
 		SubmitToEventThread([this]()
 		{
@@ -105,7 +112,7 @@ namespace Flux {
 			m_FrameCounter++;
 			if (time >= m_LastTime + 1.0f)
 			{
-				FLUX_TRACE("Frame time: {0:.2f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FrameCounter);
+				// FLUX_TRACE("Frame time: {0:.2f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FrameCounter);
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
@@ -114,7 +121,7 @@ namespace Flux {
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
 
-			if (!m_Minimized)
+			if (m_Application && !m_Minimized)
 			{
 				Renderer::FlushReleaseQueue(Renderer::GetCurrentFrameIndex());
 
@@ -122,7 +129,8 @@ namespace Flux {
 
 				Renderer::BeginFrame();
 
-				OnUpdate();
+				if (m_Application)
+					m_Application->OnUpdate();
 
 				Renderer::FlushRenderCommands();
 				Renderer::EndFrame();
@@ -135,7 +143,8 @@ namespace Flux {
 			}
 		}
 
-		OnExit();
+		if (m_Application)
+			m_Application->OnExit();
 
 		Renderer::Shutdown();
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Flux/Runtime/Core/Window.h"
-#include "Flux/Runtime/Core/Thread.h"
+#include "Application.h"
+#include "Window.h"
+#include "Thread.h"
 
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsDevice.h"
@@ -12,15 +13,25 @@ namespace Flux {
 
 	class Engine
 	{
-	protected:
-		Engine();
 	public:
+		Engine();
 		~Engine();
 
 		void Run();
 		void Close(bool restart = false);
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
+
+		template<typename TApplication, typename... TArgs>
+		void SetApplication(TArgs&&... args)
+		{
+			static_assert(std::is_base_of<Application, TApplication>::value);
+			FLUX_VERIFY(!m_Application, "Application already exists!");
+			m_Application = new TApplication(std::forward<TArgs>(args)...);
+		}
+
+		float GetFrameTime() const { return m_FrameTime; }
+		uint32 GetFramesPerSecond() const { return m_FramesPerSecond; }
 
 		void SetGraphicsAPI(GraphicsAPI api) { m_GraphicsAPI = api; }
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
@@ -48,15 +59,13 @@ namespace Flux {
 		void OnWindowClose();
 		void OnWindowResize(uint32 width, uint32 height);
 		void OnWindowMinimize(bool minimized);
-	protected:
-		virtual void OnInit() {}
-		virtual void OnExit() {}
-		virtual void OnUpdate() {}
  	protected:
 		inline static Engine* s_Instance = nullptr;
 
 		Unique<Window> m_Window;
 		Unique<Thread> m_MainThread;
+
+		Application* m_Application = nullptr;
 
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::Vulkan;
 
@@ -73,7 +82,7 @@ namespace Flux {
 		std::queue<std::function<void()>> m_MainThreadQueue;
 		std::mutex m_MainThreadMutex;
 
-		std::atomic<bool> m_Running = true;
+		std::atomic<bool> m_Running = false;
 		std::atomic<bool> m_Minimized = false;
 		
 		float m_FrameTime = 0.0f;

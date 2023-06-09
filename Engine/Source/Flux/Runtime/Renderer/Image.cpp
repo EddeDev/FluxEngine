@@ -1,7 +1,7 @@
 #include "FluxPCH.h"
 #include "Image.h"
 
-#include "Flux/Runtime/Engine/Engine.h"
+#include "Flux/Runtime/Core/Engine.h"
 
 #include "Vulkan/VulkanImage.h"
 

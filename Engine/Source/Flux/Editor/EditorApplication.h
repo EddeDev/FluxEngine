@@ -1,14 +1,15 @@
 #pragma once
 
-#include "Flux/Runtime/Engine/Engine.h"
+#include "Flux/Runtime/Core/Application.h"
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
 
 namespace Flux {
 
-	class EditorEngine : public Engine
+	class EditorApplication : public Application
 	{
 	public:
-		EditorEngine() {}
+		EditorApplication();
+		virtual ~EditorApplication();
 
 		virtual void OnInit() override;
 		virtual void OnExit() override;
