@@ -43,6 +43,7 @@ namespace Flux {
 
 		ThreadID GetMainThreadID() const { return m_MainThreadID; }
 		ThreadID GetEventThreadID() const { return m_EventThreadID; }
+		ThreadID GetRenderThreadID() const { return m_RenderThreadID; }
 
 		Unique<Window>& GetWindow() { return m_Window; }
 		const Unique<Window>& GetWindow() const { return m_Window; }
@@ -54,7 +55,10 @@ namespace Flux {
 			return (TEngine&)*s_Instance;
 		}
 	private:
+		void RT_Initialize();
+		void RT_Shutdown();
 		void MT_MainLoop();
+		void MT_UpdateAndRender();
 
 		void OnWindowClose();
 		void OnWindowResize(uint32 width, uint32 height);
@@ -63,10 +67,7 @@ namespace Flux {
 		inline static Engine* s_Instance = nullptr;
 
 		Unique<Window> m_Window;
-		Unique<Thread> m_MainThread;
-
 		Application* m_Application = nullptr;
-
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::Vulkan;
 
 		Ref<GraphicsContext> m_Context;
@@ -74,11 +75,16 @@ namespace Flux {
 		Ref<GraphicsDevice> m_Device;
 		Ref<Swapchain> m_Swapchain;
 
+		Unique<Thread> m_MainThread;
+		Unique<Thread> m_RenderThread;
+
 		ThreadID m_EventThreadID;
+		ThreadID m_MainThreadID;
+		ThreadID m_RenderThreadID;
+
 		std::queue<std::function<void()>> m_EventThreadQueue;
 		std::mutex m_EventThreadMutex;
 
-		ThreadID m_MainThreadID;
 		std::queue<std::function<void()>> m_MainThreadQueue;
 		std::mutex m_MainThreadMutex;
 
@@ -91,22 +97,28 @@ namespace Flux {
 		float m_LastTime = 0.0f;
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
+
+		uint32 m_CurrentRenderingFrame = 0;
 	};
 
 #ifdef FLUX_ENABLE_ASSERTS
-	#define FLUX_ASSERT_ON_MAIN_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetMainThreadID())
-	#define FLUX_ASSERT_ON_EVENT_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetEventThreadID())
+	#define FLUX_ASSERT_IS_MAIN_THREAD() FLUX_ASSERT_IS_THREAD(Engine::Get().GetMainThreadID())
+	#define FLUX_ASSERT_IS_EVENT_THREAD() FLUX_ASSERT_IS_THREAD(Engine::Get().GetEventThreadID())
+	#define FLUX_ASSERT_IS_RENDER_THREAD() FLUX_ASSERT_IS_THREAD(Engine::Get().GetRenderThreadID())
 #else
-	#define FLUX_ASSERT_ON_MAIN_THREAD() (void)0
-	#define FLUX_ASSERT_ON_EVENT_THREAD() (void)0
+	#define FLUX_ASSERT_IS_MAIN_THREAD() (void)0
+	#define FLUX_ASSERT_IS_EVENT_THREAD() (void)0
+	#define FLUX_ASSERT_IS_RENDER_THREAD() (void)0
 #endif
 
 #ifndef FLUX_BUILD_SHIPPING
-	#define FLUX_VERIFY_ON_MAIN_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetMainThreadID())
-	#define FLUX_VERIFY_ON_EVENT_THREAD() FLUX_ASSERT_ON_THREAD(Engine::Get().GetEventThreadID())
+	#define FLUX_VERIFY_IS_MAIN_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetMainThreadID())
+	#define FLUX_VERIFY_IS_EVENT_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetEventThreadID())
+	#define FLUX_VERIFY_IS_RENDER_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetRenderThreadID())
 #else
-	#define FLUX_VERIFY_ON_MAIN_THREAD() (void)0
-	#define FLUX_VERIFY_ON_EVENT_THREAD() (void)0
+	#define FLUX_VERIFY_IS_MAIN_THREAD() (void)0
+	#define FLUX_VERIFY_IS_EVENT_THREAD() (void)0
+	#define FLUX_VERIFY_IS_RENDER_THREAD() (void)0
 #endif
 
 #define FLUX_CURRENT_GRAPHICS_API Engine::Get().GetGraphicsAPI()

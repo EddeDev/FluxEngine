@@ -9,6 +9,8 @@ namespace Flux {
 
 	Ref<GraphicsPipeline> GraphicsPipeline::Create(const GraphicsPipelineCreateInfo& createInfo)
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
 		case GraphicsAPI::Vulkan: return Ref<VulkanPipeline>::Create(createInfo);

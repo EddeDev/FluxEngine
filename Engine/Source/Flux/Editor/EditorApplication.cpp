@@ -113,7 +113,7 @@ namespace Flux {
 		}
 		case Menu_File_Exit:
 		{
-			Engine::Get().SubmitToMainThread([this]() {  Engine::Get().Close(); });
+			Engine::Get().SubmitToMainThread([this]() { Engine::Get().Close(); });
 			break;
 		}
 		default:

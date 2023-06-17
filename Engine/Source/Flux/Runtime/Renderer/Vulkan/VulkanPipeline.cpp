@@ -1,6 +1,7 @@
 #include "FluxPCH.h"
 #include "VulkanPipeline.h"
 
+#include "Flux/Runtime/Core/Engine.h"
 #include "Flux/Runtime/Renderer/Renderer.h"
 
 #include "VulkanDevice.h"
@@ -79,6 +80,7 @@ namespace Flux {
 	VulkanPipeline::VulkanPipeline(const GraphicsPipelineCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
 		FLUX_VERIFY(createInfo.IsValid());
 
 		Invalidate();
@@ -86,6 +88,8 @@ namespace Flux {
 
 	VulkanPipeline::~VulkanPipeline()
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+		
 		for (auto& [stage, storage] : m_PushConstantStorage)
 			delete[] storage;
 
@@ -100,6 +104,8 @@ namespace Flux {
 
 	void VulkanPipeline::Invalidate()
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		Ref<VulkanPipeline> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
 		{
@@ -109,6 +115,8 @@ namespace Flux {
 
 	void VulkanPipeline::RT_Invalidate()
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 		VkPipelineCache pipelineCache = VulkanDevice::Get()->GetPipelineCache();
 
@@ -268,6 +276,8 @@ namespace Flux {
 
 	void VulkanPipeline::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		Ref<const VulkanPipeline> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
 		{
@@ -277,6 +287,8 @@ namespace Flux {
 
 	void VulkanPipeline::RT_Bind(Ref<CommandBuffer> commandBuffer) const
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
 		vkCmdBindPipeline(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
 			VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -286,6 +298,8 @@ namespace Flux {
 
 	void VulkanPipeline::SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset)
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		if (m_PushConstantStorage.find(stage) == m_PushConstantStorage.end())
 		{
 			auto& pushConstants = m_CreateInfo.Shader->GetPushConstants();
@@ -316,6 +330,8 @@ namespace Flux {
 
 	void VulkanPipeline::RT_SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset) const
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
 		vkCmdPushConstants(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
 			m_PipelineLayout, 
@@ -328,6 +344,8 @@ namespace Flux {
 
 	void VulkanPipeline::DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		Ref<const VulkanPipeline> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer, indexCount, startIndexLocation, baseVertexLocation]()
 		{
@@ -337,6 +355,8 @@ namespace Flux {
 
 	void VulkanPipeline::RT_DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+		
 		vkCmdDrawIndexed(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
 			indexCount,

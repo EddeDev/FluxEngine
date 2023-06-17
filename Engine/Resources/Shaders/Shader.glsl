@@ -43,5 +43,5 @@ layout(location = 0) in VertexOutput Input;
 void main()
 {
     // o_Color = Input.Color * texture(u_Texture, Input.Color.xy);
-   o_Color = Input.Color;
+    o_Color = Input.Color;
 }

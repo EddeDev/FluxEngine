@@ -1,6 +1,8 @@
 #include "FluxPCH.h"
 #include "VulkanDevice.h"
 
+#include "Flux/Runtime/Core/Engine.h"
+
 #include "Vulkan.h"
 
 namespace Flux {
@@ -190,6 +192,8 @@ namespace Flux {
 
 	uint32 VulkanDevice::GetMemoryTypeIndex(uint32 typeBits, VkMemoryPropertyFlags propertyFlags) const
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
 		VkPhysicalDeviceMemoryProperties memoryProperties;
 		vkGetPhysicalDeviceMemoryProperties(m_Adapter->GetPhysicalDevice(), &memoryProperties);
 
@@ -209,6 +213,8 @@ namespace Flux {
 
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool begin) const
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
 		VkCommandBuffer commandBuffer;
 
 		VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
@@ -231,6 +237,7 @@ namespace Flux {
 
 	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer) const
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
 		FLUX_ASSERT(commandBuffer);
 		
 		VkDevice device = VulkanDevice::Get()->GetDevice();

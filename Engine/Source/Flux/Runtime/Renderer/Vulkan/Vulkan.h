@@ -68,10 +68,10 @@ namespace Flux {
 	}
 
 #ifndef FLUX_BUILD_SHIPPING
-	#define FLUX_VK_CHECKS_ENABLED
+	#define VK_CHECKS_ENABLED
 #endif
 
-#ifdef FLUX_VK_CHECKS_ENABLED
+#ifdef VK_CHECKS_ENABLED
 	#define VK_CHECK(result) \
 		if (result != VK_SUCCESS) \
 		{ \

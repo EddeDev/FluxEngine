@@ -49,6 +49,15 @@ namespace Flux {
 		LeaveCriticalSection(&m_CriticalSection);
 	}
 
+	uint32 WindowsThread::GetRemainingJobs()
+	{
+		EnterCriticalSection(&m_CriticalSection);
+		uint32 result = static_cast<size_t>(m_Jobs.size());
+		WakeConditionVariable(&m_ConditionVariable);
+		LeaveCriticalSection(&m_CriticalSection);
+		return result;
+	}
+
 	void WindowsThread::Destroy()
 	{
 		EnterCriticalSection(&m_CriticalSection);

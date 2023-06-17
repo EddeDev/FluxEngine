@@ -1,6 +1,7 @@
 #include "FluxPCH.h"
 #include "VulkanShader.h"
 
+#include "Flux/Runtime/Core/Engine.h"
 #include "Flux/Runtime/Renderer/Renderer.h"
 
 #include "VulkanDevice.h"
@@ -155,11 +156,15 @@ namespace Flux {
 	VulkanShader::VulkanShader(const std::filesystem::path& path)
 		: m_Path(path)
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		Reload();
 	}
 
 	VulkanShader::~VulkanShader()
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([shaderModules = m_ShaderModules]()
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();
@@ -170,6 +175,8 @@ namespace Flux {
 
 	void VulkanShader::Reload()
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		m_Binaries.clear();
 		m_InputLayout = {};
 		m_PushConstants = {};
@@ -236,6 +243,8 @@ namespace Flux {
 
 	void VulkanShader::RT_CreateShaders()
 	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 
 		for (const auto& [stage, binary] : m_Binaries)

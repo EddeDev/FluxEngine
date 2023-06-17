@@ -12,6 +12,7 @@ namespace Flux {
 		Ref<Framebuffer> ActiveFramebuffer;
 
 		uint32 CurrentFrameIndex = 0;
+		uint32 CurrentQueueIndex = 0;
 		uint32 FrameCount = 0;
 	};
 
@@ -29,7 +30,7 @@ namespace Flux {
 
 	void Renderer::Init()
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		s_Data = new RendererData();
 		s_ResourceAllocator = CreateResourceAllocator();
@@ -37,10 +38,7 @@ namespace Flux {
 
 	void Renderer::Shutdown()
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
-
-		for (uint32 frameIndex = 0; frameIndex < s_MaxReleaseQueueCount; frameIndex++)
-			FlushReleaseQueue(frameIndex);
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		delete s_ResourceAllocator;
 		s_ResourceAllocator = nullptr;
@@ -51,22 +49,23 @@ namespace Flux {
 
 	void Renderer::BeginFrame()
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
 	}
 
 	void Renderer::EndFrame()
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
 
+		s_Data->CurrentQueueIndex = (s_Data->CurrentQueueIndex + 1) % s_RenderCommandQueueCount;
 		s_Data->CurrentFrameIndex = (s_Data->CurrentFrameIndex + 1) % Renderer::GetFramesInFlight();
 		s_Data->FrameCount++;
 	}
 
 	void Renderer::BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<Framebuffer> framebuffer)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
 		FLUX_ASSERT(commandBuffer);
@@ -78,7 +77,7 @@ namespace Flux {
 
 	void Renderer::EndRenderPass(Ref<CommandBuffer> commandBuffer)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		FLUX_ASSERT(s_Data->ActiveFramebuffer);
 		FLUX_ASSERT(commandBuffer);
@@ -89,7 +88,7 @@ namespace Flux {
 
 	void Renderer::RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<GraphicsPipeline> pipeline, Ref<Shader> shader, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		vertexBuffer->Bind(commandBuffer);
 		pipeline->Bind(commandBuffer);
@@ -101,23 +100,20 @@ namespace Flux {
 #ifndef FLUX_BUILD_SHIPPING
 	void Renderer::SubmitRenderCommand(const char* functionName, RenderCommand command)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
-		if (s_RenderCommandQueueLocked)
+		if (s_RenderCommandQueueLocked[s_Data->CurrentQueueIndex])
 		{
 			FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
 			FLUX_VERIFY(false);
-
-			// Should we return here or delay the recursive call to the next frame?
-			return;
 		}
 
-		s_RenderCommandQueue.push(std::move(command));
+		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push(std::move(command));
 	}
 
 	void Renderer::SubmitRenderCommandRelease(const char* functionName, RenderCommand command)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
 
@@ -125,9 +121,6 @@ namespace Flux {
 		{
 			FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
 			FLUX_VERIFY(false);
-
-			// Should we return here or delay the recursive call to the next frame?
-			return;
 		}
 
 		s_ReleaseQueue[frameIndex].push(std::move(command));
@@ -135,45 +128,58 @@ namespace Flux {
 #else
 	void Renderer::SubmitRenderCommand(RenderCommand command)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
-		s_RenderCommandQueue.push(std::move(command));
+		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push(std::move(command));
 	}
 
 	void Renderer::SubmitRenderCommandRelease(RenderCommand command)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
 		s_ReleaseQueue[frameIndex].push(std::move(command));
 	}
 #endif
 
-	void Renderer::FlushRenderCommands()
+	void Renderer::RT_FlushRenderCommands(uint32 queueIndex)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_RENDER_THREAD();
 		
 #ifndef FLUX_BUILD_SHIPPING
-		s_RenderCommandQueueLocked = true;
+		if (s_RenderCommandQueueLocked[queueIndex])
+		{
+			FLUX_CRITICAL_CATEGORY("Renderer", "RT_FlushRenderCommands called recursively!");
+			FLUX_VERIFY(false);
+		}
+
+		s_RenderCommandQueueLocked[queueIndex] = true;
 #endif
 
-		while (!s_RenderCommandQueue.empty())
+		auto& queue = s_RenderCommandQueue[queueIndex];
+		while (!queue.empty())
 		{
-			RenderCommand& command = s_RenderCommandQueue.front();
+			RenderCommand& command = queue.front();
 			command();
-			s_RenderCommandQueue.pop();
+			queue.pop();
 		}
 
 #ifndef FLUX_BUILD_SHIPPING
-		s_RenderCommandQueueLocked = false;
+		s_RenderCommandQueueLocked[queueIndex] = false;
 #endif
 	}
 
-	void Renderer::FlushReleaseQueue(uint32 frameIndex)
+	void Renderer::RT_FlushReleaseQueue(uint32 frameIndex)
 	{
-		// FLUX_ASSERT_ON_RENDER_THREAD();
+		FLUX_ASSERT_IS_RENDER_THREAD();
 
 #ifndef FLUX_BUILD_SHIPPING
+		if (s_ReleaseQueueLocked[frameIndex])
+		{
+			FLUX_CRITICAL_CATEGORY("Renderer", "RT_FlushReleaseQueue called recursively!");
+			FLUX_VERIFY(false);
+		}
+
 		s_ReleaseQueueLocked[frameIndex] = true;
 #endif
 
@@ -191,18 +197,33 @@ namespace Flux {
 
 	}
 
+	void Renderer::RT_FlushReleaseQueues()
+	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
+		for (uint32 frameIndex = 0; frameIndex < s_ReleaseQueueCount; frameIndex++)
+			RT_FlushReleaseQueue(frameIndex);
+	}
+
 	uint32 Renderer::GetCurrentFrameIndex()
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		return s_Data->CurrentFrameIndex;
 	}
 
 	uint32 Renderer::RT_GetCurrentFrameIndex()
 	{
-		// FLUX_ASSERT_ON_RENDER_THREAD();
+		FLUX_ASSERT_IS_RENDER_THREAD();
 
 		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
+	}
+
+	uint32 Renderer::GetCurrentQueueIndex()
+	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
+		return s_Data->CurrentQueueIndex;
 	}
 
 	uint32 Renderer::GetFramesInFlight()

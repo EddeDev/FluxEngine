@@ -48,21 +48,35 @@ namespace Flux {
 
 	Engine::~Engine()
 	{
-		FLUX_ASSERT_ON_EVENT_THREAD();
+		FLUX_ASSERT_IS_EVENT_THREAD();
 
 		s_Instance = nullptr;
 	}
 
 	void Engine::Run()
 	{
-		FLUX_ASSERT_ON_EVENT_THREAD();
+		FLUX_ASSERT_IS_EVENT_THREAD();
 
 		ThreadCreateInfo mainThreadCreateInfo;
 		mainThreadCreateInfo.Name = "Main Thread";
-		mainThreadCreateInfo.Priority = ThreadPriority::Highest;
-
+		mainThreadCreateInfo.Priority = ThreadPriority::AboveNormal;
 		m_MainThread = Thread::Create(mainThreadCreateInfo);
+
+		ThreadCreateInfo renderThreadCreateInfo;
+		renderThreadCreateInfo.Name = "Render Thread";
+		renderThreadCreateInfo.Priority = ThreadPriority::Highest;
+		m_RenderThread = Thread::Create(renderThreadCreateInfo);
+
 		m_MainThreadID = m_MainThread->GetID();
+		m_RenderThreadID = m_RenderThread->GetID();
+
+		m_RenderThread->Submit(FLUX_BIND_CALLBACK(RT_Initialize, this));
+
+		// TODO: do we really need to wait for the render thread to finish here?
+		m_RenderThread->Wait();
+
+		// Initialize renderer (on main thread)
+		m_MainThread->Submit(Renderer::Init);
 
 		m_Running = true;
 		m_MainThread->Submit(FLUX_BIND_CALLBACK(MT_MainLoop, this));
@@ -77,6 +91,9 @@ namespace Flux {
 
 		m_MainThread.reset();
 
+		m_RenderThread->Submit(FLUX_BIND_CALLBACK(RT_Shutdown, this));
+		m_RenderThread.reset();
+
 		if (m_Application)
 		{
 			delete m_Application;
@@ -84,17 +101,33 @@ namespace Flux {
 		}
 	}
 
-	void Engine::MT_MainLoop()
+	void Engine::RT_Initialize()
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
-
 		m_Context = GraphicsContext::Create();
 		m_Adapter = GraphicsAdapter::Create(m_Context);
 		m_Device = GraphicsDevice::Create(m_Adapter);
 		m_Swapchain = Swapchain::Create(m_Window.get());
+	}
 
-		Renderer::Init();
-	
+	void Engine::RT_Shutdown()
+	{
+		FLUX_VERIFY(m_Swapchain->GetReferenceCount() == 1);
+		m_Swapchain = nullptr;
+
+		FLUX_VERIFY(m_Device->GetReferenceCount() == 1);
+		m_Device = nullptr;
+
+		FLUX_VERIFY(m_Adapter->GetReferenceCount() == 1);
+		m_Adapter = nullptr;
+
+		FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
+		m_Context = nullptr;
+	}
+
+	void Engine::MT_MainLoop()
+	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		if (m_Application)
 			m_Application->OnInit();
 
@@ -121,49 +154,74 @@ namespace Flux {
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
 
-			if (m_Application && !m_Minimized)
-			{
-				Renderer::FlushReleaseQueue(Renderer::GetCurrentFrameIndex());
-
-				m_Swapchain->BeginFrame();
-
-				Renderer::BeginFrame();
-
-				if (m_Application)
-					m_Application->OnUpdate();
-
-				Renderer::FlushRenderCommands();
-				Renderer::EndFrame();
-
-				m_Swapchain->Present(1);
-			}
+			if (!m_Minimized)
+				MT_UpdateAndRender();
 			else
-			{
 				Platform::Sleep(0.2f);
-			}
 		}
+
+		m_RenderThread->Wait();
+
+		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
+		{
+			Renderer::RT_FlushRenderCommands(queueIndex);
+		});
 
 		if (m_Application)
 			m_Application->OnExit();
 
+		m_RenderThread->Submit(Renderer::RT_FlushReleaseQueues);
+		m_RenderThread->Wait();
+
 		Renderer::Shutdown();
+	}
 
-		FLUX_VERIFY(m_Swapchain->GetReferenceCount() == 1);
-		m_Swapchain = nullptr;
+	void Engine::MT_UpdateAndRender()
+	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
-		FLUX_VERIFY(m_Device->GetReferenceCount() == 1);
-		m_Device = nullptr;
+		m_CurrentRenderingFrame++;
 
-		FLUX_VERIFY(m_Adapter->GetReferenceCount() == 1);
-		m_Adapter = nullptr;
+		// Flush release queue and acquire next swapchain image
+		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain]() mutable
+		{
+			Renderer::RT_FlushReleaseQueue(Renderer::RT_GetCurrentFrameIndex());
 
-		FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
-		m_Context = nullptr;
+			swapchain->BeginFrame();
+		});
+
+		// Begin rendering frame
+		Renderer::BeginFrame();
+
+		if (m_Application)
+		{
+			m_Application->OnUpdate();
+
+			// TODO: Input
+		}
+
+		// Wait for the previous frame to finish
+		m_RenderThread->Wait();
+
+		// Swap buffers
+		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain]() mutable
+		{
+			swapchain->Present(1);
+		});
+
+		// Flush render command queue
+		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
+		{
+			Renderer::RT_FlushRenderCommands(queueIndex);
+		});
+
+		// Swap render queues
+		Renderer::EndFrame();
 	}
 
 	void Engine::Close(bool restart)
 	{
-		FLUX_ASSERT_ON_MAIN_THREAD();
+		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		m_Running = false;
 		g_EngineRunning = restart;
@@ -171,7 +229,7 @@ namespace Flux {
 
 	void Engine::OnWindowClose()
 	{
-		FLUX_ASSERT_ON_EVENT_THREAD();
+		FLUX_ASSERT_IS_EVENT_THREAD();
 
 		SubmitToMainThread([this]()
 		{
@@ -181,7 +239,7 @@ namespace Flux {
 
 	void Engine::OnWindowResize(uint32 width, uint32 height)
 	{
-		FLUX_ASSERT_ON_EVENT_THREAD();
+		FLUX_ASSERT_IS_EVENT_THREAD();
 
 		if (width == 0 || height == 0)
 		{
@@ -194,7 +252,7 @@ namespace Flux {
 
 	void Engine::OnWindowMinimize(bool minimized)
 	{
-		FLUX_ASSERT_ON_EVENT_THREAD();
+		FLUX_ASSERT_IS_EVENT_THREAD();
 
 		m_Minimized = minimized;
 	}

@@ -34,11 +34,14 @@ namespace Flux {
 		static void SubmitRenderCommand(RenderCommand command);
 		static void SubmitRenderCommandRelease(RenderCommand command);
 #endif
-		static void FlushRenderCommands();
-		static void FlushReleaseQueue(uint32 frameIndex);
+		static void RT_FlushRenderCommands(uint32 queueIndex);
+		static void RT_FlushReleaseQueue(uint32 frameIndex);
+		static void RT_FlushReleaseQueues();
 
 		static uint32 GetCurrentFrameIndex();
 		static uint32 RT_GetCurrentFrameIndex();
+
+		static uint32 GetCurrentQueueIndex();
 
 		static uint32 GetFramesInFlight();
 
@@ -49,14 +52,15 @@ namespace Flux {
 			return *(T*)s_ResourceAllocator;
 		}
 	private:
-		inline static constexpr uint32 s_MaxReleaseQueueCount = 3;
+		inline static constexpr uint32 s_RenderCommandQueueCount = 2;
+		inline static constexpr uint32 s_ReleaseQueueCount = 3;
 
-		inline static std::queue<RenderCommand> s_RenderCommandQueue;
-		inline static std::queue<RenderCommand> s_ReleaseQueue[s_MaxReleaseQueueCount];
+		inline static std::queue<RenderCommand> s_RenderCommandQueue[s_RenderCommandQueueCount];
+		inline static std::queue<RenderCommand> s_ReleaseQueue[s_ReleaseQueueCount];
 
 #ifndef FLUX_BUILD_SHIPPING
-		inline static std::atomic<bool> s_RenderCommandQueueLocked = false;
-		inline static std::atomic<bool> s_ReleaseQueueLocked[s_MaxReleaseQueueCount];
+		inline static std::atomic<bool> s_RenderCommandQueueLocked[s_RenderCommandQueueCount];
+		inline static std::atomic<bool> s_ReleaseQueueLocked[s_ReleaseQueueCount];
 #endif
 
 		inline static ResourceAllocator* s_ResourceAllocator = nullptr;

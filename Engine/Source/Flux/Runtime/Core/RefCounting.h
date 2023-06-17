@@ -157,6 +157,7 @@ namespace Flux {
 			{
 				if (m_Reference->DecrementReferenceCount() == 0)
 				{
+					std::cout << "[Ref]: Destroying " << typeid(T).name() << "..." << std::endl;
 					delete m_Reference;
 					m_Reference = nullptr;
 				}

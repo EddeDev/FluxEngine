@@ -9,6 +9,8 @@ namespace Flux {
 
 	Ref<Image2D> Image2D::Create(const ImageCreateInfo& createInfo)
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
 		case GraphicsAPI::Vulkan: return Ref<VulkanImage2D>::Create(createInfo);

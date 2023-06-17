@@ -9,6 +9,8 @@ namespace Flux {
 
 	Ref<CommandBuffer> CommandBuffer::Create(const CommandBufferCreateInfo& createInfo)
 	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
 		case GraphicsAPI::Vulkan: return Ref<VulkanCommandBuffer>::Create(createInfo);
