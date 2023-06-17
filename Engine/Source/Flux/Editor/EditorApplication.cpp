@@ -65,7 +65,6 @@ namespace Flux {
 
 	EditorApplication::~EditorApplication()
 	{
-		m_Windows.clear();
 	}
 
 	void EditorApplication::OnInit()

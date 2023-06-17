@@ -98,7 +98,11 @@ namespace Flux {
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
 
-		uint32 m_CurrentRenderingFrame = 0;
+		struct  
+		{
+			float ApplicationUpdate = 0.0f;
+			float WaitForRenderThread = 0.0f;
+		} m_PerformanceTimers;
 	};
 
 #ifdef FLUX_ENABLE_ASSERTS

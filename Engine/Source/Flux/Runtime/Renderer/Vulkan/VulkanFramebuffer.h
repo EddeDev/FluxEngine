@@ -29,8 +29,8 @@ namespace Flux {
 		void RT_Invalidate();
 	private:
 		FramebufferCreateInfo m_CreateInfo;
-		uint32 m_Width = 0;
-		uint32 m_Height = 0;
+		std::atomic<uint32> m_Width = 0;
+		std::atomic<uint32> m_Height = 0;
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 		VkFramebuffer m_Framebuffer = VK_NULL_HANDLE;

@@ -393,8 +393,6 @@ namespace Flux {
 
 	uint32 VulkanFramebuffer::GetWidth() const
 	{
-		// FLUX_ASSERT_ON_MAIN_THREAD();
-
 		if (m_CreateInfo.SwapchainTarget)
 			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetWidth();
 		return m_Width;
@@ -402,8 +400,6 @@ namespace Flux {
 
 	uint32 VulkanFramebuffer::GetHeight() const
 	{
-		// FLUX_ASSERT_ON_MAIN_THREAD();
-
 		if (m_CreateInfo.SwapchainTarget)
 			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetHeight();
 		return m_Height;
@@ -411,8 +407,6 @@ namespace Flux {
 
 	VkRenderPass VulkanFramebuffer::GetRenderPass() const
 	{
-		// FLUX_ASSERT_ON_MAIN_THREAD();
-
 		if (m_CreateInfo.SwapchainTarget)
 			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetRenderPass();
 		return m_RenderPass;

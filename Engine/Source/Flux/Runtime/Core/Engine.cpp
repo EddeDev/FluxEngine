@@ -71,11 +71,8 @@ namespace Flux {
 		m_RenderThreadID = m_RenderThread->GetID();
 
 		m_RenderThread->Submit(FLUX_BIND_CALLBACK(RT_Initialize, this));
-
-		// TODO: do we really need to wait for the render thread to finish here?
 		m_RenderThread->Wait();
 
-		// Initialize renderer (on main thread)
 		m_MainThread->Submit(Renderer::Init);
 
 		m_Running = true;
@@ -145,7 +142,7 @@ namespace Flux {
 			m_FrameCounter++;
 			if (time >= m_LastTime + 1.0f)
 			{
-				// FLUX_TRACE("Frame time: {0:.2f}ms ({1} fps)", m_FrameTime * 1000.0f, m_FrameCounter);
+				FLUX_TRACE("Frame time: {0:.2f}ms, WaitForRenderThread: {1:.2f}ms, ApplicationUpdate: {2:.2f}ms ({3} fps)", m_FrameTime * 1000.0f, m_PerformanceTimers.WaitForRenderThread, m_PerformanceTimers.ApplicationUpdate, m_FrameCounter);
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
@@ -180,9 +177,6 @@ namespace Flux {
 	{
 		FLUX_ASSERT_IS_MAIN_THREAD();
 
-		m_CurrentRenderingFrame++;
-
-		// Flush release queue and acquire next swapchain image
 		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain]() mutable
 		{
 			Renderer::RT_FlushReleaseQueue(Renderer::RT_GetCurrentFrameIndex());
@@ -190,32 +184,37 @@ namespace Flux {
 			swapchain->BeginFrame();
 		});
 
-		// Begin rendering frame
 		Renderer::BeginFrame();
+		
+		Timer timer(TimeUnit::Milliseconds);
 
 		if (m_Application)
 		{
+			timer.Reset();
 			m_Application->OnUpdate();
+			m_PerformanceTimers.ApplicationUpdate = timer.GetTime();
 
 			// TODO: Input
 		}
 
 		// Wait for the previous frame to finish
-		m_RenderThread->Wait();
+		{
+			timer.Reset();
+			m_RenderThread->Wait();
+			m_PerformanceTimers.WaitForRenderThread = timer.GetTime();
+		}
 
 		// Swap buffers
 		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain]() mutable
 		{
-			swapchain->Present(1);
+			swapchain->Present(0);
 		});
 
-		// Flush render command queue
 		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
 		{
 			Renderer::RT_FlushRenderCommands(queueIndex);
 		});
 
-		// Swap render queues
 		Renderer::EndFrame();
 	}
 

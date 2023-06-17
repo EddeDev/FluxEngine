@@ -54,7 +54,7 @@ namespace Flux {
 		VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 	private:
 		Window* m_Window = nullptr;
-		uint32 m_Width = 0, m_Height = 0;
+		std::atomic<uint32> m_Width = 0, m_Height = 0;
 		int32 m_SwapInterval = 1;
 
 		VkInstance m_Instance = VK_NULL_HANDLE;

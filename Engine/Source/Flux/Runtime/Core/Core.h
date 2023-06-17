@@ -4,6 +4,7 @@
 #include "RefCounting.h"
 #include "Logging/LogMacros.h"
 #include "Logging/LogFormatters.h"
+#include "Debugging/Timer.h"
 #include "AssertionMacros.h"
 #include "Platform.h"
 
