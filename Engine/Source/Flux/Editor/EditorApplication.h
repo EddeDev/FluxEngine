@@ -36,6 +36,7 @@ namespace Flux {
 		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
 
 		Ref<RenderPipeline> m_RenderPipeline;
+		Ref<Texture2D> m_Texture;
 	};
 
 }

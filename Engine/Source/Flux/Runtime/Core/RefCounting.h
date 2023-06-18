@@ -29,6 +29,9 @@ namespace Flux {
 		uint32 DecrementReferenceCount() const { return --m_ReferenceCount; }
 
 		uint32 GetReferenceCount() const { return m_ReferenceCount; }
+
+		virtual bool operator==(const ReferenceCounted& other) const { return this == &other; }
+		virtual bool operator!=(const ReferenceCounted& other) const { return this != &other; }
 	private:
 		mutable std::atomic<uint32> m_ReferenceCount;
 	};
@@ -114,13 +117,6 @@ namespace Flux {
 		bool operator==(const Ref<T>& other) const { return m_Reference == other.m_Reference; }
 		bool operator!=(const Ref<T>& other) const { return !(*this == other); }
 
-		bool Equals(const Ref<T>& other)
-		{
-			if (!m_Reference || !other.m_Reference)
-				return false;
-			return *m_Reference == other.m_Reference;
-		}
-
 		operator bool() { return m_Reference != nullptr; }
 		operator bool() const { return m_Reference != nullptr; }
 
@@ -132,6 +128,13 @@ namespace Flux {
 
 		T* Get() { return m_Reference; }
 		const T* Get() const { return m_Reference; }
+
+		bool Equals(const Ref<T>& other)
+		{
+			if (!m_Reference || !other.m_Reference)
+				return false;
+			return *m_Reference == *other.m_Reference;
+		}
 
 		template<typename TOther>
 		Ref<TOther> As() const

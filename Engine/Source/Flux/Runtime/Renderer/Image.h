@@ -56,4 +56,13 @@ namespace Flux {
 		static Ref<Image2D> Create(const ImageCreateInfo& createInfo);
 	};
 
+	namespace Utils {
+
+		inline static uint32 CalculateMipCount(uint32 width, uint32 height)
+		{
+			return (uint32)std::floor(std::log2(glm::min(width, height))) + 1;
+		}
+
+	}
+
 }

@@ -8,6 +8,7 @@
 #include "Shader.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "Texture.h"
 
 namespace Flux {
 
@@ -18,6 +19,7 @@ namespace Flux {
 	public:
 		static void Init();
 		static void Shutdown();
+		static void DestroyResources();
 
 		static void BeginFrame();
 		static void EndFrame();
@@ -40,10 +42,11 @@ namespace Flux {
 
 		static uint32 GetCurrentFrameIndex();
 		static uint32 RT_GetCurrentFrameIndex();
-
 		static uint32 GetCurrentQueueIndex();
-
 		static uint32 GetFramesInFlight();
+
+		static Ref<Texture2D> GetWhiteTexture();
+		static Ref<Texture2D> GetBlackTexture();
 
 		template<typename T = ResourceAllocator>
 		static T& GetResourceAllocator()

@@ -70,6 +70,8 @@ namespace Flux {
 			m_QuadIndexBuffer = IndexBuffer::Create(indices, s_MaxQuadIndices * sizeof(uint32));
 
 			delete[] indices;
+
+			m_QuadTextureSlots[0] = Renderer::GetWhiteTexture();
 		}
 	}
 
@@ -95,6 +97,10 @@ namespace Flux {
 
 		m_QuadVertexPointer = m_QuadVertexStorage[frameIndex];
 		m_QuadIndexCount = 0;
+
+		m_QuadTextureSlotIndex = 1;
+		for (uint32_t i = m_QuadTextureSlotIndex; i < m_QuadTextureSlots.size(); i++)
+			m_QuadTextureSlots[i] = nullptr;
 	}
 
 	void ForwardRenderPipeline::EndRendering2D()
@@ -105,25 +111,24 @@ namespace Flux {
 
 		Renderer::BeginRenderPass(m_CommandBuffer, m_Framebuffer);
 
-		if (m_QuadIndexCount > 0)
+		if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
 		{
-			uint32 dataSize = static_cast<uint32>((uint8*)m_QuadVertexPointer - (uint8*)m_QuadVertexStorage[frameIndex]);
-			m_QuadVertexBuffer[frameIndex]->SetData(m_CommandBuffer, m_QuadVertexStorage[frameIndex], dataSize);
-
-			m_QuadVertexBuffer[frameIndex]->Bind(m_CommandBuffer);
-			m_QuadPipeline->Bind(m_CommandBuffer);
-			m_QuadIndexBuffer->Bind(m_CommandBuffer);
-
-			float aspectRatio = (float)m_Framebuffer->GetWidth() / (float)m_Framebuffer->GetHeight();
-
-			// glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)m_Framebuffer->GetWidth(), 0.0f, (float)m_Framebuffer->GetHeight());
-			glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), aspectRatio, 0.01f, 1000.0f);
-			FLUX_SUBMIT_RENDER_COMMAND([pipeline = m_QuadPipeline, commandBuffer = m_CommandBuffer, projectionMatrix]()
+			if (m_QuadIndexCount > 0)
 			{
-				pipeline->RT_SetPushConstant(commandBuffer, ShaderStage::Vertex, &(projectionMatrix[0].x), 64);
-			});
+				uint32 dataSize = static_cast<uint32>((uint8*)m_QuadVertexPointer - (uint8*)m_QuadVertexStorage[frameIndex]);
+				m_QuadVertexBuffer[frameIndex]->SetData(m_CommandBuffer, m_QuadVertexStorage[frameIndex], dataSize);
 
-			m_QuadPipeline->DrawIndexed(m_CommandBuffer, m_QuadIndexCount);
+				m_QuadVertexBuffer[frameIndex]->Bind(m_CommandBuffer);
+				m_QuadPipeline->Bind(m_CommandBuffer);
+				m_QuadIndexBuffer->Bind(m_CommandBuffer);
+
+				FLUX_SUBMIT_RENDER_COMMAND([pipeline = m_QuadPipeline, commandBuffer = m_CommandBuffer, projectionMatrix = m_CameraSettings.ProjectionMatrix]()
+				{
+					pipeline->RT_SetPushConstant(commandBuffer, ShaderStage::Vertex, glm::value_ptr(projectionMatrix), sizeof(glm::mat4));
+				});
+
+				m_QuadPipeline->DrawIndexed(m_CommandBuffer, m_QuadIndexCount);
+			}
 		}
 
 		Renderer::EndRenderPass(m_CommandBuffer);
@@ -136,18 +141,26 @@ namespace Flux {
 	{
 		m_QuadVertexPointer->Position = transform * glm::vec4(-0.5f, -0.5f, 0.0f, 1.0f);
 		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 0.0f, 1.0f };
+		m_QuadVertexPointer->TextureIndex = 0.0f;
 		m_QuadVertexPointer++;
 
 		m_QuadVertexPointer->Position = transform * glm::vec4(0.5f, -0.5f, 0.0f, 1.0f);
 		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 1.0f, 1.0f };
+		m_QuadVertexPointer->TextureIndex = 0.0f;
 		m_QuadVertexPointer++;
 
 		m_QuadVertexPointer->Position = transform * glm::vec4(0.5f, 0.5f, 0.0f, 1.0f);
 		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 1.0f, 0.0f };
+		m_QuadVertexPointer->TextureIndex = 0.0f;
 		m_QuadVertexPointer++;
 
 		m_QuadVertexPointer->Position = transform * glm::vec4(-0.5f, 0.5f, 0.0f, 1.0f);
 		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 0.0f, 0.0f };
+		m_QuadVertexPointer->TextureIndex = 0.0f;
 		m_QuadVertexPointer++;
 
 		m_QuadIndexCount += 6;
@@ -168,6 +181,69 @@ namespace Flux {
 			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
 
 		DrawQuad(transform, color);
+	}
+
+	void ForwardRenderPipeline::DrawQuad(const glm::mat4& transform, Ref<Texture2D> texture, const glm::vec4& color)
+	{
+		float textureIndex = 0.0f;
+		for (uint32 i = 1; i < m_QuadTextureSlotIndex; i++)
+		{
+			if (m_QuadTextureSlots[i].Equals(texture))
+			{
+				textureIndex = (float)i;
+				break;
+			}
+		}
+
+		if (textureIndex == 0.0f)
+		{
+			textureIndex = (float)m_QuadTextureSlotIndex;
+			m_QuadTextureSlots[m_QuadTextureSlotIndex] = texture;
+			m_QuadTextureSlotIndex++;
+		}
+
+		m_QuadVertexPointer->Position = transform * glm::vec4(-0.5f, -0.5f, 0.0f, 1.0f);
+		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 0.0f, 1.0f };
+		m_QuadVertexPointer->TextureIndex = textureIndex;
+		m_QuadVertexPointer++;
+
+		m_QuadVertexPointer->Position = transform * glm::vec4(0.5f, -0.5f, 0.0f, 1.0f);
+		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 1.0f, 1.0f };
+		m_QuadVertexPointer->TextureIndex = textureIndex;
+		m_QuadVertexPointer++;
+
+		m_QuadVertexPointer->Position = transform * glm::vec4(0.5f, 0.5f, 0.0f, 1.0f);
+		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 1.0f, 0.0f };
+		m_QuadVertexPointer->TextureIndex = textureIndex;
+		m_QuadVertexPointer++;
+
+		m_QuadVertexPointer->Position = transform * glm::vec4(-0.5f, 0.5f, 0.0f, 1.0f);
+		m_QuadVertexPointer->Color = color;
+		m_QuadVertexPointer->TexCoord = { 0.0f, 0.0f };
+		m_QuadVertexPointer->TextureIndex = textureIndex;
+		m_QuadVertexPointer++;
+
+		m_QuadIndexCount += 6;
+	}
+
+	void ForwardRenderPipeline::DrawQuad(const glm::vec3& position, float rotation, const glm::vec2& scale, Ref<Texture2D> texture, const glm::vec4& color)
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
+			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), { 0.0f, 0.0f, 1.0f })
+			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
+
+		DrawQuad(transform, texture, color);
+	}
+
+	void ForwardRenderPipeline::DrawQuad(const glm::vec3& position, const glm::vec2& scale, Ref<Texture2D> texture, const glm::vec4& color)
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
+			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
+
+		DrawQuad(transform, texture, color);
 	}
 
 	void ForwardRenderPipeline::SetViewportSize(uint32 width, uint32 height)

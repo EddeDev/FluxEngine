@@ -70,24 +70,38 @@ namespace Flux {
 	void EditorApplication::OnInit()
 	{
 		m_RenderPipeline = Ref<ForwardRenderPipeline>::Create();
+		m_Texture = Ref<Texture2D>::Create("Resources/Textures/Islandox.png");
 	}
 
 	void EditorApplication::OnExit()
 	{
 		FLUX_VERIFY(m_RenderPipeline->GetReferenceCount() == 1);
 		m_RenderPipeline = nullptr;
+
+		FLUX_VERIFY(m_Texture->GetReferenceCount() == 1);
+		m_Texture = nullptr;
 	}
 
 	void EditorApplication::OnUpdate()
 	{
-		float width = Engine::Get().GetSwapchain()->GetWidth();
-		float height = Engine::Get().GetSwapchain()->GetHeight();
+		uint32 width = Engine::Get().GetSwapchain()->GetWidth();
+		uint32 height = Engine::Get().GetSwapchain()->GetHeight();
+		m_RenderPipeline->SetViewportSize(width, height);
+
+		const float nearClip = 0.01f;
+		const float farClip = 1000.0f;
+
+		auto& cameraSettings = m_RenderPipeline->GetCameraSettings();
+		cameraSettings.ProjectionMatrix = glm::perspective(glm::radians(70.0f), (float)width / (float)height, nearClip, farClip);
+		cameraSettings.NearClip = nearClip;
+		cameraSettings.FarClip = farClip;
 
 		m_RenderPipeline->BeginRendering2D();
 
 		static float rotation = 0.0f;
 		rotation += Engine::Get().GetFrameTime() * 10.0f;
-		m_RenderPipeline->DrawQuad({ 0.0f, 0.0f, -2.0f }, rotation, { 1.0f, 1.0f }, glm::vec4(1.0f));
+		m_RenderPipeline->DrawQuad({ 1.0f, 0.0f, -2.0f }, rotation, { 1.0f, 1.0f }, m_Texture, { 0.4f, 0.8f, 0.2f, 1.0f });
+		m_RenderPipeline->DrawQuad({ -1.0f, 0.0f, -2.0f }, -rotation, { 1.0f, 1.0f }, m_Texture, { 0.8f, 0.4f, 0.2f, 1.0f });
 
 		m_RenderPipeline->EndRendering2D();
 	}

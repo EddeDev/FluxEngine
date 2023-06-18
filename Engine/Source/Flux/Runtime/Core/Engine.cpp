@@ -167,6 +167,8 @@ namespace Flux {
 		if (m_Application)
 			m_Application->OnExit();
 
+		Renderer::DestroyResources();
+
 		m_RenderThread->Submit(Renderer::RT_FlushReleaseQueues);
 		m_RenderThread->Wait();
 

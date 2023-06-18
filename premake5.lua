@@ -24,14 +24,18 @@ project "FluxEngine"
         "Engine/Source/**.h",
 
         "Engine/Libraries/glm/glm/**.hpp",
-        "Engine/Libraries/glm/glm/**.inl"
+        "Engine/Libraries/glm/glm/**.inl",
+
+        "Engine/Libraries/stb_image/**.cpp",
+        "Engine/Libraries/stb_image/**.h"
     }
 
     includedirs
     {
         "Engine/Source",
         "Engine/Libraries/spdlog/include",
-        "Engine/Libraries/glm"
+        "Engine/Libraries/glm",
+        "Engine/Libraries/stb_image"
     }
 
     if VulkanSDK ~= nil then

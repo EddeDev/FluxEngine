@@ -2,6 +2,7 @@
 
 #include "Shader.h"
 #include "Framebuffer.h"
+#include "CompareOp.h"
 
 namespace Flux {
 
@@ -10,18 +11,6 @@ namespace Flux {
 		Triangles = 0,
 		Lines,
 		Points
-	};
-
-	enum class CompareOp : uint8
-	{
-		Never = 0,
-		Less,
-		Equal,
-		LessOrEqual,
-		Greater,
-		NotEqual,
-		GreaterOrEqual,
-		Always
 	};
 
 	struct GraphicsPipelineCreateInfo

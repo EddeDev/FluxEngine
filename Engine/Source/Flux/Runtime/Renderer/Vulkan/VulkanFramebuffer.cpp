@@ -27,14 +27,14 @@ namespace Flux {
 		uint32 attachmentIndex = 0;
 		for (auto& attachment : attachments)
 		{
-			ImageCreateInfo attachmentCreateInfo;
-			attachmentCreateInfo.Width = m_Width;
-			attachmentCreateInfo.Height = m_Height;
-			attachmentCreateInfo.Format = attachment.Format;
-			attachmentCreateInfo.Usage = ImageUsage::Attachment;
-			attachmentCreateInfo.DebugLabel = fmt::format("{0}[{1}/{2}]", createInfo.DebugLabel, attachmentIndex, Utils::IsDepthFormat(attachment.Format) ? "Depth Image" : "Color Image");
+			ImageCreateInfo imageCreateInfo;
+			imageCreateInfo.Width = m_Width;
+			imageCreateInfo.Height = m_Height;
+			imageCreateInfo.Format = attachment.Format;
+			imageCreateInfo.Usage = ImageUsage::Attachment;
+			imageCreateInfo.DebugLabel = fmt::format("{0}[{1}/{2}]", createInfo.DebugLabel, attachmentIndex, Utils::IsDepthFormat(attachment.Format) ? "Depth Image" : "Color Image");
 
-			Ref<Image2D> image = Image2D::Create(attachmentCreateInfo);
+			Ref<Image2D> image = Image2D::Create(imageCreateInfo);
 			if (Utils::IsDepthFormat(attachment.Format))
 				m_DepthAttachment = image;
 			else

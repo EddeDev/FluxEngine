@@ -179,7 +179,8 @@ namespace Flux {
 
 		m_Binaries.clear();
 		m_InputLayout = {};
-		m_PushConstants = {};
+		m_PushConstants.clear();
+		m_Resources.clear();
 
 		std::string source;
 		if (!Utils::LoadFileToString(source, m_Path))
@@ -275,8 +276,6 @@ namespace Flux {
 
 			if (stage == ShaderStage::Vertex)
 			{
-				uint32 size = 0;
-
 				for (const auto& resource : resources.stage_inputs)
 				{
 					auto& attribute = m_InputLayout.Attributes.emplace_back();
@@ -288,13 +287,24 @@ namespace Flux {
 
 					attribute.Location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 					attribute.Binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-					attribute.Offset = size;
 					attribute.Type = Utils::SPIRTypeToShaderDataType(type);
-
-					size += Utils::SPIRTypeSize(type);
+					attribute.Size = Utils::SPIRTypeSize(type);
 				}
 
-				m_InputLayout.Stride = size;
+				std::sort(m_InputLayout.Attributes.begin(), m_InputLayout.Attributes.end(), [](const auto& a, const auto& b)
+				{
+					return a.Location < b.Location;
+				});
+
+				uint32 stride = 0;
+				for (size_t i = 0; i < resources.stage_inputs.size(); i++)
+				{
+					auto& attribute = m_InputLayout.Attributes[i];
+					attribute.Offset = stride;
+					stride += attribute.Size;
+				}
+
+				m_InputLayout.Stride = stride;
 			}
 
 			if (stage == ShaderStage::Fragment)
@@ -343,7 +353,11 @@ namespace Flux {
 
 			for (const auto& resource : resources.sampled_images)
 			{
-				auto& type = compiler.get_type(resource.base_type_id);
+				auto& type = compiler.get_type(resource.type_id);
+
+				uint32 arraySize = type.array[0];
+				if (arraySize == 0)
+					arraySize = 1;
 
 				std::string name = compiler.get_name(resource.id);
 				if (name.empty())
@@ -352,11 +366,51 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				FLUX_TRACE("      {0} (set = {0}, binding = {1})", name, descriptorSet, binding);
+				m_Resources[stage] = {
+					.Name = name,
+					.ArraySize = arraySize,
+					.Binding = binding,
+					.DescriptorSet = descriptorSet,
+					.Stage = stage
+				};
+
+				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
+			}
+
+			for (const auto& resource : resources.separate_images)
+			{
+				auto& type = compiler.get_type(resource.type_id);
+
+				uint32 arraySize = type.array[0];
+				if (arraySize == 0)
+					arraySize = 1;
+
+				std::string name = compiler.get_name(resource.id);
+				if (name.empty())
+					name = compiler.get_fallback_name(resource.id);
+
+				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+				m_Resources[stage] = {
+					.Name = name,
+					.ArraySize = arraySize,
+					.Binding = binding,
+					.DescriptorSet = descriptorSet,
+					.Stage = stage
+				};
+
+				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
 			}
 
 			for (const auto& resource : resources.storage_images)
 			{
+				auto& type = compiler.get_type(resource.type_id);
+
+				uint32 arraySize = type.array[0];
+				if (arraySize == 0)
+					arraySize = 1;
+
 				std::string name = compiler.get_name(resource.id);
 				if (name.empty())
 					name = compiler.get_fallback_name(resource.id);
@@ -364,7 +418,15 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				FLUX_TRACE("      {0} (set = {0}, binding = {1})", name, descriptorSet, binding);
+				m_Resources[stage] = {
+					.Name = name,
+					.ArraySize = arraySize,
+					.Binding = binding,
+					.DescriptorSet = descriptorSet,
+					.Stage = stage
+				};
+			
+				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
 			}
 		}
 	}

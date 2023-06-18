@@ -28,5 +28,6 @@
 #include <filesystem>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Flux/Runtime/Core/Core.h"

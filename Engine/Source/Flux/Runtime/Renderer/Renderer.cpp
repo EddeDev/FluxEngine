@@ -9,10 +9,14 @@ namespace Flux {
 
 	struct RendererData
 	{
+		Ref<Texture2D> WhiteTexture;
+		Ref<Texture2D> BlackTexture;
+
 		Ref<Framebuffer> ActiveFramebuffer;
 
 		uint32 CurrentFrameIndex = 0;
 		uint32 CurrentQueueIndex = 0;
+
 		uint32 FrameCount = 0;
 	};
 
@@ -34,15 +38,47 @@ namespace Flux {
 
 		s_Data = new RendererData();
 		s_ResourceAllocator = CreateResourceAllocator();
+
+		// White texture
+		{
+			TextureProperties textureProperties;
+			textureProperties.GenerateMipmaps = false;
+			textureProperties.DebugLabel = "White Texture";
+
+			uint32 whiteTextureData = 0xffffffff;
+			s_Data->WhiteTexture = Ref<Texture2D>::Create(1, 1, PixelFormat::RGBA, &whiteTextureData, textureProperties);
+		}
+
+		// Black texture
+		{
+			TextureProperties textureProperties;
+			textureProperties.GenerateMipmaps = false;
+			textureProperties.DebugLabel = "Black Texture";
+
+			uint32 blackTextureData = 0xff000000;
+			s_Data->BlackTexture = Ref<Texture2D>::Create(1, 1, PixelFormat::RGBA, &blackTextureData, textureProperties);
+		}
 	}
 
 	void Renderer::Shutdown()
 	{
 		FLUX_ASSERT_IS_MAIN_THREAD();
 
+		FLUX_VERIFY(!s_Data);
+
 		delete s_ResourceAllocator;
 		s_ResourceAllocator = nullptr;
-		
+	}
+
+	void Renderer::DestroyResources()
+	{
+		FLUX_ASSERT_IS_MAIN_THREAD();
+
+		FLUX_VERIFY(s_ResourceAllocator);
+
+		FLUX_VERIFY(s_Data->WhiteTexture->GetReferenceCount() == 1);
+		FLUX_VERIFY(s_Data->BlackTexture->GetReferenceCount() == 1);
+
 		delete s_Data;
 		s_Data = nullptr;
 	}
@@ -229,6 +265,16 @@ namespace Flux {
 	uint32 Renderer::GetFramesInFlight()
 	{
 		return Engine::Get().GetSwapchain()->GetImageCount();
+	}
+
+	Ref<Texture2D> Renderer::GetWhiteTexture()
+	{
+		return s_Data->WhiteTexture;
+	}
+
+	Ref<Texture2D> Renderer::GetBlackTexture()
+	{
+		return s_Data->BlackTexture;
 	}
 
 }

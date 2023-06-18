@@ -16,6 +16,7 @@ namespace Flux {
 
 		virtual const VertexInputLayout& GetInputLayout() const { return m_InputLayout; }
 		virtual const PushConstantMap& GetPushConstants() const { return m_PushConstants; }
+		virtual const ShaderResourceMap& GetResources() const { return m_Resources; }
 
 		const std::unordered_map<ShaderStage, VkShaderModule>& GetShaderModules() const { return m_ShaderModules; }
 	private:
@@ -28,6 +29,7 @@ namespace Flux {
 		ShaderBinaryMap m_Binaries;
 		VertexInputLayout m_InputLayout;
 		PushConstantMap m_PushConstants;
+		ShaderResourceMap m_Resources;
 		std::unordered_map<ShaderStage, VkShaderModule> m_ShaderModules;
 	};
 

@@ -2,6 +2,7 @@
 
 #include "Flux/Runtime/Core/BaseTypes.h"
 #include "Flux/Runtime/Core/Logging/LogMacros.h"
+#include "Flux/Runtime/Core/AssertionMacros.h"
 
 #include <chrono>
 
@@ -35,7 +36,7 @@ namespace Flux {
 			case TimeUnit::Milliseconds: return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - m_StartTime).count() * 0.001f;
 			}
 
-			// TODO: Assert
+			FLUX_VERIFY(false, "Unknown time unit");
 			return 0.0f;
 		}
 	private:
@@ -85,6 +86,7 @@ namespace Flux {
 #define FLUX_TOKEN_PASTE(prefix, suffix) prefix##suffix
 #define FLUX_CONCAT(prefix, suffix) FLUX_TOKEN_PASTE(prefix, suffix)
 
-#define FLUX_SCOPED_TIMER(title, unit, line) FLUX_CONCAT(ScopedTimer scopedTimer, __LINE__)(title, TimeUnit::unit);
+#define FLUX_SCOPED_TIMER(title, unit) \
+	FLUX_CONCAT(ScopedTimer scopedTimer, __LINE__)(title, TimeUnit::unit);
 
 }

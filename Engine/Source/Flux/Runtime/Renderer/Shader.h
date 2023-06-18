@@ -25,6 +25,7 @@ namespace Flux {
 		std::string Name;
 		uint32 Location = 0;
 		uint32 Binding = 0;
+		uint32 Size = 0;
 		uint32 Offset = 0;
 		ShaderDataType Type = ShaderDataType::None;
 	};
@@ -56,10 +57,20 @@ namespace Flux {
 		ShaderStage Stage = ShaderStage::None;
 	};
 
+	struct ShaderResource
+	{
+		std::string Name;
+		uint32 ArraySize = 0;
+		uint32 Binding = 0;
+		uint32 DescriptorSet = 0;
+		ShaderStage Stage = ShaderStage::None;
+	};
+
 	typedef std::vector<uint32> ShaderBinary;
 	typedef std::unordered_map<ShaderStage, ShaderBinary> ShaderBinaryMap;
 	typedef std::unordered_map<ShaderStage, std::string> ShaderSourceMap;
 	typedef std::unordered_map<ShaderStage, PushConstant> PushConstantMap;
+	typedef std::unordered_map<ShaderStage, ShaderResource> ShaderResourceMap;
 
 	class Shader : public ReferenceCounted
 	{
@@ -68,6 +79,7 @@ namespace Flux {
 
 		virtual const VertexInputLayout& GetInputLayout() const = 0;
 		virtual const PushConstantMap& GetPushConstants() const = 0;
+		virtual const ShaderResourceMap& GetResources() const = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path& path);
 	};
