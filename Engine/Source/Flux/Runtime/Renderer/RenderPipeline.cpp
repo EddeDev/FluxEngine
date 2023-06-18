@@ -118,7 +118,10 @@ namespace Flux {
 
 			// glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)m_Framebuffer->GetWidth(), 0.0f, (float)m_Framebuffer->GetHeight());
 			glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), aspectRatio, 0.01f, 1000.0f);
-			m_QuadPipeline->SetPushConstant(m_CommandBuffer, ShaderStage::Vertex, &(projectionMatrix[0].x), 64);
+			FLUX_SUBMIT_RENDER_COMMAND([pipeline = m_QuadPipeline, commandBuffer = m_CommandBuffer, projectionMatrix]()
+			{
+				pipeline->RT_SetPushConstant(commandBuffer, ShaderStage::Vertex, &(projectionMatrix[0].x), 64);
+			});
 
 			m_QuadPipeline->DrawIndexed(m_CommandBuffer, m_QuadIndexCount);
 		}

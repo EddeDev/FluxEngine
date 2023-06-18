@@ -205,9 +205,9 @@ namespace Flux {
 		}
 
 		// Swap buffers
-		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain, vsync = m_VSync]() mutable
 		{
-			swapchain->Present(0);
+			swapchain->Present(vsync ? 1 : 0);
 		});
 
 		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()

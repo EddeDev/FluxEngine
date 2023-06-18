@@ -21,7 +21,6 @@ namespace Flux {
 		virtual void DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const override;
 		virtual void RT_DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const override;
 		
-		virtual void SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset = 0) override;
 		virtual void RT_SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset = 0) const override;
 	
 		virtual bool IsValid() const { return m_CreateInfo.Shader && m_CreateInfo.Framebuffer; }
@@ -33,8 +32,6 @@ namespace Flux {
 
 		VkPipeline m_Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
-
-		std::unordered_map<ShaderStage, uint8*> m_PushConstantStorage;
 	};
 
 }
