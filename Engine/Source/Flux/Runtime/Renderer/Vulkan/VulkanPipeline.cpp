@@ -120,8 +120,21 @@ namespace Flux {
 			pushConstantRange.offset = pushConstant.Offset;
 		}
 
+		int32 descriptorSetLayoutCount = 0;
+		for (auto& [set, layout] : shader->GetDescriptorSetLayouts())
+		{
+			if ((int32)set > (int32)descriptorSetLayoutCount - 1)
+				descriptorSetLayoutCount = set + 1;
+		}
+
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts(descriptorSetLayoutCount);
+		for (auto& [set, layout] : shader->GetDescriptorSetLayouts())
+			descriptorSetLayouts[set] = layout;
+
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32>(descriptorSetLayouts.size());
+		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 		pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32>(pushConstantRanges.size());
 		pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
 		VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
@@ -136,7 +149,7 @@ namespace Flux {
 			createInfo.pName = "main";
 		}
 
-		auto& inputLayout = shader->GetInputLayout();
+		auto& inputLayout = shader->GetVertexInputLayout();
 
 		std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions;
 		vertexBindingDescriptions.emplace_back() = {

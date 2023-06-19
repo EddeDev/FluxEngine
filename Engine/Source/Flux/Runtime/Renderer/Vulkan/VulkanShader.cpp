@@ -66,6 +66,18 @@ namespace Flux {
 			return static_cast<shaderc_shader_kind>(0);
 		}
 
+		static VkShaderStageFlags VulkanShaderStage(ShaderStage stage)
+		{
+			switch (stage)
+			{
+			case ShaderStage::Vertex:   return VK_SHADER_STAGE_VERTEX_BIT;
+			case ShaderStage::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case ShaderStage::Compute:  return VK_SHADER_STAGE_COMPUTE_BIT;
+			}
+			FLUX_VERIFY(false, "Unknown shader stage");
+			return static_cast<VkShaderStageFlagBits>(0);
+		}
+
 		static ShaderDataType SPIRTypeToShaderDataType(const spirv_cross::SPIRType& type)
 		{
 			switch (type.basetype)
@@ -178,9 +190,9 @@ namespace Flux {
 		FLUX_ASSERT_IS_MAIN_THREAD();
 
 		m_Binaries.clear();
-		m_InputLayout = {};
+		m_VertexInputLayout = {};
 		m_PushConstants.clear();
-		m_Resources.clear();
+		m_DescriptorSetLayouts.clear();
 
 		std::string source;
 		if (!Utils::LoadFileToString(source, m_Path))
@@ -261,6 +273,16 @@ namespace Flux {
 
 			VK_CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &m_ShaderModules[stage]));
 		}
+
+		for (const auto& [set, layoutBinding] : m_DescriptorSetLayoutBindings)
+		{
+			VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+			descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32>(layoutBinding.size());
+			descriptorSetLayoutCreateInfo.pBindings = layoutBinding.data();
+
+			VK_CHECK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &m_DescriptorSetLayouts[set]));
+		}
 	}
 
 	void VulkanShader::Reflect()
@@ -278,7 +300,7 @@ namespace Flux {
 			{
 				for (const auto& resource : resources.stage_inputs)
 				{
-					auto& attribute = m_InputLayout.Attributes.emplace_back();
+					auto& attribute = m_VertexInputLayout.Attributes.emplace_back();
 					auto& type = compiler.get_type(resource.base_type_id);
 
 					attribute.Name = compiler.get_name(resource.id);
@@ -291,7 +313,7 @@ namespace Flux {
 					attribute.Size = Utils::SPIRTypeSize(type);
 				}
 
-				std::sort(m_InputLayout.Attributes.begin(), m_InputLayout.Attributes.end(), [](const auto& a, const auto& b)
+				std::sort(m_VertexInputLayout.Attributes.begin(), m_VertexInputLayout.Attributes.end(), [](const auto& a, const auto& b)
 				{
 					return a.Location < b.Location;
 				});
@@ -299,12 +321,12 @@ namespace Flux {
 				uint32 stride = 0;
 				for (size_t i = 0; i < resources.stage_inputs.size(); i++)
 				{
-					auto& attribute = m_InputLayout.Attributes[i];
+					auto& attribute = m_VertexInputLayout.Attributes[i];
 					attribute.Offset = stride;
 					stride += attribute.Size;
 				}
 
-				m_InputLayout.Stride = stride;
+				m_VertexInputLayout.Stride = stride;
 			}
 
 			if (stage == ShaderStage::Fragment)
@@ -366,13 +388,13 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				m_Resources[stage] = {
-					.Name = name,
-					.ArraySize = arraySize,
-					.Binding = binding,
-					.DescriptorSet = descriptorSet,
-					.Stage = stage
-				};
+				auto& descriptor = m_DescriptorSets[descriptorSet].SampledImages[binding];
+				descriptor.Name = name;
+				descriptor.Type = ShaderDescriptorType::SampledImage;
+				descriptor.Stage = stage;
+				descriptor.ArraySize = arraySize;
+				descriptor.Binding = binding;
+				descriptor.DescriptorSet = descriptorSet;
 
 				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
 			}
@@ -392,13 +414,13 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				m_Resources[stage] = {
-					.Name = name,
-					.ArraySize = arraySize,
-					.Binding = binding,
-					.DescriptorSet = descriptorSet,
-					.Stage = stage
-				};
+				auto& descriptor = m_DescriptorSets[descriptorSet].SeparateImages[binding];
+				descriptor.Name = name;
+				descriptor.Type = ShaderDescriptorType::SeparateImage;
+				descriptor.Stage = stage;
+				descriptor.ArraySize = arraySize;
+				descriptor.Binding = binding;
+				descriptor.DescriptorSet = descriptorSet;
 
 				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
 			}
@@ -418,17 +440,109 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				m_Resources[stage] = {
-					.Name = name,
-					.ArraySize = arraySize,
-					.Binding = binding,
-					.DescriptorSet = descriptorSet,
-					.Stage = stage
-				};
-			
+				auto& descriptor = m_DescriptorSets[descriptorSet].StorageImages[binding];
+				descriptor.Name = name;
+				descriptor.Type = ShaderDescriptorType::StorageImage;
+				descriptor.Stage = stage;
+				descriptor.ArraySize = arraySize;
+				descriptor.Binding = binding;
+				descriptor.DescriptorSet = descriptorSet;
+
 				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
 			}
 		}
+
+		for (auto& [set, descriptorSet] : m_DescriptorSets)
+		{
+			if (!descriptorSet.SampledImages.empty())
+			{
+				const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+				m_DescriptorPoolSizes[set].push_back({
+					descriptorType,
+					static_cast<uint32>(descriptorSet.SampledImages.size())
+				});
+
+				for (const auto& [binding, descriptor] : descriptorSet.SampledImages)
+				{
+					m_DescriptorSetLayoutBindings[set].push_back({
+						binding,
+						descriptorType,
+						descriptor.ArraySize,
+						Utils::VulkanShaderStage(descriptor.Stage)
+					});
+				}
+			}
+
+			if (!descriptorSet.SeparateImages.empty())
+			{
+				const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+
+				m_DescriptorPoolSizes[set].push_back({
+					descriptorType,
+					static_cast<uint32>(descriptorSet.SeparateImages.size())
+				});
+
+				for (const auto& [binding, descriptor] : descriptorSet.SeparateImages)
+				{
+					m_DescriptorSetLayoutBindings[set].push_back({
+						binding,
+						descriptorType,
+						descriptor.ArraySize,
+						Utils::VulkanShaderStage(descriptor.Stage)
+					});
+				}
+			}
+
+			if (!descriptorSet.StorageImages.empty())
+			{
+				const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+				m_DescriptorPoolSizes[set].push_back({
+					descriptorType,
+					static_cast<uint32>(descriptorSet.StorageImages.size())
+				});
+
+				for (const auto& [binding, descriptor] : descriptorSet.StorageImages)
+				{
+					m_DescriptorSetLayoutBindings[set].push_back({
+						binding,
+						descriptorType,
+						descriptor.ArraySize,
+						Utils::VulkanShaderStage(descriptor.Stage)
+					});
+				}
+			}
+		}
+	}
+
+	VkDescriptorSet VulkanShader::RT_CreateDescriptorSet(uint32 set)
+	{
+		FLUX_ASSERT_IS_RENDER_THREAD();
+
+		FLUX_VERIFY(m_DescriptorPoolSizes.find(set) != m_DescriptorPoolSizes.end());
+		FLUX_VERIFY(m_DescriptorSetLayouts.find(set) != m_DescriptorSetLayouts.end());
+
+		VkDevice device = VulkanDevice::Get()->GetDevice();
+
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		descriptorPoolCreateInfo.maxSets = 1;
+		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(m_DescriptorPoolSizes[set].size());
+		descriptorPoolCreateInfo.pPoolSizes = m_DescriptorPoolSizes[set].data();
+
+		VkDescriptorPool descriptorPool;
+		VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
+
+		VkDescriptorSetAllocateInfo allocateInfo = {};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocateInfo.descriptorPool = descriptorPool;
+		allocateInfo.descriptorSetCount = 1;
+		allocateInfo.pSetLayouts = &m_DescriptorSetLayouts[set];
+
+		VkDescriptorSet descriptorSet;
+		VK_CHECK(vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet));
+		return descriptorSet;
 	}
 
 }

@@ -43,15 +43,13 @@ struct VertexOutput
 layout(location = 0) in VertexOutput Input;
 layout(location = 2) in flat float v_TextureIndex;
 
-#if 0
-	layout(set = 1, binding = 0) uniform sampler2D u_Textures[32];
-#endif
+layout(set = 0, binding = 0) uniform sampler2D u_Textures[32];
+layout(set = 1, binding = 0) uniform sampler2D u_Texture;
 
 void main()
 {
     vec4 color = Input.Color;
 
-#if 0
 	switch (int(v_TextureIndex))
 	{
 		case  0: color *= texture(u_Textures[ 0], Input.TexCoord); break;
@@ -87,7 +85,8 @@ void main()
 		case 30: color *= texture(u_Textures[30], Input.TexCoord); break;
 		case 31: color *= texture(u_Textures[31], Input.TexCoord); break;
 	}
-#endif
+
+	color *= texture(u_Texture, Input.TexCoord);
 
 	if (color.a == 0.0)
 		discard;

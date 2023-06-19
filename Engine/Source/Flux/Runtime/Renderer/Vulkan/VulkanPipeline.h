@@ -23,7 +23,7 @@ namespace Flux {
 		
 		virtual void RT_SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset = 0) const override;
 	
-		virtual bool IsValid() const { return m_CreateInfo.Shader && m_CreateInfo.Framebuffer; }
+		virtual bool IsValid() const { return m_CreateInfo.IsValid(); }
 
 		virtual Ref<Shader> GetShader() const override { return m_CreateInfo.Shader; }
 		virtual Ref<Framebuffer> GetFramebuffer() const override { return m_CreateInfo.Framebuffer; }

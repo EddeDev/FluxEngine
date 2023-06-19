@@ -41,45 +41,62 @@ namespace Flux {
 		std::vector<VertexInputAttribute>::const_iterator end() const { return Attributes.cend(); }
 	};
 
-	struct PushConstantMember
+	struct ShaderPushConstantMember
 	{
 		std::string Name;
 		uint32 Size = 0;
 		uint32 Offset = 0;
 	};
 
-	struct PushConstant
+	struct ShaderPushConstant
 	{
-		std::unordered_map<std::string, PushConstantMember> Members;
+		std::unordered_map<std::string, ShaderPushConstantMember> Members;
 		std::string Name;
 		uint32 Size = 0;
 		uint32 Offset = 0;
 		ShaderStage Stage = ShaderStage::None;
 	};
 
-	struct ShaderResource
+	enum class ShaderDescriptorType : uint8
+	{
+		None = 0,
+
+		SampledImage,
+		SeparateImage,
+		StorageImage
+	};
+
+	struct ShaderDescriptor
 	{
 		std::string Name;
+		ShaderDescriptorType Type = ShaderDescriptorType::None;
+		ShaderStage Stage = ShaderStage::None;
 		uint32 ArraySize = 0;
 		uint32 Binding = 0;
 		uint32 DescriptorSet = 0;
-		ShaderStage Stage = ShaderStage::None;
+	};
+
+	struct ShaderDescriptorSet
+	{
+		std::unordered_map<uint32, ShaderDescriptor> SampledImages;
+		std::unordered_map<uint32, ShaderDescriptor> SeparateImages;
+		std::unordered_map<uint32, ShaderDescriptor> StorageImages;
 	};
 
 	typedef std::vector<uint32> ShaderBinary;
 	typedef std::unordered_map<ShaderStage, ShaderBinary> ShaderBinaryMap;
 	typedef std::unordered_map<ShaderStage, std::string> ShaderSourceMap;
-	typedef std::unordered_map<ShaderStage, PushConstant> PushConstantMap;
-	typedef std::unordered_map<ShaderStage, ShaderResource> ShaderResourceMap;
+	typedef std::unordered_map<ShaderStage, ShaderPushConstant> PushConstantMap;
+	typedef std::unordered_map<uint32, ShaderDescriptorSet> ShaderDescriptorSetMap;
 
 	class Shader : public ReferenceCounted
 	{
 	public:
 		virtual void Reload() = 0;
 
-		virtual const VertexInputLayout& GetInputLayout() const = 0;
+		virtual const VertexInputLayout& GetVertexInputLayout() const = 0;
 		virtual const PushConstantMap& GetPushConstants() const = 0;
-		virtual const ShaderResourceMap& GetResources() const = 0;
+		virtual const ShaderDescriptorSetMap& GetDescriptorSets() const = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path& path);
 	};
