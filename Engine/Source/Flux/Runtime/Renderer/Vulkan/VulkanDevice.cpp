@@ -192,7 +192,7 @@ namespace Flux {
 
 	uint32 VulkanDevice::GetMemoryTypeIndex(uint32 typeBits, VkMemoryPropertyFlags propertyFlags) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkPhysicalDeviceMemoryProperties memoryProperties;
 		vkGetPhysicalDeviceMemoryProperties(m_Adapter->GetPhysicalDevice(), &memoryProperties);
@@ -213,7 +213,7 @@ namespace Flux {
 
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool begin) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkCommandBuffer commandBuffer;
 
@@ -237,7 +237,7 @@ namespace Flux {
 
 	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(commandBuffer);
 		
 		VkDevice device = VulkanDevice::Get()->GetDevice();

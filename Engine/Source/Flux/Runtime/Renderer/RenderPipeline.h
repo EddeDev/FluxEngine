@@ -87,7 +87,6 @@ namespace Flux {
 		EnvironmentSettings m_EnvironmentSettings;
 
 		Ref<CommandBuffer> m_CommandBuffer;
-		Ref<Framebuffer> m_Framebuffer;
 
 		struct QuadVertex
 		{

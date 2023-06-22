@@ -48,14 +48,14 @@ namespace Flux {
 
 	Engine::~Engine()
 	{
-		FLUX_ASSERT_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_EVENT_THREAD();
 
 		s_Instance = nullptr;
 	}
 
 	void Engine::Run()
 	{
-		FLUX_ASSERT_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_EVENT_THREAD();
 
 		ThreadCreateInfo mainThreadCreateInfo;
 		mainThreadCreateInfo.Name = "Main Thread";
@@ -123,7 +123,7 @@ namespace Flux {
 
 	void Engine::MT_MainLoop()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		if (m_Application)
 			m_Application->OnInit();
@@ -177,7 +177,7 @@ namespace Flux {
 
 	void Engine::MT_UpdateAndRender()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([swapchain = m_Swapchain]() mutable
 		{
@@ -222,7 +222,7 @@ namespace Flux {
 
 	void Engine::Close(bool restart)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		m_Running = false;
 		g_EngineRunning = restart;
@@ -230,7 +230,7 @@ namespace Flux {
 
 	void Engine::OnWindowClose()
 	{
-		FLUX_ASSERT_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_EVENT_THREAD();
 
 		SubmitToMainThread([this]()
 		{
@@ -240,7 +240,7 @@ namespace Flux {
 
 	void Engine::OnWindowResize(uint32 width, uint32 height)
 	{
-		FLUX_ASSERT_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_EVENT_THREAD();
 
 		if (width == 0 || height == 0)
 		{
@@ -253,7 +253,7 @@ namespace Flux {
 
 	void Engine::OnWindowMinimize(bool minimized)
 	{
-		FLUX_ASSERT_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_EVENT_THREAD();
 
 		m_Minimized = minimized;
 	}

@@ -64,21 +64,21 @@ namespace Flux {
 	VulkanSampler::VulkanSampler(const SamplerCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Invalidate();
 	}
 
 	VulkanSampler::~VulkanSampler()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Release();
 	}
 
 	void VulkanSampler::Invalidate()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanSampler> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -89,7 +89,7 @@ namespace Flux {
 
 	void VulkanSampler::RT_Invalidate()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		RT_Release();
 
@@ -117,7 +117,7 @@ namespace Flux {
 
 	void VulkanSampler::Release()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([sampler = m_Sampler]()
 		{
@@ -128,7 +128,7 @@ namespace Flux {
 
 	void VulkanSampler::RT_Release()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_Sampler)
 		{

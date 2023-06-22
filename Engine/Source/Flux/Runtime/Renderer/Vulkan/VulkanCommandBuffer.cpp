@@ -12,7 +12,7 @@ namespace Flux {
 	VulkanCommandBuffer::VulkanCommandBuffer(const CommandBufferCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_INFO("Creating command buffer: {0}", createInfo.DebugLabel);
 		if (!createInfo.CreateFromSwapchain)
@@ -59,7 +59,7 @@ namespace Flux {
 
 	VulkanCommandBuffer::~VulkanCommandBuffer()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		if (!m_CreateInfo.CreateFromSwapchain)
 		{
@@ -75,7 +75,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::Begin()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanCommandBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -86,7 +86,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::RT_Begin()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(!m_ActiveCommandBuffer);
 
 		uint32 frameIndex = Renderer::RT_GetCurrentFrameIndex();
@@ -112,7 +112,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::End()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanCommandBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -123,7 +123,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::RT_End()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(m_ActiveCommandBuffer);
 
 		VK_CHECK(vkEndCommandBuffer(m_ActiveCommandBuffer));
@@ -132,7 +132,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::Submit()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanCommandBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -143,7 +143,7 @@ namespace Flux {
 
 	void VulkanCommandBuffer::RT_Submit()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		// FLUX_ASSERT(!m_CreateInfo.CreateFromSwapchain);
 

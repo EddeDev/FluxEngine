@@ -12,7 +12,7 @@ namespace Flux {
 	VulkanIndexBuffer::VulkanIndexBuffer(const void* data, uint32 size)
 		: m_Size(size), m_Count(size / sizeof(uint32))
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		m_Storage = new uint8[size];
 		memcpy(m_Storage, data, size);
@@ -58,7 +58,7 @@ namespace Flux {
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		delete[] m_Storage;
 
@@ -71,7 +71,7 @@ namespace Flux {
 
 	void VulkanIndexBuffer::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<const VulkanIndexBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
@@ -82,7 +82,7 @@ namespace Flux {
 
 	void VulkanIndexBuffer::RT_Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		static VkDeviceSize offsets[1] = { 0 };
 

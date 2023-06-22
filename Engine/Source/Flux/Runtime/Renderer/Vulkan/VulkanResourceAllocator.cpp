@@ -31,7 +31,7 @@ namespace Flux {
 
 	ResourceAllocation VulkanResourceAllocator::CreateBuffer(const VkBufferCreateInfo& createInfo, ResourceMemoryUsage usage, VkBuffer& outBuffer)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VmaAllocationCreateInfo allocationCreateInfo = {};
 		allocationCreateInfo.usage = (VmaMemoryUsage)usage;
@@ -50,7 +50,7 @@ namespace Flux {
 
 	ResourceAllocation VulkanResourceAllocator::CreateImage(const VkImageCreateInfo& createInfo, ResourceMemoryUsage usage, VkImage& outImage)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VmaAllocationCreateInfo allocationCreateInfo = {};
 		allocationCreateInfo.usage = (VmaMemoryUsage)usage;
@@ -69,7 +69,7 @@ namespace Flux {
 
 	void VulkanResourceAllocator::DestroyBuffer(VkBuffer buffer, ResourceAllocation allocation)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(allocation);
 
 		vmaDestroyBuffer((VmaAllocator)m_Allocator, buffer, (VmaAllocation)allocation);
@@ -77,7 +77,7 @@ namespace Flux {
 
 	void VulkanResourceAllocator::DestroyImage(VkImage image, ResourceAllocation allocation)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(allocation);
 
 		vmaDestroyImage((VmaAllocator)m_Allocator, image, (VmaAllocation)allocation);
@@ -85,7 +85,7 @@ namespace Flux {
 
 	void VulkanResourceAllocator::MapMemory(ResourceAllocation allocation, void** outData) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(allocation);
 
 		VK_CHECK(vmaMapMemory((VmaAllocator)m_Allocator, (VmaAllocation)allocation, outData));
@@ -93,7 +93,7 @@ namespace Flux {
 
 	void VulkanResourceAllocator::UnmapMemory(ResourceAllocation allocation) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_ASSERT(allocation);
 
 		vmaUnmapMemory((VmaAllocator)m_Allocator, (VmaAllocation)allocation);

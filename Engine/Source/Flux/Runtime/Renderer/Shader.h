@@ -57,12 +57,31 @@ namespace Flux {
 		ShaderStage Stage = ShaderStage::None;
 	};
 
+	struct ShaderUniform
+	{
+		std::string Name;
+		uint32 Size = 0;
+		uint32 Offset = 0;
+	};
+
+	struct ShaderUniformBuffer
+	{
+		std::unordered_map<std::string, ShaderUniform> Uniforms;
+		std::string Name;
+		ShaderStage Stage = ShaderStage::None;
+		uint32 Size = 0;
+		uint32 Binding = 0;
+		uint32 DescriptorSet = 0;
+	};
+
 	enum class ShaderDescriptorType : uint8
 	{
 		None = 0,
 
+		UniformBuffer,
+		StorageBuffer,
+		CombinedImageSampler,
 		SampledImage,
-		SeparateImage,
 		StorageImage
 	};
 
@@ -71,23 +90,16 @@ namespace Flux {
 		std::string Name;
 		ShaderDescriptorType Type = ShaderDescriptorType::None;
 		ShaderStage Stage = ShaderStage::None;
-		uint32 ArraySize = 0;
+		uint32 Count = 0;
 		uint32 Binding = 0;
 		uint32 DescriptorSet = 0;
-	};
-
-	struct ShaderDescriptorSet
-	{
-		std::unordered_map<uint32, ShaderDescriptor> SampledImages;
-		std::unordered_map<uint32, ShaderDescriptor> SeparateImages;
-		std::unordered_map<uint32, ShaderDescriptor> StorageImages;
 	};
 
 	typedef std::vector<uint32> ShaderBinary;
 	typedef std::unordered_map<ShaderStage, ShaderBinary> ShaderBinaryMap;
 	typedef std::unordered_map<ShaderStage, std::string> ShaderSourceMap;
 	typedef std::unordered_map<ShaderStage, ShaderPushConstant> PushConstantMap;
-	typedef std::unordered_map<uint32, ShaderDescriptorSet> ShaderDescriptorSetMap;
+	typedef std::map<uint32, std::map<ShaderDescriptorType, std::map<uint32, ShaderDescriptor>>> ShaderDescriptorSetMap;
 
 	class Shader : public ReferenceCounted
 	{

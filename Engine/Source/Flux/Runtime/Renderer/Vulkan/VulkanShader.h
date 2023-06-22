@@ -18,7 +18,7 @@ namespace Flux {
 		virtual const PushConstantMap& GetPushConstants() const { return m_PushConstants; }
 		virtual const ShaderDescriptorSetMap& GetDescriptorSets() const { return m_DescriptorSets; }
 
-		VkDescriptorSet RT_CreateDescriptorSet(uint32 set);
+		VkDescriptorSet RT_CreateDescriptorSet(uint32 set) const;
 
 		const std::unordered_map<uint32, VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
 		const std::unordered_map<ShaderStage, VkShaderModule>& GetShaderModules() const { return m_ShaderModules; }
@@ -27,6 +27,7 @@ namespace Flux {
 
 		void RT_CreateShaders();
 		void Reflect();
+		void CreateDescriptors();
 	private:
 		std::filesystem::path m_Path;
 

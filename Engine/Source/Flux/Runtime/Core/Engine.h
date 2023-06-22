@@ -106,24 +106,14 @@ namespace Flux {
 		} m_PerformanceTimers;
 	};
 
-#ifdef FLUX_ENABLE_ASSERTS
-	#define FLUX_ASSERT_IS_MAIN_THREAD() FLUX_ASSERT_IS_THREAD(Engine::Get().GetMainThreadID())
-	#define FLUX_ASSERT_IS_EVENT_THREAD() FLUX_ASSERT_IS_THREAD(Engine::Get().GetEventThreadID())
-	#define FLUX_ASSERT_IS_RENDER_THREAD() FLUX_ASSERT_IS_THREAD(Engine::Get().GetRenderThreadID())
-#else
-	#define FLUX_ASSERT_IS_MAIN_THREAD() (void)0
-	#define FLUX_ASSERT_IS_EVENT_THREAD() (void)0
-	#define FLUX_ASSERT_IS_RENDER_THREAD() (void)0
-#endif
-
 #ifndef FLUX_BUILD_SHIPPING
-	#define FLUX_VERIFY_IS_MAIN_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetMainThreadID())
-	#define FLUX_VERIFY_IS_EVENT_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetEventThreadID())
-	#define FLUX_VERIFY_IS_RENDER_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetRenderThreadID())
+	#define FLUX_CHECK_IS_MAIN_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetMainThreadID())
+	#define FLUX_CHECK_IS_EVENT_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetEventThreadID())
+	#define FLUX_CHECK_IS_RENDER_THREAD() FLUX_VERIFY_IS_THREAD(Engine::Get().GetRenderThreadID())
 #else
-	#define FLUX_VERIFY_IS_MAIN_THREAD() (void)0
-	#define FLUX_VERIFY_IS_EVENT_THREAD() (void)0
-	#define FLUX_VERIFY_IS_RENDER_THREAD() (void)0
+	#define FLUX_CHECK_IS_MAIN_THREAD() (void)0
+	#define FLUX_CHECK_IS_EVENT_THREAD() (void)0
+	#define FLUX_CHECK_IS_RENDER_THREAD() (void)0
 #endif
 
 #define FLUX_CURRENT_GRAPHICS_API Engine::Get().GetGraphicsAPI()

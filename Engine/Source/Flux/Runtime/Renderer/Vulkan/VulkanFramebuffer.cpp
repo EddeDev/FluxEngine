@@ -14,7 +14,7 @@ namespace Flux {
 	VulkanFramebuffer::VulkanFramebuffer(const FramebufferCreateInfo& createInfo)
 		: m_CreateInfo(createInfo), m_Width(createInfo.Width), m_Height(createInfo.Height)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		if (m_Width == 0 || m_Height == 0)
 		{
@@ -48,7 +48,7 @@ namespace Flux {
 
 	VulkanFramebuffer::~VulkanFramebuffer()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([renderPass = m_RenderPass, framebuffer = m_Framebuffer]()
 		{
@@ -61,7 +61,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::Resize(uint32 width, uint32 height, bool forceRecreate)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		if (!forceRecreate && (m_Width == width && m_Height == height))
 			return;
@@ -75,7 +75,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::Invalidate()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanFramebuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -86,7 +86,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::RT_Invalidate()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 
@@ -298,7 +298,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<const VulkanFramebuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
@@ -309,7 +309,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::RT_Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkCommandBuffer activeCommandBuffer = commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer();
 
@@ -375,7 +375,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::Unbind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<const VulkanFramebuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
@@ -386,7 +386,7 @@ namespace Flux {
 
 	void VulkanFramebuffer::RT_Unbind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		vkCmdEndRenderPass(commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer());
 	}

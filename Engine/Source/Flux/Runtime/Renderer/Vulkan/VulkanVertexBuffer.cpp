@@ -12,7 +12,7 @@ namespace Flux {
 	VulkanVertexBuffer::VulkanVertexBuffer(uint32 size)
 		: m_Size(size)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		m_Storage = new uint8[size];
 		memset(m_Storage, 0, size);
@@ -36,7 +36,7 @@ namespace Flux {
 	VulkanVertexBuffer::VulkanVertexBuffer(const void* data, uint32 size)
 		: m_Size(size)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		m_Storage = new uint8[size];
 		memcpy(m_Storage, data, size);
@@ -82,7 +82,7 @@ namespace Flux {
 
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		delete[] m_Storage;
 
@@ -95,7 +95,7 @@ namespace Flux {
 
 	void VulkanVertexBuffer::SetData(Ref<CommandBuffer> commandBuffer, const void* data, uint32 size, uint32 offset)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		memcpy(m_Storage, (uint8*)data + offset, size);
 
@@ -108,7 +108,7 @@ namespace Flux {
 
 	void VulkanVertexBuffer::RT_SetData(Ref<CommandBuffer> commandBuffer, const void* data, uint32 size, uint32 offset)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
 		uint8* memory = allocator.MapMemory<uint8>(m_Allocation);
@@ -118,7 +118,7 @@ namespace Flux {
 
 	void VulkanVertexBuffer::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<const VulkanVertexBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
@@ -129,7 +129,7 @@ namespace Flux {
 
 	void VulkanVertexBuffer::RT_Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		static VkDeviceSize offsets[1] = { 0 };
 

@@ -14,7 +14,7 @@ namespace Flux {
 	VulkanSwapchain::VulkanSwapchain(Window* window)
 		: m_Window(window)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		Ref<VulkanAdapter> adapter = VulkanDevice::Get()->GetAdapter().As<VulkanAdapter>();
 		Ref<VulkanContext> context = adapter->GetContext().As<VulkanContext>();
@@ -38,7 +38,7 @@ namespace Flux {
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		DestroyCommandBuffers();
 		DestroySemaphores();
@@ -52,7 +52,7 @@ namespace Flux {
 
 	void VulkanSwapchain::BeginFrame()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkResult result = vkAcquireNextImageKHR(m_Device, m_Swapchain, std::numeric_limits<uint64>::max(), m_PresentComplete, VK_NULL_HANDLE, &m_CurrentBufferIndex);
 
@@ -91,7 +91,7 @@ namespace Flux {
 
 	void VulkanSwapchain::Present(int32 swapInterval)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkSurfaceCapabilitiesKHR surfaceCapabilities;
 		VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &surfaceCapabilities));
@@ -169,7 +169,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateSurface()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 #ifdef FLUX_PLATFORM_WINDOWS
 		VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
@@ -182,7 +182,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateSwapchain()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		uint32 surfaceFormatCount;
 		VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &surfaceFormatCount, nullptr));
@@ -234,7 +234,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateImageViews()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VK_CHECK(vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &m_ImageCount, nullptr));
 		FLUX_VERIFY(m_ImageCount > 0);
@@ -269,7 +269,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateRenderPass()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		std::array<VkAttachmentDescription, 2> attachmentDescriptions;
 
@@ -341,7 +341,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateDepthStencilImage()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		Ref<VulkanDevice> device = VulkanDevice::Get();
 
@@ -387,7 +387,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateFramebuffer()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		m_Framebuffers.resize(m_ImageCount);
 		for (uint32 i = 0; i < m_ImageCount; i++)
@@ -411,7 +411,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateSemaphores()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -421,7 +421,7 @@ namespace Flux {
 
 	void VulkanSwapchain::CreateCommandBuffers()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkCommandPoolCreateInfo commandPoolCreateInfo = {};
 		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -445,7 +445,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroySurface()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_Surface)
 		{
@@ -456,7 +456,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroySwapchain()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_Swapchain)
 		{
@@ -467,7 +467,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroyImageViews()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		for (uint32 i = 0; i < static_cast<uint32>(m_SwapchainImageViews.size()); i++)
 			vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
@@ -476,7 +476,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroyRenderPass()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_RenderPass)
 		{
@@ -487,7 +487,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroyDepthStencilImage()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_DepthStencilImageView)
 		{
@@ -510,7 +510,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroyFramebuffer()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		for (uint32 i = 0; i < static_cast<uint32>(m_Framebuffers.size()); i++)
 			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
@@ -519,7 +519,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroySemaphores()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_PresentComplete)
 		{
@@ -536,7 +536,7 @@ namespace Flux {
 
 	void VulkanSwapchain::DestroyCommandBuffers()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		for (uint32 i = 0; i < static_cast<uint32>(m_CommandBuffers.size()); i++)
 			vkFreeCommandBuffers(m_Device, m_CommandPools[i], 1, &m_CommandBuffers[i]);
@@ -549,7 +549,7 @@ namespace Flux {
 
 	void VulkanSwapchain::FindPresentQueue()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		uint32 queueFamilyCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
@@ -604,7 +604,7 @@ namespace Flux {
 	
 	void VulkanSwapchain::FindColorFormat()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		uint32 surfaceFormatCount;
 		VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &surfaceFormatCount, nullptr));
@@ -621,7 +621,7 @@ namespace Flux {
 
 	VkFormat VulkanSwapchain::ChooseDepthFormat() const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		const std::vector<VkFormat> depthFormats = {
 			VK_FORMAT_D32_SFLOAT_S8_UINT,

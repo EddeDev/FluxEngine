@@ -9,7 +9,7 @@ namespace Flux {
 
 	Ref<Image2D> Image2D::Create(const ImageCreateInfo& createInfo)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{

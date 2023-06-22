@@ -11,6 +11,8 @@ namespace Flux {
 
 	ForwardRenderPipeline::ForwardRenderPipeline()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		m_ViewportWidth = Engine::Get().GetSwapchain()->GetWidth();
 		m_ViewportHeight = Engine::Get().GetSwapchain()->GetHeight();
 
@@ -30,7 +32,7 @@ namespace Flux {
 		};
 		framebufferCreateInfo.SwapchainTarget = s_SwapchainTarget;
 		framebufferCreateInfo.DebugLabel = "Main FB";
-		m_Framebuffer = Framebuffer::Create(framebufferCreateInfo);
+		Ref<Framebuffer> framebuffer = Framebuffer::Create(framebufferCreateInfo);
 
 		// Quads
 		{
@@ -38,8 +40,9 @@ namespace Flux {
 
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			pipelineCreateInfo.Shader = m_QuadShader;
-			pipelineCreateInfo.Framebuffer = m_Framebuffer;
+			pipelineCreateInfo.Framebuffer = framebuffer;
 			m_QuadPipeline = GraphicsPipeline::Create(pipelineCreateInfo);
+			m_QuadPipeline->SetInput("Camera", Renderer::GetUniformBuffer("Camera"));
 
 			m_QuadVertexBuffer.resize(framesInFlight);
 			m_QuadVertexStorage.resize(framesInFlight);
@@ -77,6 +80,8 @@ namespace Flux {
 
 	ForwardRenderPipeline::~ForwardRenderPipeline()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		uint32 framesInFlight = Renderer::GetFramesInFlight();
 
 		for (uint32 i = 0; i < framesInFlight; i++)
@@ -85,14 +90,18 @@ namespace Flux {
 
 	void ForwardRenderPipeline::BeginRendering()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
 	}
 
 	void ForwardRenderPipeline::EndRendering()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
 	}
 
 	void ForwardRenderPipeline::BeginRendering2D()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
 
 		m_QuadVertexPointer = m_QuadVertexStorage[frameIndex];
@@ -101,15 +110,29 @@ namespace Flux {
 		m_QuadTextureSlotIndex = 1;
 		for (uint32_t i = m_QuadTextureSlotIndex; i < m_QuadTextureSlots.size(); i++)
 			m_QuadTextureSlots[i] = nullptr;
+
+		Ref<UniformBuffer> cameraUniformBuffer = Renderer::GetUniformBuffer("Camera");
+		if (cameraUniformBuffer)
+		{
+			glm::mat4 viewMatrix = m_CameraSettings.ViewMatrix;
+			glm::mat4 projectionMatrix = m_CameraSettings.ProjectionMatrix;
+			glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
+			glm::mat4 inverseViewProjectionMatrix = glm::inverse(viewProjectionMatrix);
+
+			cameraUniformBuffer->Set("u_ViewProjectionMatrix", projectionMatrix);
+			cameraUniformBuffer->Set("u_InverseViewProjectionMatrix", inverseViewProjectionMatrix);
+			cameraUniformBuffer->Set("u_ProjectionMatrix", projectionMatrix);
+			cameraUniformBuffer->Set("u_ViewMatrix", viewMatrix);
+		}
 	}
 
 	void ForwardRenderPipeline::EndRendering2D()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		m_CommandBuffer->Begin();
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
-
-		Renderer::BeginRenderPass(m_CommandBuffer, m_Framebuffer);
 
 		if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
 		{
@@ -118,20 +141,11 @@ namespace Flux {
 				uint32 dataSize = static_cast<uint32>((uint8*)m_QuadVertexPointer - (uint8*)m_QuadVertexStorage[frameIndex]);
 				m_QuadVertexBuffer[frameIndex]->SetData(m_CommandBuffer, m_QuadVertexStorage[frameIndex], dataSize);
 
-				m_QuadVertexBuffer[frameIndex]->Bind(m_CommandBuffer);
-				m_QuadPipeline->Bind(m_CommandBuffer);
-				m_QuadIndexBuffer->Bind(m_CommandBuffer);
-
-				FLUX_SUBMIT_RENDER_COMMAND([pipeline = m_QuadPipeline, commandBuffer = m_CommandBuffer, projectionMatrix = m_CameraSettings.ProjectionMatrix]()
-				{
-					pipeline->RT_SetPushConstant(commandBuffer, ShaderStage::Vertex, glm::value_ptr(projectionMatrix), sizeof(glm::mat4));
-				});
-
-				m_QuadPipeline->DrawIndexed(m_CommandBuffer, m_QuadIndexCount);
+				Renderer::BeginRenderPass(m_CommandBuffer, m_QuadPipeline);
+				Renderer::RenderGeometry(m_CommandBuffer, m_QuadVertexBuffer[frameIndex], m_QuadIndexBuffer, m_QuadIndexCount);
+				Renderer::EndRenderPass(m_CommandBuffer);
 			}
 		}
-
-		Renderer::EndRenderPass(m_CommandBuffer);
 
 		m_CommandBuffer->End();
 		m_CommandBuffer->Submit();
@@ -139,6 +153,8 @@ namespace Flux {
 
 	void ForwardRenderPipeline::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		m_QuadVertexPointer->Position = transform * glm::vec4(-0.5f, -0.5f, 0.0f, 1.0f);
 		m_QuadVertexPointer->Color = color;
 		m_QuadVertexPointer->TexCoord = { 0.0f, 1.0f };
@@ -168,6 +184,8 @@ namespace Flux {
 
 	void ForwardRenderPipeline::DrawQuad(const glm::vec3& position, float rotation, const glm::vec2& scale, const glm::vec4& color)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
 			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), { 0.0f, 0.0f, 1.0f })
 			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
@@ -177,6 +195,8 @@ namespace Flux {
 
 	void ForwardRenderPipeline::DrawQuad(const glm::vec3& position, const glm::vec2& scale, const glm::vec4& color)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
 			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
 
@@ -185,6 +205,8 @@ namespace Flux {
 
 	void ForwardRenderPipeline::DrawQuad(const glm::mat4& transform, Ref<Texture2D> texture, const glm::vec4& color)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		float textureIndex = 0.0f;
 		for (uint32 i = 1; i < m_QuadTextureSlotIndex; i++)
 		{
@@ -231,6 +253,8 @@ namespace Flux {
 
 	void ForwardRenderPipeline::DrawQuad(const glm::vec3& position, float rotation, const glm::vec2& scale, Ref<Texture2D> texture, const glm::vec4& color)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
 			* glm::rotate(glm::mat4(1.0f), glm::radians(rotation), { 0.0f, 0.0f, 1.0f })
 			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
@@ -240,6 +264,8 @@ namespace Flux {
 
 	void ForwardRenderPipeline::DrawQuad(const glm::vec3& position, const glm::vec2& scale, Ref<Texture2D> texture, const glm::vec4& color)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), position)
 			* glm::scale(glm::mat4(1.0f), { scale, 1.0f });
 
@@ -248,11 +274,12 @@ namespace Flux {
 
 	void ForwardRenderPipeline::SetViewportSize(uint32 width, uint32 height)
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
 		FLUX_ASSERT(width > 0 && height > 0);
 
 		if (m_ViewportWidth != width || m_ViewportHeight != height)
 		{
-			m_Framebuffer->Resize(width, height);
+			m_QuadPipeline->GetFramebuffer()->Resize(width, height);
 
 			m_ViewportWidth = width;
 			m_ViewportHeight = height;

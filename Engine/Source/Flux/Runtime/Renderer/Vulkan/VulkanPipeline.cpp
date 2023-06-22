@@ -8,6 +8,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanShader.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanUniformBuffer.h"
 #include "VulkanCompareOp.h"
 
 namespace Flux {
@@ -64,7 +65,7 @@ namespace Flux {
 	VulkanPipeline::VulkanPipeline(const GraphicsPipelineCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 		FLUX_VERIFY(createInfo.IsValid());
 
 		Invalidate();
@@ -72,7 +73,7 @@ namespace Flux {
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 		
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([pipelineLayout = m_PipelineLayout, pipeline = m_Pipeline]()
 		{
@@ -85,7 +86,7 @@ namespace Flux {
 
 	void VulkanPipeline::Invalidate()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanPipeline> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -96,7 +97,7 @@ namespace Flux {
 
 	void VulkanPipeline::RT_Invalidate()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 		VkPipelineCache pipelineCache = VulkanDevice::Get()->GetPipelineCache();
@@ -179,7 +180,7 @@ namespace Flux {
 		inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		inputAssemblyState.topology = Utils::VulkanPrimitiveTopology(m_CreateInfo.Topology);
 		inputAssemblyState.primitiveRestartEnable = VK_FALSE;
-		
+
 		VkViewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -270,7 +271,7 @@ namespace Flux {
 
 	void VulkanPipeline::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<const VulkanPipeline> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
@@ -281,7 +282,7 @@ namespace Flux {
 
 	void VulkanPipeline::RT_Bind(Ref<CommandBuffer> commandBuffer) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		vkCmdBindPipeline(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
@@ -292,7 +293,7 @@ namespace Flux {
 
 	void VulkanPipeline::RT_SetPushConstant(Ref<CommandBuffer> commandBuffer, ShaderStage stage, const void* data, uint32 size, uint32 offset) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		vkCmdPushConstants(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(), 
@@ -304,9 +305,41 @@ namespace Flux {
 		);
 	}
 
+	void VulkanPipeline::BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		Ref<const VulkanPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
+		{
+			instance->RT_BindDescriptorSets(commandBuffer);
+		});
+	}
+
+	void VulkanPipeline::RT_BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const
+	{
+		FLUX_CHECK_IS_RENDER_THREAD();
+
+		uint32 firstSet = 0;
+		uint32 descriptorSetCount = 1;
+
+		VkDescriptorSet ds = {};
+
+		vkCmdBindDescriptorSets(
+			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			m_PipelineLayout,
+			firstSet,
+			descriptorSetCount,
+			&ds,
+			0,
+			nullptr
+		);
+	}
+
 	void VulkanPipeline::DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<const VulkanPipeline> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer, indexCount, startIndexLocation, baseVertexLocation]()
@@ -317,8 +350,8 @@ namespace Flux {
 
 	void VulkanPipeline::RT_DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
-		
+		FLUX_CHECK_IS_RENDER_THREAD();
+
 		vkCmdDrawIndexed(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
 			indexCount,

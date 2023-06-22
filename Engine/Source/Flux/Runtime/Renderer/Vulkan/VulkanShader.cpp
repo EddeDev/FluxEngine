@@ -78,6 +78,20 @@ namespace Flux {
 			return static_cast<VkShaderStageFlagBits>(0);
 		}
 
+		static VkDescriptorType VulkanDescriptorType(ShaderDescriptorType type)
+		{
+			switch (type)
+			{
+			case ShaderDescriptorType::UniformBuffer:        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case ShaderDescriptorType::StorageBuffer:        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case ShaderDescriptorType::CombinedImageSampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case ShaderDescriptorType::SampledImage:         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case ShaderDescriptorType::StorageImage:         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			}
+			FLUX_VERIFY(false, "Unknown descriptor type");
+			return static_cast<VkDescriptorType>(0);
+		}
+
 		static ShaderDataType SPIRTypeToShaderDataType(const spirv_cross::SPIRType& type)
 		{
 			switch (type.basetype)
@@ -168,14 +182,14 @@ namespace Flux {
 	VulkanShader::VulkanShader(const std::filesystem::path& path)
 		: m_Path(path)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Reload();
 	}
 
 	VulkanShader::~VulkanShader()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([shaderModules = m_ShaderModules]()
 		{
@@ -187,12 +201,14 @@ namespace Flux {
 
 	void VulkanShader::Reload()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		m_Binaries.clear();
 		m_VertexInputLayout = {};
 		m_PushConstants.clear();
 		m_DescriptorSetLayouts.clear();
+		m_DescriptorPoolSizes.clear();
+		m_DescriptorSetLayoutBindings.clear();
 
 		std::string source;
 		if (!Utils::LoadFileToString(source, m_Path))
@@ -216,6 +232,7 @@ namespace Flux {
 		}
 
 		Reflect();
+		CreateDescriptors();
 
 		Ref<VulkanShader> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -256,7 +273,7 @@ namespace Flux {
 
 	void VulkanShader::RT_CreateShaders()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 
@@ -272,16 +289,6 @@ namespace Flux {
 			createInfo.pCode = binary.data();
 
 			VK_CHECK(vkCreateShaderModule(device, &createInfo, nullptr, &m_ShaderModules[stage]));
-		}
-
-		for (const auto& [set, layoutBinding] : m_DescriptorSetLayoutBindings)
-		{
-			VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-			descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32>(layoutBinding.size());
-			descriptorSetLayoutCreateInfo.pBindings = layoutBinding.data();
-
-			VK_CHECK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &m_DescriptorSetLayouts[set]));
 		}
 	}
 
@@ -329,16 +336,6 @@ namespace Flux {
 				m_VertexInputLayout.Stride = stride;
 			}
 
-			if (stage == ShaderStage::Fragment)
-			{
-				for (const auto& resource : resources.stage_inputs)
-				{
-					std::string name = compiler.get_name(resource.id);
-					if (name.empty())
-						name = compiler.get_fallback_name(resource.id);
-				}
-			}
-
 			for (const auto& resource : resources.push_constant_buffers)
 			{
 				auto& pushConstant = m_PushConstants[stage];
@@ -369,6 +366,80 @@ namespace Flux {
 					member.Offset = compiler.type_struct_member_offset(bufferType, i);
 				}
 			}
+			
+			if (!resources.uniform_buffers.empty() || !resources.storage_buffers.empty())
+				FLUX_TRACE("    Buffers:");
+
+			for (const auto& resource : resources.uniform_buffers)
+			{
+				auto& bufferType = compiler.get_type(resource.base_type_id);
+
+				std::string bufferName = compiler.get_name(resource.base_type_id);
+				if (bufferName.empty())
+					bufferName = compiler.get_fallback_name(resource.base_type_id);
+
+				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+				uint32 bufferSize = static_cast<uint32>(compiler.get_declared_struct_size(bufferType));
+
+				const auto descriptorType = ShaderDescriptorType::UniformBuffer;
+
+				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
+				descriptor.Name = bufferName;
+				descriptor.Type = descriptorType;
+				descriptor.Stage = stage;
+				descriptor.Count = 1;
+				descriptor.Binding = binding;
+				descriptor.DescriptorSet = descriptorSet;
+
+				FLUX_TRACE("      {0} (set = {1}, binding = {2})", bufferName, descriptorSet, binding);
+
+				ShaderUniformBuffer buffer;
+				buffer.Name = bufferName;
+				buffer.Stage = stage;
+				buffer.Size = bufferSize;
+				buffer.Binding = binding;
+
+				for (uint32 i = 0; i < static_cast<uint32>(bufferType.member_types.size()); i++)
+				{
+					std::string uniformName = compiler.get_member_name(bufferType.self, i);
+					if (uniformName.empty())
+						uniformName = compiler.get_fallback_member_name(i);
+
+					uint32 size = static_cast<uint32>(compiler.get_declared_struct_member_size(bufferType, i));
+					uint32 offset = compiler.type_struct_member_offset(bufferType, i);
+
+					auto& uniform = buffer.Uniforms[uniformName];
+					uniform.Name = uniformName;
+					uniform.Size = size;
+					uniform.Offset = offset;
+				}
+
+				Renderer::RegisterUniformBuffer(buffer);
+			}
+
+			for (const auto& resource : resources.storage_buffers)
+			{
+				std::string name = compiler.get_name(resource.base_type_id);
+				if (name.empty())
+					name = compiler.get_fallback_name(resource.base_type_id);
+
+				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+				const auto descriptorType = ShaderDescriptorType::StorageBuffer;
+
+				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
+				descriptor.Name = name;
+				descriptor.Type = descriptorType;
+				descriptor.Stage = stage;
+				descriptor.Count = 1;
+				descriptor.Binding = binding;
+				descriptor.DescriptorSet = descriptorSet;
+
+				FLUX_TRACE("      {0} (set = {1}, binding = {2})", name, descriptorSet, binding);
+			}
 
 			if (!resources.sampled_images.empty() || !resources.storage_images.empty())
 				FLUX_TRACE("    Resources:");
@@ -388,11 +459,13 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				auto& descriptor = m_DescriptorSets[descriptorSet].SampledImages[binding];
+				const auto descriptorType = ShaderDescriptorType::CombinedImageSampler;
+
+				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
-				descriptor.Type = ShaderDescriptorType::SampledImage;
+				descriptor.Type = descriptorType;
 				descriptor.Stage = stage;
-				descriptor.ArraySize = arraySize;
+				descriptor.Count = arraySize;
 				descriptor.Binding = binding;
 				descriptor.DescriptorSet = descriptorSet;
 
@@ -414,11 +487,13 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				auto& descriptor = m_DescriptorSets[descriptorSet].SeparateImages[binding];
+				const auto descriptorType = ShaderDescriptorType::SampledImage;
+
+				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
-				descriptor.Type = ShaderDescriptorType::SeparateImage;
+				descriptor.Type = descriptorType;
 				descriptor.Stage = stage;
-				descriptor.ArraySize = arraySize;
+				descriptor.Count = arraySize;
 				descriptor.Binding = binding;
 				descriptor.DescriptorSet = descriptorSet;
 
@@ -440,85 +515,77 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				auto& descriptor = m_DescriptorSets[descriptorSet].StorageImages[binding];
+				const auto descriptorType = ShaderDescriptorType::StorageImage;
+
+				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
-				descriptor.Type = ShaderDescriptorType::StorageImage;
+				descriptor.Type = descriptorType;
 				descriptor.Stage = stage;
-				descriptor.ArraySize = arraySize;
+				descriptor.Count = arraySize;
 				descriptor.Binding = binding;
 				descriptor.DescriptorSet = descriptorSet;
 
 				FLUX_TRACE("      {0} (set = {1}, binding = {2}, array size = {3})", name, descriptorSet, binding, arraySize);
 			}
 		}
+	}
 
-		for (auto& [set, descriptorSet] : m_DescriptorSets)
+	void VulkanShader::CreateDescriptors()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		for (const auto& [set, descriptorSet] : m_DescriptorSets)
 		{
-			if (!descriptorSet.SampledImages.empty())
+			for (const auto& [shaderDescriptorType, descriptors] : descriptorSet)
 			{
-				const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				const VkDescriptorType descriptorType = Utils::VulkanDescriptorType(shaderDescriptorType);
 
 				m_DescriptorPoolSizes[set].push_back({
 					descriptorType,
-					static_cast<uint32>(descriptorSet.SampledImages.size())
+					static_cast<uint32>(descriptors.size())
 				});
 
-				for (const auto& [binding, descriptor] : descriptorSet.SampledImages)
+				for (const auto& [binding, descriptor] : descriptors)
 				{
+					FLUX_VERIFY(descriptor.Type == shaderDescriptorType);
+
+					if (shaderDescriptorType == ShaderDescriptorType::None)
+					{
+						FLUX_VERIFY(false, "Unknown descriptor type!");
+						continue;
+					}
+
 					m_DescriptorSetLayoutBindings[set].push_back({
 						binding,
 						descriptorType,
-						descriptor.ArraySize,
-						Utils::VulkanShaderStage(descriptor.Stage)
-					});
-				}
-			}
-
-			if (!descriptorSet.SeparateImages.empty())
-			{
-				const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-
-				m_DescriptorPoolSizes[set].push_back({
-					descriptorType,
-					static_cast<uint32>(descriptorSet.SeparateImages.size())
-				});
-
-				for (const auto& [binding, descriptor] : descriptorSet.SeparateImages)
-				{
-					m_DescriptorSetLayoutBindings[set].push_back({
-						binding,
-						descriptorType,
-						descriptor.ArraySize,
-						Utils::VulkanShaderStage(descriptor.Stage)
-					});
-				}
-			}
-
-			if (!descriptorSet.StorageImages.empty())
-			{
-				const VkDescriptorType descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-
-				m_DescriptorPoolSizes[set].push_back({
-					descriptorType,
-					static_cast<uint32>(descriptorSet.StorageImages.size())
-				});
-
-				for (const auto& [binding, descriptor] : descriptorSet.StorageImages)
-				{
-					m_DescriptorSetLayoutBindings[set].push_back({
-						binding,
-						descriptorType,
-						descriptor.ArraySize,
+						descriptor.Count,
 						Utils::VulkanShaderStage(descriptor.Stage)
 					});
 				}
 			}
 		}
+
+		Ref<VulkanShader> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		{
+			VkDevice device = VulkanDevice::Get()->GetDevice();
+
+			// TODO: synchronize access
+			for (const auto& [set, layoutBinding] : instance->m_DescriptorSetLayoutBindings)
+			{
+				VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+				descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+				descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32>(layoutBinding.size());
+				descriptorSetLayoutCreateInfo.pBindings = layoutBinding.data();
+
+				VK_CHECK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &instance->m_DescriptorSetLayouts[set]));
+			}
+		});
 	}
 
-	VkDescriptorSet VulkanShader::RT_CreateDescriptorSet(uint32 set)
+	VkDescriptorSet VulkanShader::RT_CreateDescriptorSet(uint32 set) const
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		FLUX_VERIFY(m_DescriptorPoolSizes.find(set) != m_DescriptorPoolSizes.end());
 		FLUX_VERIFY(m_DescriptorSetLayouts.find(set) != m_DescriptorSetLayouts.end());
@@ -528,8 +595,8 @@ namespace Flux {
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolCreateInfo.maxSets = 1;
-		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(m_DescriptorPoolSizes[set].size());
-		descriptorPoolCreateInfo.pPoolSizes = m_DescriptorPoolSizes[set].data();
+		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(m_DescriptorPoolSizes.at(set).size());
+		descriptorPoolCreateInfo.pPoolSizes = m_DescriptorPoolSizes.at(set).data();
 
 		VkDescriptorPool descriptorPool;
 		VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
@@ -538,7 +605,7 @@ namespace Flux {
 		allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocateInfo.descriptorPool = descriptorPool;
 		allocateInfo.descriptorSetCount = 1;
-		allocateInfo.pSetLayouts = &m_DescriptorSetLayouts[set];
+		allocateInfo.pSetLayouts = &m_DescriptorSetLayouts.at(set);
 
 		VkDescriptorSet descriptorSet;
 		VK_CHECK(vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet));

@@ -12,7 +12,7 @@ namespace Flux {
 		Ref<Texture2D> WhiteTexture;
 		Ref<Texture2D> BlackTexture;
 
-		Ref<Framebuffer> ActiveFramebuffer;
+		Ref<GraphicsPipeline> ActivePipeline;
 
 		uint32 CurrentFrameIndex = 0;
 		uint32 CurrentQueueIndex = 0;
@@ -34,7 +34,7 @@ namespace Flux {
 
 	void Renderer::Init()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		s_Data = new RendererData();
 		s_ResourceAllocator = CreateResourceAllocator();
@@ -62,7 +62,7 @@ namespace Flux {
 
 	void Renderer::Shutdown()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_VERIFY(!s_Data);
 
@@ -72,9 +72,12 @@ namespace Flux {
 
 	void Renderer::DestroyResources()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		FLUX_VERIFY(s_ResourceAllocator);
+
+		s_UniformBufferBindings.clear();
+		s_UniformBuffers.clear();
 
 		FLUX_VERIFY(s_Data->WhiteTexture->GetReferenceCount() == 1);
 		FLUX_VERIFY(s_Data->BlackTexture->GetReferenceCount() == 1);
@@ -85,58 +88,65 @@ namespace Flux {
 
 	void Renderer::BeginFrame()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
-		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(!s_Data->ActivePipeline);
 	}
 
 	void Renderer::EndFrame()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
-		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(!s_Data->ActivePipeline);
 
 		s_Data->CurrentQueueIndex = (s_Data->CurrentQueueIndex + 1) % s_RenderCommandQueueCount;
 		s_Data->CurrentFrameIndex = (s_Data->CurrentFrameIndex + 1) % Renderer::GetFramesInFlight();
 		s_Data->FrameCount++;
 	}
 
-	void Renderer::BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<Framebuffer> framebuffer)
+	void Renderer::BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<GraphicsPipeline> pipeline)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_ASSERT(!s_Data->ActiveFramebuffer);
+		FLUX_ASSERT(!s_Data->ActivePipeline);
 		FLUX_ASSERT(commandBuffer);
-		FLUX_ASSERT(framebuffer);
+		FLUX_ASSERT(pipeline);
 
-		s_Data->ActiveFramebuffer = framebuffer;
-		framebuffer->Bind(commandBuffer);
+		s_Data->ActivePipeline = pipeline;
+
+		pipeline->GetFramebuffer()->Bind(commandBuffer);
+		pipeline->Bind(commandBuffer);
+		// pipeline->BindDescriptorSets(commandBuffer);
 	}
 
 	void Renderer::EndRenderPass(Ref<CommandBuffer> commandBuffer)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_ASSERT(s_Data->ActiveFramebuffer);
+		FLUX_ASSERT(s_Data->ActivePipeline);
 		FLUX_ASSERT(commandBuffer);
 
-		s_Data->ActiveFramebuffer->Unbind(commandBuffer);
-		s_Data->ActiveFramebuffer = nullptr;
+		s_Data->ActivePipeline->GetFramebuffer()->Unbind(commandBuffer);
+		s_Data->ActivePipeline = nullptr;
 	}
 
-	void Renderer::RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<GraphicsPipeline> pipeline, Ref<Shader> shader, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer)
+	void Renderer::RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32 indexCount)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		if (indexCount == 0)
+			indexCount = indexBuffer->GetCount();
 
 		vertexBuffer->Bind(commandBuffer);
-		pipeline->Bind(commandBuffer);
+		// s_Data->ActivePipeline->Bind(commandBuffer);
 		indexBuffer->Bind(commandBuffer);
 
-		pipeline->DrawIndexed(commandBuffer, indexBuffer->GetCount());
+		// pipeline->BindDescriptorSets(commandBuffer);
+		s_Data->ActivePipeline->DrawIndexed(commandBuffer, indexCount);
 	}
 
 #ifndef FLUX_BUILD_SHIPPING
 	void Renderer::SubmitRenderCommand(const char* functionName, RenderCommand command)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		if (s_RenderCommandQueueLocked[s_Data->CurrentQueueIndex])
 		{
@@ -149,7 +159,7 @@ namespace Flux {
 
 	void Renderer::SubmitRenderCommandRelease(const char* functionName, RenderCommand command)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
 
@@ -164,14 +174,14 @@ namespace Flux {
 #else
 	void Renderer::SubmitRenderCommand(RenderCommand command)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push(std::move(command));
 	}
 
 	void Renderer::SubmitRenderCommandRelease(RenderCommand command)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
 		s_ReleaseQueue[frameIndex].push(std::move(command));
@@ -180,7 +190,7 @@ namespace Flux {
 
 	void Renderer::RT_FlushRenderCommands(uint32 queueIndex)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		
 #ifndef FLUX_BUILD_SHIPPING
 		if (s_RenderCommandQueueLocked[queueIndex])
@@ -207,7 +217,7 @@ namespace Flux {
 
 	void Renderer::RT_FlushReleaseQueue(uint32 frameIndex)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 #ifndef FLUX_BUILD_SHIPPING
 		if (s_ReleaseQueueLocked[frameIndex])
@@ -235,7 +245,7 @@ namespace Flux {
 
 	void Renderer::RT_FlushReleaseQueues()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		for (uint32 frameIndex = 0; frameIndex < s_ReleaseQueueCount; frameIndex++)
 			RT_FlushReleaseQueue(frameIndex);
@@ -243,21 +253,21 @@ namespace Flux {
 
 	uint32 Renderer::GetCurrentFrameIndex()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		return s_Data->CurrentFrameIndex;
 	}
 
 	uint32 Renderer::RT_GetCurrentFrameIndex()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		return Engine::Get().GetSwapchain()->GetCurrentBufferIndex();
 	}
 
 	uint32 Renderer::GetCurrentQueueIndex()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		return s_Data->CurrentQueueIndex;
 	}
@@ -269,12 +279,73 @@ namespace Flux {
 
 	Ref<Texture2D> Renderer::GetWhiteTexture()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		return s_Data->WhiteTexture;
 	}
 
 	Ref<Texture2D> Renderer::GetBlackTexture()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		return s_Data->BlackTexture;
+	}
+
+	Ref<UniformBuffer> Renderer::GetUniformBuffer(std::string_view name)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		/*
+		for (const auto& entry : s_UniformBufferBindings)
+		{
+			if (entry.first == name)
+			{
+				auto it = s_UniformBuffers.find(entry.second);
+				if (it != s_UniformBuffers.end())
+				{
+					uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+					return it->second[frameIndex];
+				}
+			}
+		}
+		*/
+		return nullptr;
+	}
+
+	std::vector<Ref<UniformBuffer>> Renderer::GetUniformBufferSet(std::string_view name)
+	{
+		return {};
+	}
+
+	bool Renderer::RegisterUniformBuffer(const ShaderUniformBuffer& buffer)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		if (s_UniformBufferBindings.find(buffer.Name) != s_UniformBufferBindings.end())
+			return false;
+
+		if (s_UniformBuffers.find(buffer.Binding) != s_UniformBuffers.end())
+			return false;
+
+		uint32 framesInFlight = Renderer::GetFramesInFlight();
+
+		UniformBufferCreateInfo createInfo = {};
+		createInfo.Count = framesInFlight;
+		createInfo.Size = buffer.Size;
+		createInfo.Binding = buffer.Binding;
+
+		for (const auto& [uniformName, uniform] : buffer.Uniforms)
+		{
+			createInfo.Uniforms[uniformName] = {
+				uniformName,
+				uniform.Size,
+				uniform.Offset
+			};
+		}
+
+		s_UniformBuffers[buffer.Binding] = UniformBuffer::Create(createInfo);
+		s_UniformBufferBindings[buffer.Name] = buffer.Binding;
+
+		return true;
 	}
 
 }

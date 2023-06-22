@@ -33,7 +33,7 @@ namespace Flux {
 	VulkanImage2D::VulkanImage2D(const ImageCreateInfo& createInfo)
 		: m_CreateInfo(createInfo)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 		FLUX_ASSERT(createInfo.Width > 0 && createInfo.Height > 0);
 
 		if (createInfo.InitialData)
@@ -46,14 +46,14 @@ namespace Flux {
 
 	VulkanImage2D::~VulkanImage2D()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Release();
 	}
 
 	void VulkanImage2D::Invalidate()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanImage2D> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -64,7 +64,7 @@ namespace Flux {
 
 	void VulkanImage2D::RT_Invalidate()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		RT_Release();
 
@@ -90,7 +90,7 @@ namespace Flux {
 
 	void VulkanImage2D::Release()
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		delete[] m_Storage;
 
@@ -106,7 +106,7 @@ namespace Flux {
 
 	void VulkanImage2D::RT_Release()
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 
 		if (m_Image)
 		{
@@ -118,7 +118,7 @@ namespace Flux {
 
 	void VulkanImage2D::AttachToFramebuffer(uint32 attachmentIndex)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanImage2D> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, attachmentIndex]() mutable
@@ -129,7 +129,7 @@ namespace Flux {
 
 	void VulkanImage2D::RT_AttachToFramebuffer(uint32 attachmentIndex)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_VERIFY(m_CreateInfo.Usage == ImageUsage::Attachment);
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
@@ -169,7 +169,7 @@ namespace Flux {
 
 	void VulkanImage2D::AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer)
 	{
-		FLUX_ASSERT_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_MAIN_THREAD();
 
 		Ref<VulkanImage2D> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, attachmentIndex, layer]() mutable
@@ -180,7 +180,7 @@ namespace Flux {
 
 	void VulkanImage2D::RT_AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer)
 	{
-		FLUX_ASSERT_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_VERIFY(m_CreateInfo.Usage == ImageUsage::Attachment);
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
