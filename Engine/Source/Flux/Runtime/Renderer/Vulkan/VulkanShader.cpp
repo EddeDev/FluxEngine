@@ -210,7 +210,6 @@ namespace Flux {
 		m_Binaries.clear();
 		m_VertexInputLayout = {};
 		m_PushConstants.clear();
-		m_DescriptorSetLayouts.clear();
 		m_DescriptorPoolSizes.clear();
 		m_DescriptorSetLayoutBindings.clear();
 
@@ -581,6 +580,9 @@ namespace Flux {
 				descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 				descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32>(layoutBinding.size());
 				descriptorSetLayoutCreateInfo.pBindings = layoutBinding.data();
+
+				if (instance->m_DescriptorSetLayouts[set])
+					vkDestroyDescriptorSetLayout(device, instance->m_DescriptorSetLayouts[set], nullptr);
 
 				VK_CHECK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &instance->m_DescriptorSetLayouts[set]));
 			}

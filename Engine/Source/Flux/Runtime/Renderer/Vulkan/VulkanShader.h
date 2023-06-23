@@ -26,7 +26,6 @@ namespace Flux {
 		const std::vector<VkDescriptorPoolSize>& GetDescriptorPoolSizes(uint32 set) const { return m_DescriptorPoolSizes.at(set); }
 		const std::unordered_map<uint32, std::vector<VkDescriptorPoolSize>>& GetDescriptorPoolSizes() const { return m_DescriptorPoolSizes; }
 		
-		const std::vector<VkDescriptorSetLayoutBinding>& GetDescriptorSetLayoutBindings(uint32 set) const { return m_DescriptorSetLayoutBindings.at(set); }
 		const std::unordered_map<uint32, VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
 		const std::unordered_map<ShaderStage, VkShaderModule>& GetShaderModules() const { return m_ShaderModules; }
 	private:
