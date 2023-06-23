@@ -74,7 +74,7 @@ namespace Flux {
 		uint32 DescriptorSet = 0;
 	};
 
-	enum class ShaderDescriptorType : uint8
+	enum class DescriptorType : uint8
 	{
 		None = 0,
 
@@ -85,10 +85,10 @@ namespace Flux {
 		StorageImage
 	};
 
-	struct ShaderDescriptor
+	struct Descriptor
 	{
 		std::string Name;
-		ShaderDescriptorType Type = ShaderDescriptorType::None;
+		DescriptorType Type = DescriptorType::None;
 		ShaderStage Stage = ShaderStage::None;
 		uint32 Count = 0;
 		uint32 Binding = 0;
@@ -99,7 +99,7 @@ namespace Flux {
 	typedef std::unordered_map<ShaderStage, ShaderBinary> ShaderBinaryMap;
 	typedef std::unordered_map<ShaderStage, std::string> ShaderSourceMap;
 	typedef std::unordered_map<ShaderStage, ShaderPushConstant> PushConstantMap;
-	typedef std::map<uint32, std::map<ShaderDescriptorType, std::map<uint32, ShaderDescriptor>>> ShaderDescriptorSetMap;
+	typedef std::map<uint32, std::map<DescriptorType, std::map<uint32, Descriptor>>> DescriptorSetMap;
 
 	class Shader : public ReferenceCounted
 	{
@@ -108,7 +108,9 @@ namespace Flux {
 
 		virtual const VertexInputLayout& GetVertexInputLayout() const = 0;
 		virtual const PushConstantMap& GetPushConstants() const = 0;
-		virtual const ShaderDescriptorSetMap& GetDescriptorSets() const = 0;
+		virtual const DescriptorSetMap& GetDescriptorSets() const = 0;
+
+		virtual const std::filesystem::path& GetPath() const = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path& path);
 	};

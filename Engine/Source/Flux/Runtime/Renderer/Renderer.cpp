@@ -114,7 +114,7 @@ namespace Flux {
 
 		pipeline->GetFramebuffer()->Bind(commandBuffer);
 		pipeline->Bind(commandBuffer);
-		// pipeline->BindDescriptorSets(commandBuffer);
+		pipeline->BindDescriptorSets(commandBuffer);
 	}
 
 	void Renderer::EndRenderPass(Ref<CommandBuffer> commandBuffer)
@@ -274,6 +274,9 @@ namespace Flux {
 
 	uint32 Renderer::GetFramesInFlight()
 	{
+		// TODO
+		return 1;
+
 		return Engine::Get().GetSwapchain()->GetImageCount();
 	}
 
@@ -294,26 +297,17 @@ namespace Flux {
 	Ref<UniformBuffer> Renderer::GetUniformBuffer(std::string_view name)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
-		/*
+
 		for (const auto& entry : s_UniformBufferBindings)
 		{
 			if (entry.first == name)
 			{
 				auto it = s_UniformBuffers.find(entry.second);
 				if (it != s_UniformBuffers.end())
-				{
-					uint32 frameIndex = Renderer::GetCurrentFrameIndex();
-					return it->second[frameIndex];
-				}
+					return it->second;
 			}
 		}
-		*/
 		return nullptr;
-	}
-
-	std::vector<Ref<UniformBuffer>> Renderer::GetUniformBufferSet(std::string_view name)
-	{
-		return {};
 	}
 
 	bool Renderer::RegisterUniformBuffer(const ShaderUniformBuffer& buffer)

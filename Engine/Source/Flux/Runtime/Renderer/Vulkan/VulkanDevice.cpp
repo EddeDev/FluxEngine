@@ -93,6 +93,7 @@ namespace Flux {
 	VulkanDevice::VulkanDevice(Ref<GraphicsAdapter> adapter)
 		: m_Adapter(adapter.As<VulkanAdapter>())
 	{
+		FLUX_CHECK_IS_RENDER_THREAD();
 		FLUX_VERIFY(!s_Instance);
 		s_Instance = this;
 
@@ -183,6 +184,8 @@ namespace Flux {
 
 	VulkanDevice::~VulkanDevice()
 	{
+		FLUX_CHECK_IS_RENDER_THREAD();
+
 		vkDestroyCommandPool(m_Device, m_GraphicsCommandPool, nullptr);
 		vkDestroyPipelineCache(m_Device, m_PipelineCache, nullptr);
 		vkDestroyDevice(m_Device, nullptr);

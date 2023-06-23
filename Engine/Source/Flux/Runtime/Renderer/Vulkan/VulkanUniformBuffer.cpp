@@ -14,7 +14,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		m_BufferPool.resize(4);
+		m_BufferPool.resize(2);
 
 		Ref<VulkanUniformBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
@@ -65,7 +65,10 @@ namespace Flux {
 		}
 
 		if (bufferIndex == std::numeric_limits<uint32>::max())
-			FLUX_VERIFY(false, "Buffer overflow!");
+		{
+			m_BufferPool.resize(m_BufferPool.size() * 2);
+			bufferIndex = m_BufferPool.size() / 2;
+		}
 
 		auto& buffer = m_BufferPool[bufferIndex];
 		buffer.State = BufferState::InUse;
@@ -90,7 +93,10 @@ namespace Flux {
 			if (buffer.State == BufferState::Available)
 				FLUX_VERIFY(false);
 
-			instance->RT_SetData(buffer.Storage, size, offset);
+			auto& allocator = Renderer::GetResourceAllocator<VulkanResourceAllocator>();
+			uint8* memory = allocator.MapMemory<uint8>(instance->m_Allocation);
+			memcpy(memory + offset, buffer.Storage + offset, size);
+			allocator.UnmapMemory(instance->m_Allocation);
 
 			buffer.State = BufferState::Available;
 		});

@@ -16,10 +16,17 @@ namespace Flux {
 
 		virtual const VertexInputLayout& GetVertexInputLayout() const { return m_VertexInputLayout; }
 		virtual const PushConstantMap& GetPushConstants() const { return m_PushConstants; }
-		virtual const ShaderDescriptorSetMap& GetDescriptorSets() const { return m_DescriptorSets; }
+		virtual const DescriptorSetMap& GetDescriptorSets() const { return m_DescriptorSets; }
+
+		virtual const std::filesystem::path& GetPath() const { return m_Path; }
 
 		VkDescriptorSet RT_CreateDescriptorSet(uint32 set) const;
+		VkDescriptorSetLayout GetDescriptorSetLayout(uint32 set) const { return m_DescriptorSetLayouts.at(set); }
 
+		const std::vector<VkDescriptorPoolSize>& GetDescriptorPoolSizes(uint32 set) const { return m_DescriptorPoolSizes.at(set); }
+		const std::unordered_map<uint32, std::vector<VkDescriptorPoolSize>>& GetDescriptorPoolSizes() const { return m_DescriptorPoolSizes; }
+		
+		const std::vector<VkDescriptorSetLayoutBinding>& GetDescriptorSetLayoutBindings(uint32 set) const { return m_DescriptorSetLayoutBindings.at(set); }
 		const std::unordered_map<uint32, VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
 		const std::unordered_map<ShaderStage, VkShaderModule>& GetShaderModules() const { return m_ShaderModules; }
 	private:
@@ -35,7 +42,7 @@ namespace Flux {
 		
 		VertexInputLayout m_VertexInputLayout;
 		PushConstantMap m_PushConstants;
-		ShaderDescriptorSetMap m_DescriptorSets;
+		DescriptorSetMap m_DescriptorSets;
 
 		std::unordered_map<uint32, VkDescriptorSetLayout> m_DescriptorSetLayouts;
 		std::unordered_map<uint32, std::vector<VkDescriptorPoolSize>> m_DescriptorPoolSizes;

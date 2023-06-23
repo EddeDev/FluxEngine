@@ -78,15 +78,15 @@ namespace Flux {
 			return static_cast<VkShaderStageFlagBits>(0);
 		}
 
-		static VkDescriptorType VulkanDescriptorType(ShaderDescriptorType type)
+		static VkDescriptorType VulkanDescriptorType(DescriptorType type)
 		{
 			switch (type)
 			{
-			case ShaderDescriptorType::UniformBuffer:        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			case ShaderDescriptorType::StorageBuffer:        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			case ShaderDescriptorType::CombinedImageSampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			case ShaderDescriptorType::SampledImage:         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			case ShaderDescriptorType::StorageImage:         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case DescriptorType::UniformBuffer:        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case DescriptorType::StorageBuffer:        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case DescriptorType::CombinedImageSampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case DescriptorType::SampledImage:         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case DescriptorType::StorageImage:         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			}
 			FLUX_VERIFY(false, "Unknown descriptor type");
 			return static_cast<VkDescriptorType>(0);
@@ -191,9 +191,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([shaderModules = m_ShaderModules]()
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([shaderModules = m_ShaderModules, descriptorSetLayouts = m_DescriptorSetLayouts]()
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();
+
+			for (auto& [set, descriptorSetLayout] : descriptorSetLayouts)
+				vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
 			for (auto& [stage, shaderModule] : shaderModules)
 				vkDestroyShaderModule(device, shaderModule, nullptr);
 		});
@@ -383,7 +387,7 @@ namespace Flux {
 
 				uint32 bufferSize = static_cast<uint32>(compiler.get_declared_struct_size(bufferType));
 
-				const auto descriptorType = ShaderDescriptorType::UniformBuffer;
+				const auto descriptorType = DescriptorType::UniformBuffer;
 
 				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = bufferName;
@@ -428,7 +432,7 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				const auto descriptorType = ShaderDescriptorType::StorageBuffer;
+				const auto descriptorType = DescriptorType::StorageBuffer;
 
 				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
@@ -459,7 +463,7 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				const auto descriptorType = ShaderDescriptorType::CombinedImageSampler;
+				const auto descriptorType = DescriptorType::CombinedImageSampler;
 
 				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
@@ -487,7 +491,7 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				const auto descriptorType = ShaderDescriptorType::SampledImage;
+				const auto descriptorType = DescriptorType::SampledImage;
 
 				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
@@ -515,7 +519,7 @@ namespace Flux {
 				uint32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 				uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-				const auto descriptorType = ShaderDescriptorType::StorageImage;
+				const auto descriptorType = DescriptorType::StorageImage;
 
 				auto& descriptor = m_DescriptorSets[descriptorSet][descriptorType][binding];
 				descriptor.Name = name;
@@ -549,7 +553,7 @@ namespace Flux {
 				{
 					FLUX_VERIFY(descriptor.Type == shaderDescriptorType);
 
-					if (shaderDescriptorType == ShaderDescriptorType::None)
+					if (shaderDescriptorType == DescriptorType::None)
 					{
 						FLUX_VERIFY(false, "Unknown descriptor type!");
 						continue;

@@ -15,7 +15,6 @@ struct VertexOutput
 layout(location = 0) out VertexOutput Output;
 layout(location = 2) out flat float v_TextureIndex;
 
-/*
 layout(std140, binding = 0) uniform Camera
 {
 	mat4 u_ViewProjectionMatrix;
@@ -23,7 +22,6 @@ layout(std140, binding = 0) uniform Camera
 	mat4 u_ProjectionMatrix;
 	mat4 u_ViewMatrix;
 };
-*/
 
 layout(push_constant) uniform Uniforms
 {
@@ -36,8 +34,8 @@ void main()
     Output.TexCoord = a_TexCoord;
     v_TextureIndex = a_TextureIndex;
 
-    // gl_Position = u_ViewProjectionMatrix * vec4(a_Position, 1.0);
-    gl_Position = vec4(a_Position, 1.0);
+    gl_Position = u_ViewProjectionMatrix * vec4(a_Position, 1.0);
+    // gl_Position = vec4(a_Position, 1.0);
 }
 
 #stage fragment

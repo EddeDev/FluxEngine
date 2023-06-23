@@ -13,7 +13,13 @@ namespace Flux {
 		virtual ~VulkanPipeline();
 
 		virtual void Invalidate() override;
-		virtual void RT_Invalidate()  override;
+		virtual void RT_Invalidate() override;
+
+		virtual bool SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer) override;
+		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name) const override;
+
+		virtual void Bake() override;
+		virtual void RT_Bake() override;
 
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const override;
 		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const override;
@@ -31,10 +37,16 @@ namespace Flux {
 		virtual Ref<Shader> GetShader() const override { return m_CreateInfo.Shader; }
 		virtual Ref<Framebuffer> GetFramebuffer() const override { return m_CreateInfo.Framebuffer; }
 	private:
+		const Descriptor* GetDescriptor(std::string_view name, DescriptorType type) const;
+	private:
 		GraphicsPipelineCreateInfo m_CreateInfo;
 
 		VkPipeline m_Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
+		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+
+		std::map<uint32, std::map<DescriptorType, std::map<uint32, Ref<ReferenceCounted>>>> m_Descriptors;
+		std::vector<VkDescriptorSet> m_DesciptorSets;
 	};
 
 }

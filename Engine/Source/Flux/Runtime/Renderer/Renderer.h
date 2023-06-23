@@ -50,7 +50,6 @@ namespace Flux {
 		static Ref<Texture2D> GetBlackTexture();
 
 		static Ref<UniformBuffer> GetUniformBuffer(std::string_view name);
-		static std::vector<Ref<UniformBuffer>> GetUniformBufferSet(std::string_view name);
 		static bool RegisterUniformBuffer(const ShaderUniformBuffer& buffer);
 
 		template<typename T = ResourceAllocator>

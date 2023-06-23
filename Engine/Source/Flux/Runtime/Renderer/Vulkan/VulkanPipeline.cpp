@@ -75,10 +75,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 		
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([pipelineLayout = m_PipelineLayout, pipeline = m_Pipeline]()
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([pipelineLayout = m_PipelineLayout, pipeline = m_Pipeline, descriptorPool = m_DescriptorPool]()
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();
 			
+			vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 			vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 			vkDestroyPipeline(device, pipeline, nullptr);
 		});
@@ -269,6 +270,170 @@ namespace Flux {
 		VK_CHECK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &m_Pipeline));
 	}
 
+	bool VulkanPipeline::SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
+		if (descriptor)
+		{
+			FLUX_INFO("[{0}]: Setting Uniform Buffer descriptor '{1}' in {2} shader '{3}' ({4}.{5})", 
+				m_CreateInfo.DebugLabel, name, 
+				descriptor->Stage == ShaderStage::Vertex ? "vertex" : 
+				descriptor->Stage == ShaderStage::Fragment ? "fragment" :
+				descriptor->Stage == ShaderStage::Compute ? "compute" : "<invalid>",
+				m_CreateInfo.Shader->GetPath().filename().string(),
+				descriptor->DescriptorSet, descriptor->Binding
+			);
+			
+			m_Descriptors[descriptor->DescriptorSet][DescriptorType::UniformBuffer][descriptor->Binding] = uniformBuffer;
+		}			
+		else
+		{
+			FLUX_ERROR("Could not find uniform buffer descriptor: {0}", name);
+		}
+		return true;
+	}
+
+	Ref<UniformBuffer> VulkanPipeline::GetUniformBuffer(std::string_view name) const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
+		if (descriptor)
+		{
+			auto setIt = m_Descriptors.find(descriptor->DescriptorSet);
+			if (setIt != m_Descriptors.end())
+			{
+				auto typeIt = setIt->second.find(descriptor->Type);
+				if (typeIt != setIt->second.end())
+				{
+					auto it = typeIt->second.find(descriptor->Binding);
+					if (it != typeIt->second.end())
+						return it->second;
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	// TODO: cache this
+	const Descriptor* VulkanPipeline::GetDescriptor(std::string_view name, DescriptorType type) const
+	{
+		for (const auto& [set, descriptorSet] : m_CreateInfo.Shader->GetDescriptorSets())
+		{
+			for (const auto& [descriptorType, descriptors] : descriptorSet)
+			{
+				if (descriptorType != type)
+					continue;
+
+				for (const auto& [binding, descriptor] : descriptors)
+				{
+					if (descriptor.Name == name)
+						return &descriptor;
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	void VulkanPipeline::Bake()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		Ref<VulkanPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		{
+			instance->RT_Bake();
+		});
+	}
+
+	void VulkanPipeline::RT_Bake()
+	{
+		FLUX_CHECK_IS_RENDER_THREAD();
+
+		VkDevice device = VulkanDevice::Get()->GetDevice();
+
+		Ref<VulkanShader> shader = m_CreateInfo.Shader.As<VulkanShader>();
+
+		auto& descriptorPoolSizes = shader->GetDescriptorPoolSizes();
+		if (descriptorPoolSizes.empty())
+		{
+			FLUX_WARNING("Empty descriptor pool!");
+			return;
+		}
+
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		descriptorPoolCreateInfo.maxSets = 10;
+
+		// TODO
+		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(descriptorPoolSizes.at(0).size());
+		descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.at(0).data();
+
+		if (m_DescriptorPool)
+			vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
+
+		VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool));
+
+		// TODO
+		m_DesciptorSets.resize(m_Descriptors.size());
+
+		std::vector<VkWriteDescriptorSet> descriptorWrites;
+		for (const auto& [set, descriptorSets] : m_Descriptors)
+		{
+			VkDescriptorSetLayout descriptorSetLayout = shader->GetDescriptorSetLayout(set);
+
+			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
+			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
+			descriptorSetAllocateInfo.descriptorSetCount = 1;
+			descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
+
+			VK_CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &m_DesciptorSets[set]));
+
+			for (const auto& [descriptorType, descriptors] : descriptorSets)
+			{
+				for (const auto& [binding, descriptor] : descriptors)
+				{
+					if (!descriptor)
+					{
+						FLUX_VERIFY(false);
+						continue;
+					}
+
+					auto& descriptorWrite = descriptorWrites.emplace_back();
+					descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					descriptorWrite.dstSet = m_DesciptorSets.at(set);
+					descriptorWrite.dstBinding = binding;
+					descriptorWrite.dstArrayElement = 0;
+					descriptorWrite.descriptorCount = 1;
+
+					switch (descriptorType)
+					{
+					case DescriptorType::UniformBuffer:
+					{
+						Ref<VulkanUniformBuffer> uniformBuffer = descriptor.As<VulkanUniformBuffer>();
+						FLUX_VERIFY(binding == uniformBuffer->GetBinding());
+
+						VkDescriptorBufferInfo descriptorBufferInfo = {};
+						descriptorBufferInfo.buffer = uniformBuffer->GetBuffer();
+						descriptorBufferInfo.offset = 0;
+						descriptorBufferInfo.range = uniformBuffer->GetSize();
+
+						descriptorWrite.pBufferInfo = &descriptorBufferInfo;
+						descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+						break;
+					}
+					}
+				}
+			}
+		}
+
+		vkUpdateDescriptorSets(device, static_cast<uint32>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	}
+
 	void VulkanPipeline::Bind(Ref<CommandBuffer> commandBuffer) const
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
@@ -320,18 +485,20 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
 
+		if (m_DesciptorSets.empty())
+			return;
+
+		// TODO
 		uint32 firstSet = 0;
 		uint32 descriptorSetCount = 1;
-
-		VkDescriptorSet ds = {};
-
+		
 		vkCmdBindDescriptorSets(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			m_PipelineLayout,
 			firstSet,
-			descriptorSetCount,
-			&ds,
+			static_cast<uint32>(m_DesciptorSets.size()),
+			m_DesciptorSets.data(),
 			0,
 			nullptr
 		);

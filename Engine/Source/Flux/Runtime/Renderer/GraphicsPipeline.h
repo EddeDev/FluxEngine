@@ -2,6 +2,7 @@
 
 #include "Shader.h"
 #include "Framebuffer.h"
+#include "UniformBuffer.h"
 #include "CompareOp.h"
 
 namespace Flux {
@@ -26,6 +27,8 @@ namespace Flux {
 		bool Wireframe = false;
 		float LineWidth = 1.0f;
 
+		std::string DebugLabel = "Pipeline";
+
 		bool IsValid() const
 		{
 			return Shader && Framebuffer;
@@ -40,6 +43,12 @@ namespace Flux {
 		virtual void Invalidate() = 0;
 		virtual void RT_Invalidate() = 0;
 
+		virtual bool SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer) = 0;
+		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name) const = 0;
+
+		virtual void Bake() = 0;
+		virtual void RT_Bake() = 0;
+
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const = 0;
 		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const = 0;
 
@@ -52,12 +61,6 @@ namespace Flux {
 		virtual void RT_BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const = 0;
 
 		virtual bool IsValid() const = 0;
-
-		template<typename T>
-		void SetInput(std::string_view name, Ref<T> input)
-		{
-
-		}
 
 		virtual Ref<Shader> GetShader() const = 0;
 		virtual Ref<Framebuffer> GetFramebuffer() const = 0;

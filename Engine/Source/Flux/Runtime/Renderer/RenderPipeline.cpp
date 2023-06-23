@@ -41,8 +41,10 @@ namespace Flux {
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			pipelineCreateInfo.Shader = m_QuadShader;
 			pipelineCreateInfo.Framebuffer = framebuffer;
+			pipelineCreateInfo.DebugLabel = "Quad Pipeline";
 			m_QuadPipeline = GraphicsPipeline::Create(pipelineCreateInfo);
-			m_QuadPipeline->SetInput("Camera", Renderer::GetUniformBuffer("Camera"));
+			m_QuadPipeline->SetUniformBuffer("Camera", Renderer::GetUniformBuffer("Camera"));
+			m_QuadPipeline->Bake();
 
 			m_QuadVertexBuffer.resize(framesInFlight);
 			m_QuadVertexStorage.resize(framesInFlight);
@@ -119,7 +121,7 @@ namespace Flux {
 			glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 			glm::mat4 inverseViewProjectionMatrix = glm::inverse(viewProjectionMatrix);
 
-			cameraUniformBuffer->Set("u_ViewProjectionMatrix", projectionMatrix);
+			cameraUniformBuffer->Set("u_ViewProjectionMatrix", viewProjectionMatrix);
 			cameraUniformBuffer->Set("u_InverseViewProjectionMatrix", inverseViewProjectionMatrix);
 			cameraUniformBuffer->Set("u_ProjectionMatrix", projectionMatrix);
 			cameraUniformBuffer->Set("u_ViewMatrix", viewMatrix);
