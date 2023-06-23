@@ -277,6 +277,7 @@ namespace Flux {
 		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
 		if (descriptor)
 		{
+#if 0
 			FLUX_INFO("[{0}]: Setting Uniform Buffer descriptor '{1}' in {2} shader '{3}' ({4}.{5})", 
 				m_CreateInfo.DebugLabel, name, 
 				descriptor->Stage == ShaderStage::Vertex ? "vertex" : 
@@ -285,12 +286,13 @@ namespace Flux {
 				m_CreateInfo.Shader->GetPath().filename().string(),
 				descriptor->DescriptorSet, descriptor->Binding
 			);
+#endif
 			
 			m_Descriptors[descriptor->DescriptorSet][DescriptorType::UniformBuffer][descriptor->Binding] = uniformBuffer;
 		}			
 		else
 		{
-			FLUX_ERROR("Could not find uniform buffer descriptor: {0}", name);
+			FLUX_WARNING("Could not find uniform buffer descriptor: {0}", name);
 		}
 		return true;
 	}
@@ -320,6 +322,8 @@ namespace Flux {
 	// TODO: cache this
 	const Descriptor* VulkanPipeline::GetDescriptor(std::string_view name, DescriptorType type) const
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		for (const auto& [set, descriptorSet] : m_CreateInfo.Shader->GetDescriptorSets())
 		{
 			for (const auto& [descriptorType, descriptors] : descriptorSet)

@@ -255,9 +255,9 @@ namespace Flux {
 		compileOptions.SetOptimizationLevel(shaderc_optimization_level_performance);
 		compileOptions.SetWarningsAsErrors();
 
-#ifdef FLUX_BUILD_DEBUG
+// #ifdef FLUX_BUILD_DEBUG
 		compileOptions.SetGenerateDebugInfo();
-#endif
+// #endif
 
 		// TODO: cache shaders
 		for (auto& [stage, source] : sources)
