@@ -16,9 +16,10 @@ namespace Flux {
 #ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanContext>::Create();
 #endif
+		default:
+			FLUX_VERIFY(false, "Unknown Graphics API.");
+			return nullptr;
 		}
-		FLUX_VERIFY(false, "Unknown Graphics API.");
-		return nullptr;
 	}
 
 }
