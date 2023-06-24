@@ -35,7 +35,6 @@ void main()
     v_TextureIndex = a_TextureIndex;
 
     gl_Position = u_ViewProjectionMatrix * vec4(a_Position, 1.0);
-    // gl_Position = vec4(a_Position, 1.0);
 }
 
 #stage fragment

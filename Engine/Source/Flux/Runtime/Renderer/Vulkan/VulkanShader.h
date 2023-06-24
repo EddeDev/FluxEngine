@@ -50,4 +50,20 @@ namespace Flux {
 		std::unordered_map<ShaderStage, VkShaderModule> m_ShaderModules;
 	};
 
+	namespace Utils {
+
+		inline static VkShaderStageFlagBits VulkanShaderStage(ShaderStage stage)
+		{
+			switch (stage)
+			{
+			case ShaderStage::Vertex:   return VK_SHADER_STAGE_VERTEX_BIT;
+			case ShaderStage::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case ShaderStage::Compute:  return VK_SHADER_STAGE_COMPUTE_BIT;
+			}
+			FLUX_VERIFY(false, "Unknown shader stage");
+			return static_cast<VkShaderStageFlagBits>(0);
+		}
+
+	}
+
 }

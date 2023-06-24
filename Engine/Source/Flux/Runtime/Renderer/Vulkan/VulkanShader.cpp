@@ -66,18 +66,6 @@ namespace Flux {
 			return static_cast<shaderc_shader_kind>(0);
 		}
 
-		static VkShaderStageFlags VulkanShaderStage(ShaderStage stage)
-		{
-			switch (stage)
-			{
-			case ShaderStage::Vertex:   return VK_SHADER_STAGE_VERTEX_BIT;
-			case ShaderStage::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
-			case ShaderStage::Compute:  return VK_SHADER_STAGE_COMPUTE_BIT;
-			}
-			FLUX_VERIFY(false, "Unknown shader stage");
-			return static_cast<VkShaderStageFlagBits>(0);
-		}
-
 		static VkDescriptorType VulkanDescriptorType(DescriptorType type)
 		{
 			switch (type)
@@ -562,7 +550,7 @@ namespace Flux {
 						binding,
 						descriptorType,
 						descriptor.Count,
-						Utils::VulkanShaderStage(descriptor.Stage)
+						static_cast<VkShaderStageFlags>(Utils::VulkanShaderStage(descriptor.Stage))
 					});
 				}
 			}

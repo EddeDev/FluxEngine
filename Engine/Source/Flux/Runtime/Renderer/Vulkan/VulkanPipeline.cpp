@@ -15,18 +15,6 @@ namespace Flux {
 
 	namespace Utils {
 
-		static VkShaderStageFlagBits VulkanShaderStage(ShaderStage stage)
-		{
-			switch (stage)
-			{
-			case ShaderStage::Vertex:   return VK_SHADER_STAGE_VERTEX_BIT;
-			case ShaderStage::Fragment: return VK_SHADER_STAGE_FRAGMENT_BIT;
-			case ShaderStage::Compute:  return VK_SHADER_STAGE_COMPUTE_BIT;
-			}
-			FLUX_VERIFY(false, "Unknown shader stage");
-			return static_cast<VkShaderStageFlagBits>(0);
-		}
-
 		static VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology topology)
 		{
 			switch (topology)
@@ -360,28 +348,70 @@ namespace Flux {
 
 		Ref<VulkanShader> shader = m_CreateInfo.Shader.As<VulkanShader>();
 
-		auto& descriptorPoolSizes = shader->GetDescriptorPoolSizes();
+		for (const auto& [set, descriptorSet] : shader->GetDescriptorSets())
+		{
+			for (const auto& [descriptorType, descriptors] : descriptorSet)
+			{
+				for (const auto& [binding, descriptor] : descriptors)
+				{
+					bool hasDescriptor = false;
+
+					auto setIt = m_Descriptors.find(set);
+					if (setIt != m_Descriptors.end())
+					{
+						auto typeIt = setIt->second.find(descriptorType);
+						if (typeIt != setIt->second.end())
+						{
+							auto it = typeIt->second.find(binding);
+							if (it != typeIt->second.end())
+							{
+								if (it->second)
+									hasDescriptor = true;
+							}
+						}
+					}
+
+					if (!hasDescriptor)
+					{
+						FLUX_VERIFY(false, "{0} '{1}' ({2}.{3}) is not set!", 
+							Utils::DescriptorTypeToString(descriptorType),
+							descriptor.Name,
+							descriptor.DescriptorSet, descriptor.Binding
+						);
+					}
+				}
+			}
+		}
+	
+		std::unordered_map<VkDescriptorType, uint32> descriptorPoolSizes;
+		for (auto& [set, poolSizes] : shader->GetDescriptorPoolSizes())
+		{
+			for (auto& poolSize : poolSizes)
+				descriptorPoolSizes[poolSize.type] += poolSize.descriptorCount;
+		}
+
 		if (descriptorPoolSizes.empty())
 		{
-			FLUX_WARNING("Empty descriptor pool!");
+			FLUX_WARNING("[{0}]: Empty descriptor pool!", m_CreateInfo.DebugLabel);
 			return;
 		}
+
+		std::vector<VkDescriptorPoolSize> typeCounts;
+		for (auto& [type, count] : descriptorPoolSizes)
+			typeCounts.push_back({ type, count });
 
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		descriptorPoolCreateInfo.maxSets = 10;
-
-		// TODO
-		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(descriptorPoolSizes.at(0).size());
-		descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.at(0).data();
+		descriptorPoolCreateInfo.maxSets = static_cast<uint32>(descriptorPoolSizes.size());
+		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(typeCounts.size());
+		descriptorPoolCreateInfo.pPoolSizes = typeCounts.data();
 
 		if (m_DescriptorPool)
 			vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
 
 		VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool));
 
-		// TODO
 		m_DesciptorSets.resize(m_Descriptors.size());
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -492,15 +522,11 @@ namespace Flux {
 		if (m_DesciptorSets.empty())
 			return;
 
-		// TODO
-		uint32 firstSet = 0;
-		uint32 descriptorSetCount = 1;
-		
 		vkCmdBindDescriptorSets(
 			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			m_PipelineLayout,
-			firstSet,
+			0,
 			static_cast<uint32>(m_DesciptorSets.size()),
 			m_DesciptorSets.data(),
 			0,

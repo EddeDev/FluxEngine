@@ -115,4 +115,22 @@ namespace Flux {
 		static Ref<Shader> Create(const std::filesystem::path& path);
 	};
 
+	namespace Utils {
+
+		inline static const char* DescriptorTypeToString(DescriptorType type)
+		{
+			switch (type)
+			{
+			case DescriptorType::UniformBuffer:        return "Uniform Buffer";
+			case DescriptorType::StorageBuffer:        return "Storage Buffer";
+			case DescriptorType::CombinedImageSampler: return "Combined Image Sampler";
+			case DescriptorType::SampledImage:         return "Sampled Image";
+			case DescriptorType::StorageImage:         return "Storage Image";
+			}
+			FLUX_VERIFY(false, "Unknown descriptor type!");
+			return "";
+		}
+
+	}
+
 }
