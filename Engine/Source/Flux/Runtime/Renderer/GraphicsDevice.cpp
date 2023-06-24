@@ -3,7 +3,9 @@
 
 #include "Flux/Runtime/Core/Engine.h"
 
-#include "Vulkan/VulkanDevice.h"
+#ifdef FLUX_HAS_VULKAN_SDK
+	#include "Vulkan/VulkanDevice.h"
+#endif
 
 namespace Flux {
 
@@ -11,7 +13,9 @@ namespace Flux {
 	{
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
+#ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanAdapter>::Create(context);
+#endif
 		}
 		FLUX_VERIFY(false, "Unknown Graphics API.");
 		return nullptr;
@@ -21,7 +25,9 @@ namespace Flux {
 	{
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
+#ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanDevice>::Create(adapter);
+#endif
 		}
 		FLUX_VERIFY(false, "Unknown Graphics API.");
 		return nullptr;

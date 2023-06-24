@@ -37,10 +37,6 @@ project "FluxEngine"
         "Engine/Libraries/glm",
         "Engine/Libraries/stb_image"
     }
-
-    if VulkanSDK ~= nil then
-        includedirs "%{VulkanSDK}/Include"
-    end
     
     defines
     {
@@ -48,10 +44,19 @@ project "FluxEngine"
     }
 
     if VulkanSDK ~= nil then
+        includedirs "%{VulkanSDK}/Include"
+        defines "FLUX_HAS_VULKAN_SDK"
+
         links
         {
             "%{VulkanSDK}/Lib/vulkan-1.lib",
             "%{VulkanSDK}/Lib/VkLayer_utils.lib"
+        }
+    else
+        excludes
+        {
+            "Engine/Source/Flux/Runtime/Renderer/Vulkan/**.cpp",
+            "Engine/Source/Flux/Runtime/Renderer/Vulkan/**.h"
         }
     end
 

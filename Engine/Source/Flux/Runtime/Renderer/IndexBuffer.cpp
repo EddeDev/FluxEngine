@@ -3,7 +3,9 @@
 
 #include "Flux/Runtime/Core/Engine.h"
 
-#include "Vulkan/VulkanIndexBuffer.h"
+#ifdef FLUX_HAS_VULKAN_SDK
+	#include "Vulkan/VulkanIndexBuffer.h"
+#endif
 
 namespace Flux {
 
@@ -13,7 +15,9 @@ namespace Flux {
 
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
+#ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanIndexBuffer>::Create(data, size);
+#endif
 		}
 		FLUX_VERIFY(false, "Unknown Graphics API.");
 		return nullptr;

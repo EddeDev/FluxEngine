@@ -3,7 +3,9 @@
 
 #include "Flux/Runtime/Core/Engine.h"
 
-#include "Vulkan/VulkanPipeline.h"
+#ifdef FLUX_HAS_VULKAN_SDK
+	#include "Vulkan/VulkanPipeline.h"
+#endif
 
 namespace Flux {
 
@@ -13,7 +15,9 @@ namespace Flux {
 
 		switch (FLUX_CURRENT_GRAPHICS_API)
 		{
+#ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanPipeline>::Create(createInfo);
+#endif
 		}
 		FLUX_VERIFY(false, "Unknown Graphics API.");
 		return nullptr;
