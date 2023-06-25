@@ -67,7 +67,7 @@ namespace Flux {
 		if (bufferIndex == std::numeric_limits<uint32>::max())
 		{
 			m_BufferPool.resize(m_BufferPool.size() * 2);
-			bufferIndex = m_BufferPool.size() / 2;
+			bufferIndex = static_cast<uint32>(m_BufferPool.size() / 2);
 		}
 
 		auto& buffer = m_BufferPool[bufferIndex];

@@ -368,10 +368,11 @@ namespace Flux {
 
 						if (!hasDescriptor)
 						{
-							FLUX_VERIFY(false, "{0} '{1}' ({2}.{3}) is not set!",
+							FLUX_VERIFY(false, "{0} '{1}' ({2}.{3}) is not set for frame {4}!",
 								Utils::DescriptorTypeToString(descriptorType),
 								descriptor.Name,
-								descriptor.DescriptorSet, descriptor.Binding
+								descriptor.DescriptorSet, descriptor.Binding,
+								frameIndex
 							);
 						}
 					}

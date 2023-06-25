@@ -32,8 +32,6 @@ namespace Flux {
 		virtual void BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const override;
 		virtual void RT_BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const override;
 
-		virtual bool IsValid() const { return m_CreateInfo.IsValid(); }
-
 		virtual Ref<Shader> GetShader() const override { return m_CreateInfo.Shader; }
 		virtual Ref<Framebuffer> GetFramebuffer() const override { return m_CreateInfo.Framebuffer; }
 	private:

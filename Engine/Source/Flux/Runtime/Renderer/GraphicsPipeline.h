@@ -60,8 +60,6 @@ namespace Flux {
 		virtual void BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const = 0;
 		virtual void RT_BindDescriptorSets(Ref<CommandBuffer> commandBuffer) const = 0;
 
-		virtual bool IsValid() const = 0;
-
 		virtual Ref<Shader> GetShader() const = 0;
 		virtual Ref<Framebuffer> GetFramebuffer() const = 0;
 
