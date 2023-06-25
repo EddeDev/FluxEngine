@@ -15,8 +15,8 @@ namespace Flux {
 		virtual void Invalidate() override;
 		virtual void RT_Invalidate() override;
 
-		virtual bool SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer) override;
-		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name) const override;
+		virtual bool SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer, uint32 frameIndex) override;
+		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex) const override;
 
 		virtual void Bake() override;
 		virtual void RT_Bake() override;
@@ -45,8 +45,9 @@ namespace Flux {
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 
-		std::map<uint32, std::map<DescriptorType, std::map<uint32, Ref<ReferenceCounted>>>> m_Descriptors;
-		std::vector<VkDescriptorSet> m_DesciptorSets;
+		// frame -> set -> type -> binding
+		std::map<uint32, std::map<uint32, std::map<DescriptorType, std::map<uint32, Ref<ReferenceCounted>>>>> m_Descriptors;
+		std::map<uint32, std::vector<VkDescriptorSet>> m_DescriptorSets;
 	};
 
 }

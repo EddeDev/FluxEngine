@@ -31,10 +31,9 @@ namespace Flux {
 #ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return new VulkanResourceAllocator();
 #endif
-		default:
-			FLUX_VERIFY(false, "Unknown Graphics API.");
-			return nullptr;
 		}
+		FLUX_VERIFY(false, "Unknown Graphics API.");
+		return nullptr;
 	}
 
 	void Renderer::Init()
@@ -279,9 +278,6 @@ namespace Flux {
 
 	uint32 Renderer::GetFramesInFlight()
 	{
-		// TODO
-		return 1;
-
 		return Engine::Get().GetSwapchain()->GetImageCount();
 	}
 
@@ -307,9 +303,33 @@ namespace Flux {
 		{
 			if (entry.first == name)
 			{
-				auto it = s_UniformBuffers.find(entry.second);
-				if (it != s_UniformBuffers.end())
-					return it->second;
+				auto bindingIt = s_UniformBuffers.find(entry.second);
+				if (bindingIt != s_UniformBuffers.end())
+				{
+					auto it = bindingIt->second.find(Renderer::GetCurrentFrameIndex());
+					if (it != bindingIt->second.end())
+						return it->second;
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	Ref<UniformBuffer> Renderer::GetUniformBuffer(std::string_view name, uint32 frameIndex)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		for (const auto& entry : s_UniformBufferBindings)
+		{
+			if (entry.first == name)
+			{
+				auto bindingIt = s_UniformBuffers.find(entry.second);
+				if (bindingIt != s_UniformBuffers.end())
+				{
+					auto it = bindingIt->second.find(frameIndex);
+					if (it != bindingIt->second.end())
+						return it->second;
+				}
 			}
 		}
 		return nullptr;
@@ -341,7 +361,9 @@ namespace Flux {
 			};
 		}
 
-		s_UniformBuffers[buffer.Binding] = UniformBuffer::Create(createInfo);
+		for (uint32 frameIndex = 0; frameIndex < framesInFlight; frameIndex++)
+			s_UniformBuffers[buffer.Binding][frameIndex] = UniformBuffer::Create(createInfo);
+
 		s_UniformBufferBindings[buffer.Name] = buffer.Binding;
 
 		return true;

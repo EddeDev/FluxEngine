@@ -18,10 +18,9 @@ namespace Flux {
 #ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanVertexBuffer>::Create(size);
 #endif
-		default:
-			FLUX_VERIFY(false, "Unknown Graphics API.");
-			return nullptr;
 		}
+		FLUX_VERIFY(false, "Unknown Graphics API.");
+		return nullptr;
 	}
 
 	Ref<VertexBuffer> VertexBuffer::Create(const void* data, uint32 size)
@@ -33,10 +32,9 @@ namespace Flux {
 #ifdef FLUX_HAS_VULKAN_SDK
 		case GraphicsAPI::Vulkan: return Ref<VulkanVertexBuffer>::Create(data, size);
 #endif
-		default:
-			FLUX_VERIFY(false, "Unknown Graphics API.");
-			return nullptr;
 		}
+		FLUX_VERIFY(false, "Unknown Graphics API.");
+		return nullptr;
 	}
 
 }

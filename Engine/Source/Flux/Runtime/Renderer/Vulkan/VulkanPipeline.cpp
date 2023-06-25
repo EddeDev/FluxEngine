@@ -258,49 +258,38 @@ namespace Flux {
 		VK_CHECK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &m_Pipeline));
 	}
 
-	bool VulkanPipeline::SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer)
+	bool VulkanPipeline::SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer, uint32 frameIndex)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
 		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
 		if (descriptor)
-		{
-#if 0
-			FLUX_INFO("[{0}]: Setting Uniform Buffer descriptor '{1}' in {2} shader '{3}' ({4}.{5})", 
-				m_CreateInfo.DebugLabel, name, 
-				descriptor->Stage == ShaderStage::Vertex ? "vertex" : 
-				descriptor->Stage == ShaderStage::Fragment ? "fragment" :
-				descriptor->Stage == ShaderStage::Compute ? "compute" : "<invalid>",
-				m_CreateInfo.Shader->GetPath().filename().string(),
-				descriptor->DescriptorSet, descriptor->Binding
-			);
-#endif
-			
-			m_Descriptors[descriptor->DescriptorSet][DescriptorType::UniformBuffer][descriptor->Binding] = uniformBuffer;
-		}			
+			m_Descriptors[frameIndex][descriptor->DescriptorSet][DescriptorType::UniformBuffer][descriptor->Binding] = uniformBuffer;
 		else
-		{
 			FLUX_WARNING("Could not find uniform buffer descriptor: {0}", name);
-		}
 		return true;
 	}
 
-	Ref<UniformBuffer> VulkanPipeline::GetUniformBuffer(std::string_view name) const
+	Ref<UniformBuffer> VulkanPipeline::GetUniformBuffer(std::string_view name, uint32 frameIndex) const
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
 		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
 		if (descriptor)
 		{
-			auto setIt = m_Descriptors.find(descriptor->DescriptorSet);
-			if (setIt != m_Descriptors.end())
+			auto frameIt = m_Descriptors.find(frameIndex);
+			if (frameIt != m_Descriptors.end())
 			{
-				auto typeIt = setIt->second.find(descriptor->Type);
-				if (typeIt != setIt->second.end())
+				auto setIt = frameIt->second.find(descriptor->DescriptorSet);
+				if (setIt != frameIt->second.end())
 				{
-					auto it = typeIt->second.find(descriptor->Binding);
-					if (it != typeIt->second.end())
-						return it->second;
+					auto typeIt = setIt->second.find(descriptor->Type);
+					if (typeIt != setIt->second.end())
+					{
+						auto bindingIt = typeIt->second.find(descriptor->Binding);
+						if (bindingIt != typeIt->second.end())
+							return bindingIt->second;
+					}
 				}
 			}
 		}
@@ -348,41 +337,48 @@ namespace Flux {
 
 		Ref<VulkanShader> shader = m_CreateInfo.Shader.As<VulkanShader>();
 
-		for (const auto& [set, descriptorSet] : shader->GetDescriptorSets())
+		for (uint32 frameIndex = 0; frameIndex < Renderer::GetFramesInFlight(); frameIndex++)
 		{
-			for (const auto& [descriptorType, descriptors] : descriptorSet)
+			for (const auto& [set, descriptorSet] : shader->GetDescriptorSets())
 			{
-				for (const auto& [binding, descriptor] : descriptors)
+				for (const auto& [descriptorType, descriptors] : descriptorSet)
 				{
-					bool hasDescriptor = false;
-
-					auto setIt = m_Descriptors.find(set);
-					if (setIt != m_Descriptors.end())
+					for (const auto& [binding, descriptor] : descriptors)
 					{
-						auto typeIt = setIt->second.find(descriptorType);
-						if (typeIt != setIt->second.end())
+						bool hasDescriptor = false;
+
+						auto frameIt = m_Descriptors.find(frameIndex);
+						if (frameIt != m_Descriptors.end())
 						{
-							auto it = typeIt->second.find(binding);
-							if (it != typeIt->second.end())
+							auto setIt = frameIt->second.find(set);
+							if (setIt != frameIt->second.end())
 							{
-								if (it->second)
-									hasDescriptor = true;
+								auto typeIt = setIt->second.find(descriptorType);
+								if (typeIt != setIt->second.end())
+								{
+									auto bindingIt = typeIt->second.find(binding);
+									if (bindingIt != typeIt->second.end())
+									{
+										if (bindingIt->second)
+											hasDescriptor = true;
+									}
+								}
 							}
 						}
-					}
 
-					if (!hasDescriptor)
-					{
-						FLUX_VERIFY(false, "{0} '{1}' ({2}.{3}) is not set!", 
-							Utils::DescriptorTypeToString(descriptorType),
-							descriptor.Name,
-							descriptor.DescriptorSet, descriptor.Binding
-						);
+						if (!hasDescriptor)
+						{
+							FLUX_VERIFY(false, "{0} '{1}' ({2}.{3}) is not set!",
+								Utils::DescriptorTypeToString(descriptorType),
+								descriptor.Name,
+								descriptor.DescriptorSet, descriptor.Binding
+							);
+						}
 					}
 				}
 			}
 		}
-	
+
 		std::unordered_map<VkDescriptorType, uint32> descriptorPoolSizes;
 		for (auto& [set, poolSizes] : shader->GetDescriptorPoolSizes())
 		{
@@ -403,7 +399,7 @@ namespace Flux {
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		descriptorPoolCreateInfo.maxSets = static_cast<uint32>(descriptorPoolSizes.size());
+		descriptorPoolCreateInfo.maxSets = static_cast<uint32>(descriptorPoolSizes.size()) * static_cast<uint32>(m_Descriptors.size());
 		descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(typeCounts.size());
 		descriptorPoolCreateInfo.pPoolSizes = typeCounts.data();
 
@@ -412,58 +408,59 @@ namespace Flux {
 
 		VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool));
 
-		m_DesciptorSets.resize(m_Descriptors.size());
+		m_DescriptorSets.clear();
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites;
-		for (const auto& [set, descriptorSets] : m_Descriptors)
+
+		for (const auto& [frameIndex, descriptorMap] : m_Descriptors)
 		{
-			VkDescriptorSetLayout descriptorSetLayout = shader->GetDescriptorSetLayout(set);
+			m_DescriptorSets[frameIndex].resize(descriptorMap.size());
 
-			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
-			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
-			descriptorSetAllocateInfo.descriptorSetCount = 1;
-			descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
-
-			VK_CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &m_DesciptorSets[set]));
-
-			for (const auto& [descriptorType, descriptors] : descriptorSets)
+			for (const auto& [set, descriptorSets] : descriptorMap)
 			{
-				for (const auto& [binding, descriptor] : descriptors)
+				VkDescriptorSetLayout descriptorSetLayout = shader->GetDescriptorSetLayout(set);
+
+				VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
+				descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+				descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
+				descriptorSetAllocateInfo.descriptorSetCount = 1;
+				descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
+
+				VK_CHECK(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &m_DescriptorSets[frameIndex][set]));
+
+				for (const auto& [descriptorType, descriptorBindings] : descriptorSets)
 				{
-					if (!descriptor)
+					for (const auto& [binding, descriptor] : descriptorBindings)
 					{
-						FLUX_VERIFY(false);
-						continue;
-					}
+						auto& descriptorWrite = descriptorWrites.emplace_back();
+						descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+						descriptorWrite.dstSet = m_DescriptorSets.at(frameIndex).at(set);
+						descriptorWrite.dstBinding = binding;
+						descriptorWrite.dstArrayElement = 0;
+						descriptorWrite.descriptorCount = 1;
 
-					auto& descriptorWrite = descriptorWrites.emplace_back();
-					descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-					descriptorWrite.dstSet = m_DesciptorSets.at(set);
-					descriptorWrite.dstBinding = binding;
-					descriptorWrite.dstArrayElement = 0;
-					descriptorWrite.descriptorCount = 1;
+						switch (descriptorType)
+						{
+						case DescriptorType::UniformBuffer:
+						{
+							Ref<VulkanUniformBuffer> uniformBuffer = descriptor.As<VulkanUniformBuffer>();
+							FLUX_VERIFY(binding == uniformBuffer->GetBinding());
 
-					switch (descriptorType)
-					{
-					case DescriptorType::UniformBuffer:
-					{
-						Ref<VulkanUniformBuffer> uniformBuffer = descriptor.As<VulkanUniformBuffer>();
-						FLUX_VERIFY(binding == uniformBuffer->GetBinding());
+							VkDescriptorBufferInfo descriptorBufferInfo = {};
+							descriptorBufferInfo.buffer = uniformBuffer->GetBuffer();
+							descriptorBufferInfo.offset = 0;
+							descriptorBufferInfo.range = uniformBuffer->GetSize();
 
-						VkDescriptorBufferInfo descriptorBufferInfo = {};
-						descriptorBufferInfo.buffer = uniformBuffer->GetBuffer();
-						descriptorBufferInfo.offset = 0;
-						descriptorBufferInfo.range = uniformBuffer->GetSize();
-
-						descriptorWrite.pBufferInfo = &descriptorBufferInfo;
-						descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-						break;
-					}
+							descriptorWrite.pBufferInfo = &descriptorBufferInfo;
+							descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+							break;
+						}
+						}
 					}
 				}
 			}
 		}
+		
 
 		vkUpdateDescriptorSets(device, static_cast<uint32>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
@@ -519,19 +516,28 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
 
-		if (m_DesciptorSets.empty())
+		if (m_DescriptorSets.empty())
 			return;
 
-		vkCmdBindDescriptorSets(
-			commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			m_PipelineLayout,
-			0,
-			static_cast<uint32>(m_DesciptorSets.size()),
-			m_DesciptorSets.data(),
-			0,
-			nullptr
-		);
+		uint32 frameIndex = Renderer::RT_GetCurrentFrameIndex();
+
+		auto it = m_DescriptorSets.find(frameIndex);
+		if (it != m_DescriptorSets.end())
+		{
+			if (it->second.empty())
+				return;
+
+			vkCmdBindDescriptorSets(
+				commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				m_PipelineLayout,
+				0,
+				static_cast<uint32>(it->second.size()),
+				it->second.data(),
+				0,
+				nullptr
+			);
+		}
 	}
 
 	void VulkanPipeline::DrawIndexed(Ref<CommandBuffer> commandBuffer, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const

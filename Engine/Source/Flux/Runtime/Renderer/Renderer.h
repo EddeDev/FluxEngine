@@ -50,6 +50,7 @@ namespace Flux {
 		static Ref<Texture2D> GetBlackTexture();
 
 		static Ref<UniformBuffer> GetUniformBuffer(std::string_view name);
+		static Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex);
 		static bool RegisterUniformBuffer(const ShaderUniformBuffer& buffer);
 
 		template<typename T = ResourceAllocator>
@@ -64,7 +65,7 @@ namespace Flux {
 		inline static constexpr uint32 s_RenderCommandQueueCount = 2;
 		inline static constexpr uint32 s_ReleaseQueueCount = 3;
 
-		inline static std::unordered_map<uint32, Ref<UniformBuffer>> s_UniformBuffers;
+		inline static std::unordered_map<uint32, std::unordered_map<uint32, Ref<UniformBuffer>>> s_UniformBuffers;
 		inline static std::unordered_map<std::string, uint32> s_UniformBufferBindings;
 
 		inline static std::queue<RenderCommand> s_RenderCommandQueue[s_RenderCommandQueueCount];

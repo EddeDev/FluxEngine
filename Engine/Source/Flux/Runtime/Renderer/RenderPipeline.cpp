@@ -43,7 +43,10 @@ namespace Flux {
 			pipelineCreateInfo.Framebuffer = framebuffer;
 			pipelineCreateInfo.DebugLabel = "Quad Pipeline";
 			m_QuadPipeline = GraphicsPipeline::Create(pipelineCreateInfo);
-			m_QuadPipeline->SetUniformBuffer("Camera", Renderer::GetUniformBuffer("Camera"));
+
+			for (uint32 frameIndex = 0; frameIndex < Renderer::GetFramesInFlight(); frameIndex++)
+				m_QuadPipeline->SetUniformBuffer("Camera", Renderer::GetUniformBuffer("Camera", frameIndex), frameIndex);
+
 			m_QuadPipeline->Bake();
 
 			m_QuadVertexBuffer.resize(framesInFlight);
