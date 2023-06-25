@@ -30,6 +30,7 @@ namespace Flux {
 			m_Application = new TApplication(std::forward<TArgs>(args)...);
 		}
 
+		float GetTime() const { return m_Time; }
 		float GetFrameTime() const { return m_FrameTime; }
 		uint32 GetFramesPerSecond() const { return m_FramesPerSecond; }
 
@@ -95,6 +96,7 @@ namespace Flux {
 		float m_FrameTime = 0.0f;
 		float m_LastFrameTime = 0.0f;
 
+		float m_Time = 0.0f;
 		float m_LastTime = 0.0f;
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;

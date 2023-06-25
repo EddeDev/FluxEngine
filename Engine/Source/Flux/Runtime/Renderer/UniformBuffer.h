@@ -44,16 +44,7 @@ namespace Flux {
 				return;
 			}
 
-			auto& uniform = it->second;
-
-			uint32 size = static_cast<uint32>(sizeof(T));
-			if (size > uniform.Size)
-			{
-				FLUX_VERIFY(false);
-				return;
-			}
-
-			SetData(&value, size, uniform.Offset);
+			SetData(&value, it->second.Size, it->second.Offset);
 		}
 
 		static Ref<UniformBuffer> Create(const UniformBufferCreateInfo& createInfo);

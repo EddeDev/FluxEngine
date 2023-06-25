@@ -29,6 +29,10 @@ namespace Flux {
 			bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
 			instance->m_Allocation = allocator.CreateBuffer(bufferCreateInfo, ResourceMemoryUsage::CpuToGpu, instance->m_Buffer);
+
+			instance->m_DescriptorInfo.buffer = instance->m_Buffer;
+			instance->m_DescriptorInfo.offset = 0;
+			instance->m_DescriptorInfo.range = instance->m_CreateInfo.Size;
 		});
 	}
 

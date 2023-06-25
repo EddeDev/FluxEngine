@@ -43,10 +43,6 @@ namespace Flux {
 			pipelineCreateInfo.Framebuffer = framebuffer;
 			pipelineCreateInfo.DebugLabel = "Quad Pipeline";
 			m_QuadPipeline = GraphicsPipeline::Create(pipelineCreateInfo);
-
-			for (uint32 frameIndex = 0; frameIndex < Renderer::GetFramesInFlight(); frameIndex++)
-				m_QuadPipeline->SetUniformBuffer("Camera", Renderer::GetUniformBuffer("Camera", frameIndex), frameIndex);
-
 			m_QuadPipeline->Bake();
 
 			m_QuadVertexBuffer.resize(framesInFlight);
@@ -128,6 +124,12 @@ namespace Flux {
 			cameraUniformBuffer->Set("u_InverseViewProjectionMatrix", inverseViewProjectionMatrix);
 			cameraUniformBuffer->Set("u_ProjectionMatrix", projectionMatrix);
 			cameraUniformBuffer->Set("u_ViewMatrix", viewMatrix);
+		}
+
+		Ref<UniformBuffer> timeUniformBuffer = Renderer::GetUniformBuffer("Time");
+		if (timeUniformBuffer)
+		{
+			timeUniformBuffer->Set("u_Time", Engine::Get().GetTime());
 		}
 	}
 

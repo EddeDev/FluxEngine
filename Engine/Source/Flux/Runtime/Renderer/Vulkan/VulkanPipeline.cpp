@@ -343,6 +343,52 @@ namespace Flux {
 			{
 				for (const auto& [descriptorType, descriptors] : descriptorSet)
 				{
+					if (descriptorType != DescriptorType::UniformBuffer)
+						continue;
+
+					for (const auto& [binding, descriptor] : descriptors)
+					{
+						bool hasDescriptor = false;
+
+						auto frameIt = m_Descriptors.find(frameIndex);
+						if (frameIt != m_Descriptors.end())
+						{
+							auto setIt = frameIt->second.find(set);
+							if (setIt != frameIt->second.end())
+							{
+								auto typeIt = setIt->second.find(descriptorType);
+								if (typeIt != setIt->second.end())
+								{
+									auto bindingIt = typeIt->second.find(binding);
+									if (bindingIt != typeIt->second.end())
+									{
+										if (bindingIt->second)
+										{
+											if (bindingIt->second)
+												hasDescriptor = true;
+										}
+									}
+								}
+							}
+						}
+
+						if (!hasDescriptor)
+						{
+							Ref<UniformBuffer> uniformBuffer = Renderer::RT_GetUniformBuffer(descriptor.Name, frameIndex);
+							if (uniformBuffer)
+								m_Descriptors[frameIndex][descriptor.DescriptorSet][DescriptorType::UniformBuffer][binding] = uniformBuffer;
+						}
+					}
+				}
+			}
+		}
+
+		for (uint32 frameIndex = 0; frameIndex < Renderer::GetFramesInFlight(); frameIndex++)
+		{
+			for (const auto& [set, descriptorSet] : shader->GetDescriptorSets())
+			{
+				for (const auto& [descriptorType, descriptors] : descriptorSet)
+				{
 					for (const auto& [binding, descriptor] : descriptors)
 					{
 						bool hasDescriptor = false;
@@ -447,12 +493,7 @@ namespace Flux {
 							Ref<VulkanUniformBuffer> uniformBuffer = descriptor.As<VulkanUniformBuffer>();
 							FLUX_VERIFY(binding == uniformBuffer->GetBinding());
 
-							VkDescriptorBufferInfo descriptorBufferInfo = {};
-							descriptorBufferInfo.buffer = uniformBuffer->GetBuffer();
-							descriptorBufferInfo.offset = 0;
-							descriptorBufferInfo.range = uniformBuffer->GetSize();
-
-							descriptorWrite.pBufferInfo = &descriptorBufferInfo;
+							descriptorWrite.pBufferInfo = &uniformBuffer->GetDescriptorInfo();
 							descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 							break;
 						}
@@ -461,7 +502,6 @@ namespace Flux {
 				}
 			}
 		}
-		
 
 		vkUpdateDescriptorSets(device, static_cast<uint32>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}

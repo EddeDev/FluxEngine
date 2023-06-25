@@ -299,6 +299,8 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		std::lock_guard<std::mutex> lock(s_UniformBufferMutex);
+
 		for (const auto& entry : s_UniformBufferBindings)
 		{
 			if (entry.first == name)
@@ -315,9 +317,55 @@ namespace Flux {
 		return nullptr;
 	}
 
+	Ref<UniformBuffer> Renderer::RT_GetUniformBuffer(std::string_view name)
+	{
+		FLUX_CHECK_IS_RENDER_THREAD();
+
+		std::lock_guard<std::mutex> lock(s_UniformBufferMutex);
+
+		for (const auto& entry : s_UniformBufferBindings)
+		{
+			if (entry.first == name)
+			{
+				auto bindingIt = s_UniformBuffers.find(entry.second);
+				if (bindingIt != s_UniformBuffers.end())
+				{
+					auto it = bindingIt->second.find(Renderer::RT_GetCurrentFrameIndex());
+					if (it != bindingIt->second.end())
+						return it->second;
+				}
+			}
+		}
+		return nullptr;
+	}
+
 	Ref<UniformBuffer> Renderer::GetUniformBuffer(std::string_view name, uint32 frameIndex)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+
+		std::lock_guard<std::mutex> lock(s_UniformBufferMutex);
+
+		for (const auto& entry : s_UniformBufferBindings)
+		{
+			if (entry.first == name)
+			{
+				auto bindingIt = s_UniformBuffers.find(entry.second);
+				if (bindingIt != s_UniformBuffers.end())
+				{
+					auto it = bindingIt->second.find(frameIndex);
+					if (it != bindingIt->second.end())
+						return it->second;
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	Ref<UniformBuffer> Renderer::RT_GetUniformBuffer(std::string_view name, uint32 frameIndex)
+	{
+		FLUX_CHECK_IS_RENDER_THREAD();
+
+		std::lock_guard<std::mutex> lock(s_UniformBufferMutex);
 
 		for (const auto& entry : s_UniformBufferBindings)
 		{

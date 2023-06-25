@@ -21,6 +21,8 @@ namespace Flux {
 		virtual uint32 GetSize() const override { return m_CreateInfo.Size; }
 		virtual uint32 GetBinding() const override { return m_CreateInfo.Binding; }
 
+		const VkDescriptorBufferInfo& GetDescriptorInfo() const { return m_DescriptorInfo; }
+
 		VkBuffer GetBuffer() const { return m_Buffer; }
 	private:
 		UniformBufferCreateInfo m_CreateInfo;
@@ -41,6 +43,7 @@ namespace Flux {
 		std::mutex m_BufferPoolMutex;
 
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
+		VkDescriptorBufferInfo m_DescriptorInfo = {};
 		ResourceAllocation m_Allocation = nullptr;
 	};
 

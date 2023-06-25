@@ -135,18 +135,18 @@ namespace Flux {
 
 		while (m_Running)
 		{
-			float time = Platform::GetTime();
-			m_FrameTime = time - m_LastFrameTime;
-			m_LastFrameTime = time;
+			m_Time = Platform::GetTime();
+			m_FrameTime = m_Time - m_LastFrameTime;
+			m_LastFrameTime = m_Time;
 
 			m_FrameCounter++;
-			if (time >= m_LastTime + 1.0f)
+			if (m_Time >= m_LastTime + 1.0f)
 			{
 				FLUX_TRACE("Frame time: {0:.2f}ms, WaitForRenderThread: {1:.2f}ms, ApplicationUpdate: {2:.2f}ms ({3} fps)", m_FrameTime * 1000.0f, m_PerformanceTimers.WaitForRenderThread, m_PerformanceTimers.ApplicationUpdate, m_FrameCounter);
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
-				m_LastTime = time;
+				m_LastTime = m_Time;
 			}
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
