@@ -12,9 +12,9 @@ namespace Flux {
 		Critical
 	};
 
-	namespace LogVerbosityUtils {
+	namespace Utils {
 		
-		inline static const char* ToString(LogVerbosity verbosity)
+		inline static const char* LogVerbosityToString(LogVerbosity verbosity)
 		{
 			switch (verbosity)
 			{
@@ -28,7 +28,7 @@ namespace Flux {
 			return "Unknown";
 		}
 
-		inline static LogVerbosity FromString(std::string_view string)
+		inline static LogVerbosity LogVerbosityFromString(std::string_view string)
 		{
 			if (string == "Trace")
 				return LogVerbosity::Trace;

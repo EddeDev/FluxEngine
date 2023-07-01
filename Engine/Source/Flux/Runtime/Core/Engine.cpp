@@ -43,7 +43,7 @@ namespace Flux {
 		m_Window->AddSizeCallback(FLUX_BIND_CALLBACK(OnWindowResize, this));
 		m_Window->AddMinimizeCallback(FLUX_BIND_CALLBACK(OnWindowMinimize, this));
 
-		FLUX_INFO("Graphics API: {0}", GraphicsAPIUtils::ToString(m_GraphicsAPI));
+		FLUX_INFO("Graphics API: {0}", Utils::GraphicsAPIToString(m_GraphicsAPI));
 	}
 
 	Engine::~Engine()

@@ -10,9 +10,9 @@ namespace Flux {
 		Vulkan
 	};
 
-	namespace GraphicsAPIUtils {
+	namespace Utils {
 
-		inline static const char* ToString(GraphicsAPI api)
+		inline static const char* GraphicsAPIToString(GraphicsAPI api)
 		{
 			switch (api)
 			{
