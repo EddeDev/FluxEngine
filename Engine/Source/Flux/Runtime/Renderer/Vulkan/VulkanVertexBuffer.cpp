@@ -84,6 +84,8 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		std::lock_guard<std::mutex> lock(m_StorageMutex);
+
 		delete[] m_Storage;
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([buffer = m_Buffer, allocation = m_Allocation]()
@@ -97,11 +99,15 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		std::lock_guard<std::mutex> lock(m_StorageMutex);
+
 		memcpy(m_Storage, (uint8*)data + offset, size);
 
 		Ref<VulkanVertexBuffer> instance = this;
 		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer, size, offset]() mutable
 		{
+			std::lock_guard<std::mutex> lock(instance->m_StorageMutex);
+
 			instance->RT_SetData(commandBuffer, instance->m_Storage, size, offset);
 		});
 	}

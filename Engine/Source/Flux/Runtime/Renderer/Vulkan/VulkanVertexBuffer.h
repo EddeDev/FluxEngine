@@ -20,6 +20,7 @@ namespace Flux {
 		virtual void Bind(Ref<CommandBuffer> commandBuffer) const override;
 		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const override;
 	private:
+		std::mutex m_StorageMutex;
 		uint8* m_Storage = nullptr;
 		uint32 m_Size = 0;
 
