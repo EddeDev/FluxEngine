@@ -8,7 +8,7 @@
 
 #ifdef FLUX_ENABLE_ASSERTS
 	#define FLUX_ASSERT(expression, ...) if (!(expression)) ::Flux::Logger::AssertionFailed(__VA_ARGS__)
-	#define FLUX_ASSERT_IS_THREAD(threadID) ::Flux::Logger::AssertOnThread(threadID, __FUNCTION__)
+	#define FLUX_ASSERT_IS_THREAD(threadID) ::Flux::Logger::AssertIsThread(threadID, __FUNCTION__)
 #else
 	#define FLUX_ASSERT(expression, ...) (void)0
 	#define FLUX_ASSERT_IS_THREAD(threadID) (void)0
@@ -16,7 +16,7 @@
 
 #ifndef FLUX_BUILD_SHIPPING
 	#define FLUX_VERIFY(expression, ...) if (!(expression)) ::Flux::Logger::VerifyFailed(__VA_ARGS__)
-	#define FLUX_VERIFY_IS_THREAD(threadID) ::Flux::Logger::VerifyOnThread(threadID, __FUNCTION__)
+	#define FLUX_VERIFY_IS_THREAD(threadID) ::Flux::Logger::VerifyIsThread(threadID, __FUNCTION__)
 #else
 	#define FLUX_VERIFY(expression, ...) (void)0
 #endif

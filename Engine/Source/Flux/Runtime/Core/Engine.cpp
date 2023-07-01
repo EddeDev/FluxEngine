@@ -2,6 +2,7 @@
 #include "Engine.h"
 
 #include "Platform.h"
+#include "Input.h"
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
@@ -73,8 +74,6 @@ namespace Flux {
 		m_RenderThread->Submit(FLUX_BIND_CALLBACK(RT_Initialize, this));
 		m_RenderThread->Wait();
 
-		m_MainThread->Submit(Renderer::Init);
-
 		m_Running = true;
 		m_MainThread->Submit(FLUX_BIND_CALLBACK(MT_MainLoop, this));
 
@@ -125,6 +124,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		Input::Init();
+		Renderer::Init();
+
 		if (m_Application)
 			m_Application->OnInit();
 
@@ -173,6 +175,7 @@ namespace Flux {
 		m_RenderThread->Wait();
 
 		Renderer::Shutdown();
+		Input::Shutdown();
 	}
 
 	void Engine::MT_UpdateAndRender()

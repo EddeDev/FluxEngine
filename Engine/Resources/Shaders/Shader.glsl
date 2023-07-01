@@ -48,11 +48,6 @@ struct VertexOutput
     vec2 TexCoord;
 };
 
-layout(std140, binding = 1) uniform Time
-{
-	float u_Time;
-};
-
 layout(location = 0) in VertexOutput Input;
 layout(location = 2) in flat float v_TextureIndex;
 
@@ -62,8 +57,6 @@ void main()
 
 	if (color.a == 0.0)
 		discard;
-
-	color *= (sin(u_Time) * 0.7 + 1.0) * 0.5;
 
 	o_Color = color;
 }

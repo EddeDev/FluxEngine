@@ -568,6 +568,7 @@ namespace Flux {
 			if (it->second.empty())
 				return;
 
+			// TODO: move this to RT_Bind?
 			vkCmdBindDescriptorSets(
 				commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer(),
 				VK_PIPELINE_BIND_POINT_GRAPHICS,

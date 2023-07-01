@@ -45,7 +45,7 @@ namespace Flux {
 		}
 
 		template<typename TThreadID>
-		static void AssertOnThread(TThreadID threadID, const char* functionName = "")
+		static void AssertIsThread(TThreadID threadID, const char* functionName = "")
 		{
 			static_assert(std::is_same<TThreadID, ThreadID>::value);
 
@@ -72,7 +72,7 @@ namespace Flux {
 		}
 
 		template<typename TThreadID>
-		static void VerifyOnThread(TThreadID threadID, const char* functionName = "")
+		static void VerifyIsThread(TThreadID threadID, const char* functionName = "")
 		{
 			static_assert(std::is_same<TThreadID, ThreadID>::value);
 

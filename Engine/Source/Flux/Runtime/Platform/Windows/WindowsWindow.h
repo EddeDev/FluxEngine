@@ -21,10 +21,20 @@ namespace Flux {
 		virtual void SetVisible(bool visible) const override;
 		virtual bool IsVisible() const override;
 
+		virtual bool IsKeyDown(int32 key) const override;
+		virtual bool IsMouseButtonDown(int32 button) const override;
+		virtual glm::vec2 GetMousePosition() const override;
+
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
 		virtual void AddMinimizeCallback(const WindowMinimizeCallback& callback) override;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
+		virtual void AddKeyPressCallback(const KeyPressCallback& callback) override;
+		virtual void AddKeyReleaseCallback(const KeyReleaseCallback& callback) override;
+		virtual void AddKeyRepeatCallback(const KeyRepeatCallback& callback) override;
+		virtual void AddMouseButtonPressCallback(const MouseButtonPressCallback& callback) override;
+		virtual void AddMouseButtonReleaseCallback(const MouseButtonReleaseCallback& callback) override;
+		virtual void AddScrollCallback(const ScrollCallback& callback) override;
 
 		virtual uint32 GetWidth() const override { return m_Width; }
 		virtual uint32 GetHeight() const override { return m_Height; }
@@ -42,12 +52,18 @@ namespace Flux {
 
 		std::atomic<bool> m_Minimized = false;
 		
-		ThreadID m_ThreadID;
+		ThreadID m_ThreadID = 0;
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
 		std::vector<WindowMinimizeCallback> m_MinimizeCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;
 		std::vector<WindowMenuCallback> m_MenuCallbacks;
+		std::vector<KeyPressCallback> m_KeyPressCallbacks;
+		std::vector<KeyReleaseCallback> m_KeyReleaseCallbacks;
+		std::vector<KeyRepeatCallback> m_KeyRepeatCallbacks;
+		std::vector<MouseButtonPressCallback> m_MouseButtonPressCallbacks;
+		std::vector<MouseButtonReleaseCallback> m_MouseButtonReleaseCallbacks;
+		std::vector<ScrollCallback> m_ScrollCallbacks;
 
 		WindowMenu m_Menu = nullptr;
 	};

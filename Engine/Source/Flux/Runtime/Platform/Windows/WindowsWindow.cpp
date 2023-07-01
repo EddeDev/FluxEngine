@@ -191,6 +191,33 @@ namespace Flux {
 		return ::IsWindowVisible(m_WindowHandle);
 	}
 
+	bool WindowsWindow::IsKeyDown(int32 key) const
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
+
+		// TODO
+		return false;
+	}
+
+	bool WindowsWindow::IsMouseButtonDown(int32 button) const
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
+
+		// TODO
+		return false;
+	}
+
+	glm::vec2 WindowsWindow::GetMousePosition() const
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
+
+		// TODO
+		return {};
+	}
+
 	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
 	{
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
@@ -217,6 +244,48 @@ namespace Flux {
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
 
 		m_MenuCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddKeyPressCallback(const KeyPressCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_KeyPressCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddKeyReleaseCallback(const KeyReleaseCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_KeyReleaseCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddKeyRepeatCallback(const KeyRepeatCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_KeyRepeatCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMouseButtonPressCallback(const MouseButtonPressCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_MouseButtonPressCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMouseButtonReleaseCallback(const MouseButtonReleaseCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_MouseButtonReleaseCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddScrollCallback(const ScrollCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+		
+		m_ScrollCallbacks.push_back(callback);
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -259,6 +328,28 @@ namespace Flux {
 			for (auto& callback : m_CloseCallbacks)
 				callback();
 			return 0;
+		}
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+		{
+			const bool released = HIWORD(lParam) & KF_UP;
+
+			int32 scancode = (HIWORD(lParam) & (KF_EXTENDED | 0xff));
+			if (!scancode)
+				scancode = MapVirtualKeyW((UINT)wParam, MAPVK_VK_TO_VSC);
+
+			if (scancode == 0x54)
+				scancode = 0x137;
+			if (scancode == 0x146)
+				scancode = 0x45;
+			if (scancode == 0x136)
+				scancode = 0x36;
+
+			__debugbreak();
+
+			break;
 		}
 		}
 
