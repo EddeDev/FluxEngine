@@ -112,6 +112,13 @@ namespace Flux {
 
 		Ref<IndexBuffer> m_QuadIndexBuffer;
 		uint32 m_QuadIndexCount = 0;
+
+		enum class State
+		{
+			None = 0,
+			Render3D,
+			Render2D
+		} m_State = State::None;
 	};
 
 }

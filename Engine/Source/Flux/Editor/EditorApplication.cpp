@@ -61,6 +61,9 @@ namespace Flux {
 				});
 			}
 		}
+
+		m_OrthoCamera.SetViewportSize(window->GetWidth(), window->GetHeight());
+		m_OrthoCamera.SetZoomLevel(7.0f);
 	}
 
 	EditorApplication::~EditorApplication()
@@ -88,18 +91,21 @@ namespace Flux {
 		uint32 height = Engine::Get().GetSwapchain()->GetHeight();
 		m_RenderPipeline->SetViewportSize(width, height);
 
-		const float nearClip = 0.01f;
-		const float farClip = 1000.0f;
-
 		auto& cameraSettings = m_RenderPipeline->GetCameraSettings();
-		cameraSettings.ProjectionMatrix = glm::perspective(glm::radians(70.0f), (float)width / (float)height, nearClip, farClip);
-		cameraSettings.NearClip = nearClip;
-		cameraSettings.FarClip = farClip;
+		cameraSettings.ViewMatrix = m_OrthoCamera.ViewMatrix;
+		cameraSettings.ProjectionMatrix = m_OrthoCamera.ProjectionMatrix;
+		cameraSettings.NearClip = -1.0f;
+		cameraSettings.FarClip = 1.0f;
 
 		m_RenderPipeline->BeginRendering2D();
 
-		static glm::vec3 quadPosition = { 0.0f, 0.0f, -2.0f };
-		static float moveSpeed = 2.85f;
+		static glm::vec2 quadPosition = { 0.0f, 0.0f };
+		static glm::vec2 quadScale = { 5.0f, 1.0f };
+		static glm::vec4 initialQuadColor = { 0.8f, 0.4f, 0.2f, 1.0f };
+		static glm::vec4 quadColor = initialQuadColor;
+
+#if 0
+		static float moveSpeed = 4.5f;
 
 		if (Input::GetKey(KeyCode::W))
 			quadPosition.y += moveSpeed * Engine::Get().GetFrameTime();
@@ -110,13 +116,44 @@ namespace Flux {
 			quadPosition.x -= moveSpeed * Engine::Get().GetFrameTime();
 		if (Input::GetKey(KeyCode::D))
 			quadPosition.x += moveSpeed * Engine::Get().GetFrameTime();
+#endif
+
+		glm::vec2 mouseOrthoPos = Input::GetMouseOrthoPosition(m_OrthoCamera.ViewMatrix, m_OrthoCamera.ProjectionMatrix);
+
+		float left = quadPosition.x - quadScale.x * 0.5f;
+		float right = quadPosition.x + quadScale.x * 0.5f;
+		float bottom = quadPosition.y - quadScale.y * 0.5f;
+		float top = quadPosition.y + quadScale.y * 0.5f;
+
+		static bool draggingQuad = false;
+
+		float hoveringQuad = mouseOrthoPos.x >= left && mouseOrthoPos.x <= right && mouseOrthoPos.y >= bottom && mouseOrthoPos.y <= top;
+		if (hoveringQuad)
+		{
+			quadColor = glm::vec4(initialQuadColor.r * 0.8f, initialQuadColor.g * 0.8f, initialQuadColor.b * 0.8f, 1.0f);
+			
+			if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
+				draggingQuad = true;
+		}
+		else
+		{
+			quadColor = initialQuadColor;
+		}
+
+		if (draggingQuad)
+		{
+			quadPosition = glm::lerp(quadPosition, mouseOrthoPos, 40.0f * Engine::Get().GetFrameTime());
+		
+			if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
+				draggingQuad = false;
+		}
 
 		if (Input::GetKeyUp(KeyCode::Space))
 		{
 			FLUX_INFO("SPACE!");
 		}
 
-		m_RenderPipeline->DrawQuad(quadPosition, { 0.7f, 0.7f }, { 0.8f, 0.4f, 0.2f, 1.0f });
+		m_RenderPipeline->DrawQuad(glm::vec3(quadPosition, 0.0f), quadScale, quadColor);
 
 		m_RenderPipeline->EndRendering2D();
 	}

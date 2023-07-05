@@ -331,10 +331,14 @@ namespace Flux {
 		static bool GetMouseButtonDown(MouseButtonCode button);
 		static bool GetMouseButtonUp(MouseButtonCode button);
 
-		static glm::vec3 GetMousePosition();
+		static glm::vec2 GetMousePosition();
+		static glm::vec2 GetMousePositionDelta();
+		static glm::vec2 GetMouseOrthoPosition(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
+		static glm::vec2 GetMouseScroll();
 	private:
 		static void OnKeyEvent(int32 key, int32 scancode, int32 action, int32 mods);
 		static void OnMouseButtonEvent(int32 button, int32 action, int32 mods);
+		static void OnMouseMoveEvent(float x, float y);
 	};
 
 }

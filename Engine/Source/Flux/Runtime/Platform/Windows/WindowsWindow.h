@@ -27,6 +27,7 @@ namespace Flux {
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
 		virtual void AddKeyCallback(const KeyCallback& callback) override;
 		virtual void AddMouseButtonCallback(const MouseButtonCallback& callback) override;
+		virtual void AddMouseMoveCallback(const MouseMoveCallback& callback) override;
 
 		virtual uint32 GetWidth() const override { return m_Width; }
 		virtual uint32 GetHeight() const override { return m_Height; }
@@ -35,7 +36,7 @@ namespace Flux {
 
 		int32 ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 	private:
-		HWND m_WindowHandle = NULL;
+		std::atomic<HWND> m_WindowHandle = NULL;
 
 		std::atomic<uint32> m_Width = 0;
 		std::atomic<uint32> m_Height = 0;
@@ -52,6 +53,9 @@ namespace Flux {
 		std::vector<WindowMenuCallback> m_MenuCallbacks;
 		std::vector<KeyCallback> m_KeyCallbacks;
 		std::vector<MouseButtonCallback> m_MouseButtonCallbacks;
+		std::vector<MouseMoveCallback> m_MouseMoveCallbacks;
+
+		bool m_CursorTracked = false;
 
 		WindowMenu m_Menu = nullptr;
 	};

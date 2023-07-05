@@ -14,6 +14,7 @@ namespace Flux {
 		int8 MouseButtons[FLUX_MOUSE_BUTTON_LAST + 1];
 
 		glm::vec2 MousePosition;
+		glm::vec2 LastMousePosition;
 		glm::vec2 MousePositionDelta;
 		glm::vec2 MouseScroll;
 	};
@@ -51,6 +52,14 @@ namespace Flux {
 					Input::OnMouseButtonEvent(button, action, mods);
 				});
 			});
+
+			window->AddMouseMoveCallback([](auto x, auto y)
+			{
+				Engine::Get().SubmitToMainThread([x, y]()
+				{
+					Input::OnMouseMoveEvent(x, y);
+				});
+			});
 		});
 	}
 
@@ -69,17 +78,8 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		auto& window = Engine::Get().GetWindow();
-		if (window)
-		{
-			// TODO
-			glm::vec2 mousePosition = {};
-			// glm::vec2 mousePosition = window->GetMousePosition();
-			// mousePosition.y = static_cast<float>(window->GetHeight()) - mousePosition.y;
-			s_Data->MousePositionDelta = s_Data->MousePosition - mousePosition;
-			s_Data->MousePosition = mousePosition;
-			s_Data->MouseScroll = {};
-		}
+		s_Data->MousePositionDelta = s_Data->MousePosition - s_Data->LastMousePosition;
+		s_Data->LastMousePosition = s_Data->MousePosition;
 
 		memset(s_Data->KeyStates, 0, static_cast<int32>(KeyCode::Last));
 		memset(s_Data->MouseButtonStates, 0, static_cast<int32>(MouseButtonCode::ButtonLast));
@@ -152,6 +152,18 @@ namespace Flux {
 			break;
 		}
 		}
+	}
+
+	void Input::OnMouseMoveEvent(float x, float y)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(x > -std::numeric_limits<float>::max());
+		FLUX_ASSERT(x < std::numeric_limits<float>::max());
+		FLUX_ASSERT(y > -std::numeric_limits<float>::max());
+		FLUX_ASSERT(y < std::numeric_limits<float>::max());
+
+		s_Data->MousePosition.x = x;
+		s_Data->MousePosition.y = y;
 	}
 
 	bool Input::GetKey(KeyCode key)
@@ -232,10 +244,39 @@ namespace Flux {
 		return s_Data->MouseButtonStates[static_cast<int32>(button)] == MouseButtonState::Released;
 	}
 
-	glm::vec3 Input::GetMousePosition()
+	glm::vec2 Input::GetMousePosition()
 	{
-		// TODO
-		return {};
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		return s_Data->LastMousePosition;
+	}
+
+	glm::vec2 Input::GetMousePositionDelta()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		return s_Data->MousePositionDelta;
+	}
+
+	glm::vec2 Input::GetMouseOrthoPosition(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		auto& window = Engine::Get().GetWindow();
+
+		glm::vec4 result = { s_Data->MousePosition, 0.0f, 1.0f };
+		result.x = (result.x / (float)window->GetWidth()) * 2.0f - 1.0f;
+		result.y = (result.y / (float)window->GetHeight()) * 2.0f - 1.0f;
+		result.y = -result.y;
+		result = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * result;
+		return result;
+	}
+
+	glm::vec2 Input::GetMouseScroll()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		return s_Data->MouseScroll;
 	}
 
 }

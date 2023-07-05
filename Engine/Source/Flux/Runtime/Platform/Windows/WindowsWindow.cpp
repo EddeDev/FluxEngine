@@ -5,6 +5,7 @@
 #include "WindowsWindow.h"
 
 #include <VersionHelpers.h>
+#include <windowsx.h>
 
 #ifndef WM_COPYGLOBALDATA
 	#define WM_COPYGLOBALDATA 0x0049
@@ -234,6 +235,13 @@ namespace Flux {
 		m_MouseButtonCallbacks.push_back(callback);
 	}
 
+	void WindowsWindow::AddMouseMoveCallback(const MouseMoveCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_MouseMoveCallbacks.push_back(callback);
+	}
+
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
@@ -411,6 +419,35 @@ namespace Flux {
 			for (auto& callback : m_MouseButtonCallbacks)
 				callback(button, action, mods);
 
+			break;
+		}
+		case WM_MOUSEMOVE:
+		{
+			const int32 x = GET_X_LPARAM(lParam);
+			const int32 y = GET_Y_LPARAM(lParam);
+
+			if (!m_CursorTracked)
+			{
+				TRACKMOUSEEVENT tme = {};
+				tme.cbSize = sizeof(TRACKMOUSEEVENT);
+				tme.dwFlags = TME_LEAVE;
+				tme.hwndTrack = m_WindowHandle;
+				TrackMouseEvent(&tme);
+
+				m_CursorTracked = true;
+				
+				// TODO: callback?
+			}
+
+			for (auto& callback : m_MouseMoveCallbacks)
+				callback(x, y);
+
+			break;
+		}
+		case WM_MOUSELEAVE:
+		{
+			m_CursorTracked = false;
+			// TODO: callback?
 			break;
 		}
 		}

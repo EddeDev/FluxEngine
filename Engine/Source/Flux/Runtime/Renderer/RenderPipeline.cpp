@@ -92,16 +92,23 @@ namespace Flux {
 	void ForwardRenderPipeline::BeginRendering()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::None);
+
+		m_State = State::Render3D;
 	}
 
 	void ForwardRenderPipeline::EndRendering()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::Render3D);
+
+		m_State = State::None;
 	}
 
 	void ForwardRenderPipeline::BeginRendering2D()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::None);
 
 		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
 
@@ -131,11 +138,14 @@ namespace Flux {
 		{
 			timeUniformBuffer->Set("u_Time", Engine::Get().GetTime());
 		}
+
+		m_State = State::Render2D;
 	}
 
 	void ForwardRenderPipeline::EndRendering2D()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::Render2D);
 
 		m_CommandBuffer->Begin();
 
@@ -156,11 +166,14 @@ namespace Flux {
 
 		m_CommandBuffer->End();
 		m_CommandBuffer->Submit();
+
+		m_State = State::None;
 	}
 
 	void ForwardRenderPipeline::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::Render2D);
 
 		m_QuadVertexPointer->Position = transform * glm::vec4(-0.5f, -0.5f, 0.0f, 1.0f);
 		m_QuadVertexPointer->Color = color;
@@ -213,6 +226,7 @@ namespace Flux {
 	void ForwardRenderPipeline::DrawQuad(const glm::mat4& transform, Ref<Texture2D> texture, const glm::vec4& color)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::Render2D);
 
 		float textureIndex = 0.0f;
 		for (uint32 i = 1; i < m_QuadTextureSlotIndex; i++)
@@ -283,6 +297,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 		FLUX_ASSERT(width > 0 && height > 0);
+		FLUX_ASSERT(m_State == State::None);
 
 		if (m_ViewportWidth != width || m_ViewportHeight != height)
 		{
