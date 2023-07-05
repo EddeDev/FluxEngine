@@ -98,7 +98,25 @@ namespace Flux {
 
 		m_RenderPipeline->BeginRendering2D();
 
-		m_RenderPipeline->DrawQuad({ 0.0f, 0.0f, -2.0f }, { 1.0f, 1.0f }, { 0.8f, 0.4f, 0.2f, 1.0f });
+		static glm::vec3 quadPosition = { 0.0f, 0.0f, -2.0f };
+		static float moveSpeed = 2.85f;
+
+		if (Input::GetKey(KeyCode::W))
+			quadPosition.y += moveSpeed * Engine::Get().GetFrameTime();
+		if (Input::GetKey(KeyCode::S))
+			quadPosition.y -= moveSpeed * Engine::Get().GetFrameTime();
+
+		if (Input::GetKey(KeyCode::A))
+			quadPosition.x -= moveSpeed * Engine::Get().GetFrameTime();
+		if (Input::GetKey(KeyCode::D))
+			quadPosition.x += moveSpeed * Engine::Get().GetFrameTime();
+
+		if (Input::GetKeyUp(KeyCode::Space))
+		{
+			FLUX_INFO("SPACE!");
+		}
+
+		m_RenderPipeline->DrawQuad(quadPosition, { 0.7f, 0.7f }, { 0.8f, 0.4f, 0.2f, 1.0f });
 
 		m_RenderPipeline->EndRendering2D();
 	}

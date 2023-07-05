@@ -7,6 +7,7 @@
 #include "Debugging/Timer.h"
 #include "AssertionMacros.h"
 #include "Platform.h"
+#include "Input.h"
 
 #define FLUX_BIND_CALLBACK(func, ...) \
 [__VA_ARGS__](auto&&... args) -> decltype(auto) \

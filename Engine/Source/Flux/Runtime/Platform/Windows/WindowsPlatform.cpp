@@ -12,13 +12,22 @@ namespace Flux {
 
 	extern HINSTANCE g_Instance;
 
-	static uint64 s_TimerOffset;
-	static uint64 s_TimerFrequency;
+	struct WindowsPlatformData
+	{
+		uint64 TimerOffset;
+		uint64 TimerFrequency;
 
-	static ATOM s_WindowClass;
+		ATOM WindowClass;
 
-	static ATOM s_HelperWindowClass;
-	static HWND s_HelperWindow;
+		ATOM HelperWindowClass;
+		HWND HelperWindow;
+
+		int16 KeyCodes[512];
+		int16 ScanCodes[FLUX_KEY_LAST + 1];
+		char KeyNames[FLUX_KEY_LAST + 1][5];
+	};
+
+	static WindowsPlatformData* s_Data = nullptr;
 
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
@@ -43,16 +52,16 @@ namespace Flux {
 		wc.hInstance = g_Instance;
 		wc.lpszClassName = L"HelperWindow";
 
-		s_HelperWindowClass = RegisterClassExW(&wc);
-		if (!s_HelperWindowClass)
+		s_Data->HelperWindowClass = RegisterClassExW(&wc);
+		if (!s_Data->HelperWindowClass)
 		{
 			FLUX_ASSERT(false, "Failed to register helper window class.");
 			return false;
 		}
 
-		s_HelperWindow = CreateWindowExW(
+		s_Data->HelperWindow = CreateWindowExW(
 			WS_EX_OVERLAPPEDWINDOW,
-			MAKEINTATOM(s_HelperWindowClass),
+			MAKEINTATOM(s_Data->HelperWindowClass),
 			L"HelperWindow",
 			WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
 			0,
@@ -65,16 +74,16 @@ namespace Flux {
 			NULL
 		);
 
-		if (!s_HelperWindow)
+		if (!s_Data->HelperWindow)
 		{
 			FLUX_ASSERT(false, "Failed to create helper window.");
 			return false;
 		}
 
-		ShowWindow(s_HelperWindow, SW_HIDE);
+		ShowWindow(s_Data->HelperWindow, SW_HIDE);
 
 		MSG msg;
-		while (PeekMessageW(&msg, s_HelperWindow, 0, 0, PM_REMOVE))
+		while (PeekMessageW(&msg, s_Data->HelperWindow, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
@@ -83,12 +92,179 @@ namespace Flux {
 		return true;
 	}
 
+	static void CreateKeyTables()
+	{
+		s_Data->KeyCodes[0x00B] = FLUX_KEY_0;
+		s_Data->KeyCodes[0x002] = FLUX_KEY_1;
+		s_Data->KeyCodes[0x003] = FLUX_KEY_2;
+		s_Data->KeyCodes[0x004] = FLUX_KEY_3;
+		s_Data->KeyCodes[0x005] = FLUX_KEY_4;
+		s_Data->KeyCodes[0x006] = FLUX_KEY_5;
+		s_Data->KeyCodes[0x007] = FLUX_KEY_6;
+		s_Data->KeyCodes[0x008] = FLUX_KEY_7;
+		s_Data->KeyCodes[0x009] = FLUX_KEY_8;
+		s_Data->KeyCodes[0x00A] = FLUX_KEY_9;
+		s_Data->KeyCodes[0x01E] = FLUX_KEY_A;
+		s_Data->KeyCodes[0x030] = FLUX_KEY_B;
+		s_Data->KeyCodes[0x02E] = FLUX_KEY_C;
+		s_Data->KeyCodes[0x020] = FLUX_KEY_D;
+		s_Data->KeyCodes[0x012] = FLUX_KEY_E;
+		s_Data->KeyCodes[0x021] = FLUX_KEY_F;
+		s_Data->KeyCodes[0x022] = FLUX_KEY_G;
+		s_Data->KeyCodes[0x023] = FLUX_KEY_H;
+		s_Data->KeyCodes[0x017] = FLUX_KEY_I;
+		s_Data->KeyCodes[0x024] = FLUX_KEY_J;
+		s_Data->KeyCodes[0x025] = FLUX_KEY_K;
+		s_Data->KeyCodes[0x026] = FLUX_KEY_L;
+		s_Data->KeyCodes[0x032] = FLUX_KEY_M;
+		s_Data->KeyCodes[0x031] = FLUX_KEY_N;
+		s_Data->KeyCodes[0x018] = FLUX_KEY_O;
+		s_Data->KeyCodes[0x019] = FLUX_KEY_P;
+		s_Data->KeyCodes[0x010] = FLUX_KEY_Q;
+		s_Data->KeyCodes[0x013] = FLUX_KEY_R;
+		s_Data->KeyCodes[0x01F] = FLUX_KEY_S;
+		s_Data->KeyCodes[0x014] = FLUX_KEY_T;
+		s_Data->KeyCodes[0x016] = FLUX_KEY_U;
+		s_Data->KeyCodes[0x02F] = FLUX_KEY_V;
+		s_Data->KeyCodes[0x011] = FLUX_KEY_W;
+		s_Data->KeyCodes[0x02D] = FLUX_KEY_X;
+		s_Data->KeyCodes[0x015] = FLUX_KEY_Y;
+		s_Data->KeyCodes[0x02C] = FLUX_KEY_Z;
+		s_Data->KeyCodes[0x028] = FLUX_KEY_APOSTROPHE;
+		s_Data->KeyCodes[0x02B] = FLUX_KEY_BACKSLASH;
+		s_Data->KeyCodes[0x033] = FLUX_KEY_COMMA;
+		s_Data->KeyCodes[0x00D] = FLUX_KEY_EQUAL;
+		s_Data->KeyCodes[0x029] = FLUX_KEY_GRAVE_ACCENT;
+		s_Data->KeyCodes[0x01A] = FLUX_KEY_LEFT_BRACKET;
+		s_Data->KeyCodes[0x00C] = FLUX_KEY_MINUS;
+		s_Data->KeyCodes[0x034] = FLUX_KEY_PERIOD;
+		s_Data->KeyCodes[0x01B] = FLUX_KEY_RIGHT_BRACKET;
+		s_Data->KeyCodes[0x027] = FLUX_KEY_SEMICOLON;
+		s_Data->KeyCodes[0x035] = FLUX_KEY_SLASH;
+		s_Data->KeyCodes[0x056] = FLUX_KEY_WORLD_2;
+		s_Data->KeyCodes[0x00E] = FLUX_KEY_BACKSPACE;
+		s_Data->KeyCodes[0x153] = FLUX_KEY_DELETE;
+		s_Data->KeyCodes[0x14F] = FLUX_KEY_END;
+		s_Data->KeyCodes[0x01C] = FLUX_KEY_ENTER;
+		s_Data->KeyCodes[0x001] = FLUX_KEY_ESCAPE;
+		s_Data->KeyCodes[0x147] = FLUX_KEY_HOME;
+		s_Data->KeyCodes[0x152] = FLUX_KEY_INSERT;
+		s_Data->KeyCodes[0x15D] = FLUX_KEY_MENU;
+		s_Data->KeyCodes[0x151] = FLUX_KEY_PAGE_DOWN;
+		s_Data->KeyCodes[0x149] = FLUX_KEY_PAGE_UP;
+		s_Data->KeyCodes[0x045] = FLUX_KEY_PAUSE;
+		s_Data->KeyCodes[0x039] = FLUX_KEY_SPACE;
+		s_Data->KeyCodes[0x00F] = FLUX_KEY_TAB;
+		s_Data->KeyCodes[0x03A] = FLUX_KEY_CAPS_LOCK;
+		s_Data->KeyCodes[0x145] = FLUX_KEY_NUM_LOCK;
+		s_Data->KeyCodes[0x046] = FLUX_KEY_SCROLL_LOCK;
+		s_Data->KeyCodes[0x03B] = FLUX_KEY_F1;
+		s_Data->KeyCodes[0x03C] = FLUX_KEY_F2;
+		s_Data->KeyCodes[0x03D] = FLUX_KEY_F3;
+		s_Data->KeyCodes[0x03E] = FLUX_KEY_F4;
+		s_Data->KeyCodes[0x03F] = FLUX_KEY_F5;
+		s_Data->KeyCodes[0x040] = FLUX_KEY_F6;
+		s_Data->KeyCodes[0x041] = FLUX_KEY_F7;
+		s_Data->KeyCodes[0x042] = FLUX_KEY_F8;
+		s_Data->KeyCodes[0x043] = FLUX_KEY_F9;
+		s_Data->KeyCodes[0x044] = FLUX_KEY_F10;
+		s_Data->KeyCodes[0x057] = FLUX_KEY_F11;
+		s_Data->KeyCodes[0x058] = FLUX_KEY_F12;
+		s_Data->KeyCodes[0x064] = FLUX_KEY_F13;
+		s_Data->KeyCodes[0x065] = FLUX_KEY_F14;
+		s_Data->KeyCodes[0x066] = FLUX_KEY_F15;
+		s_Data->KeyCodes[0x067] = FLUX_KEY_F16;
+		s_Data->KeyCodes[0x068] = FLUX_KEY_F17;
+		s_Data->KeyCodes[0x069] = FLUX_KEY_F18;
+		s_Data->KeyCodes[0x06A] = FLUX_KEY_F19;
+		s_Data->KeyCodes[0x06B] = FLUX_KEY_F20;
+		s_Data->KeyCodes[0x06C] = FLUX_KEY_F21;
+		s_Data->KeyCodes[0x06D] = FLUX_KEY_F22;
+		s_Data->KeyCodes[0x06E] = FLUX_KEY_F23;
+		s_Data->KeyCodes[0x076] = FLUX_KEY_F24;
+		s_Data->KeyCodes[0x038] = FLUX_KEY_LEFT_ALT;
+		s_Data->KeyCodes[0x01D] = FLUX_KEY_LEFT_CONTROL;
+		s_Data->KeyCodes[0x02A] = FLUX_KEY_LEFT_SHIFT;
+		s_Data->KeyCodes[0x15B] = FLUX_KEY_LEFT_SUPER;
+		s_Data->KeyCodes[0x137] = FLUX_KEY_PRINT_SCREEN;
+		s_Data->KeyCodes[0x138] = FLUX_KEY_RIGHT_ALT;
+		s_Data->KeyCodes[0x11D] = FLUX_KEY_RIGHT_CONTROL;
+		s_Data->KeyCodes[0x036] = FLUX_KEY_RIGHT_SHIFT;
+		s_Data->KeyCodes[0x15C] = FLUX_KEY_RIGHT_SUPER;
+		s_Data->KeyCodes[0x150] = FLUX_KEY_DOWN;
+		s_Data->KeyCodes[0x14B] = FLUX_KEY_LEFT;
+		s_Data->KeyCodes[0x14D] = FLUX_KEY_RIGHT;
+		s_Data->KeyCodes[0x148] = FLUX_KEY_UP;
+		s_Data->KeyCodes[0x052] = FLUX_KEY_KP_0;
+		s_Data->KeyCodes[0x04F] = FLUX_KEY_KP_1;
+		s_Data->KeyCodes[0x050] = FLUX_KEY_KP_2;
+		s_Data->KeyCodes[0x051] = FLUX_KEY_KP_3;
+		s_Data->KeyCodes[0x04B] = FLUX_KEY_KP_4;
+		s_Data->KeyCodes[0x04C] = FLUX_KEY_KP_5;
+		s_Data->KeyCodes[0x04D] = FLUX_KEY_KP_6;
+		s_Data->KeyCodes[0x047] = FLUX_KEY_KP_7;
+		s_Data->KeyCodes[0x048] = FLUX_KEY_KP_8;
+		s_Data->KeyCodes[0x049] = FLUX_KEY_KP_9;
+		s_Data->KeyCodes[0x04E] = FLUX_KEY_KP_ADD;
+		s_Data->KeyCodes[0x053] = FLUX_KEY_KP_DECIMAL;
+		s_Data->KeyCodes[0x135] = FLUX_KEY_KP_DIVIDE;
+		s_Data->KeyCodes[0x11C] = FLUX_KEY_KP_ENTER;
+		s_Data->KeyCodes[0x059] = FLUX_KEY_KP_EQUAL;
+		s_Data->KeyCodes[0x037] = FLUX_KEY_KP_MULTIPLY;
+		s_Data->KeyCodes[0x04A] = FLUX_KEY_KP_SUBTRACT;
+
+		for (int32 scancode = 0; scancode < 512; scancode++)
+		{
+			if (s_Data->KeyCodes[scancode] > 0)
+				s_Data->ScanCodes[s_Data->KeyCodes[scancode]] = scancode;
+		}
+	}
+
+	static void UpdateKeyNames()
+	{
+		const uint32 vks[] = {
+			VK_NUMPAD0,  VK_NUMPAD1,  VK_NUMPAD2, VK_NUMPAD3,
+			VK_NUMPAD4,  VK_NUMPAD5,  VK_NUMPAD6, VK_NUMPAD7,
+			VK_NUMPAD8,  VK_NUMPAD9,  VK_DECIMAL, VK_DIVIDE,
+			VK_MULTIPLY, VK_SUBTRACT, VK_ADD
+		};
+
+		uint8 state[256] = { 0 };
+
+		for (int32 key = FLUX_KEY_SPACE; key <= FLUX_KEY_LAST; key++)
+		{
+			int32 scancode = s_Data->ScanCodes[key];
+			if (scancode == -1)
+				continue;
+
+			uint32 vk;
+			if (key >= FLUX_KEY_KP_0 && key <= FLUX_KEY_KP_ADD)
+				vk = vks[key - FLUX_KEY_KP_0];
+			else
+				vk = MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK);
+
+			wchar_t chars[16];
+
+			int32 length = ToUnicode(vk, scancode, state, chars, sizeof(chars) / sizeof(wchar_t), 0);
+			if (length == -1)
+				length = ToUnicode(vk, scancode, state, chars, sizeof(chars) / sizeof(wchar_t), 0);
+
+			if (length < -1)
+				continue;
+
+			WideCharToMultiByte(CP_UTF8, 0, chars, 1, s_Data->KeyNames[key], sizeof(s_Data->KeyNames[key]), NULL, NULL);
+		}
+	}
+
 	void Platform::Init()
 	{
-		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_TimerOffset))
+		s_Data = new WindowsPlatformData;
+		memset(s_Data, 0, sizeof(WindowsPlatformData));
+
+		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_Data->TimerOffset))
 			FLUX_ASSERT(false, "QueryPerformanceCounter failed. ({0})", Platform::GetErrorMessage());
 		
-		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_TimerFrequency))
+		if (!QueryPerformanceFrequency((LARGE_INTEGER*)&s_Data->TimerFrequency))
 			FLUX_ASSERT(false, "QueryPerformanceFrequency failed. ({0})", Platform::GetErrorMessage());
 
 		DisableProcessWindowsGhosting();
@@ -102,27 +278,33 @@ namespace Flux {
 		windowClass.hCursor = LoadCursorW(g_Instance, IDC_ARROW);
 		windowClass.lpszClassName = L"FluxWindow";
 
-		s_WindowClass = RegisterClassExW(&windowClass);
-		if (!s_WindowClass)
+		s_Data->WindowClass = RegisterClassExW(&windowClass);
+		if (!s_Data->WindowClass)
 			FLUX_ASSERT(false, "RegisterClassExW failed. ({0})", Platform::GetErrorMessage());
 
 		if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 			FLUX_ASSERT(false, "Failed to initialize COM library.\n{0}", Platform::GetErrorMessage());
+
+		CreateKeyTables();
+		UpdateKeyNames();
 
 		CreateHelperWindow();
 	}
 
 	void Platform::Shutdown()
 	{
-		DestroyWindow(s_HelperWindow);
+		DestroyWindow(s_Data->HelperWindow);
 
-		if (!UnregisterClassW(MAKEINTATOM(s_HelperWindowClass), g_Instance))
+		if (!UnregisterClassW(MAKEINTATOM(s_Data->HelperWindowClass), g_Instance))
 			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage());
 
-		if (!UnregisterClassW(MAKEINTATOM(s_WindowClass), g_Instance))
+		if (!UnregisterClassW(MAKEINTATOM(s_Data->WindowClass), g_Instance))
 			FLUX_ASSERT(false, "UnregisterClassExW failed. ({0})", Platform::GetErrorMessage());
 
 		CoUninitialize();
+
+		delete s_Data;
+		s_Data = nullptr;
 	}
 
 	bool Platform::WaitMessage()
@@ -132,7 +314,7 @@ namespace Flux {
 
 	bool Platform::PostEmptyEvent()
 	{
-		return ::PostMessageW(s_HelperWindow, WM_NULL, 0, 0);
+		return ::PostMessageW(s_Data->HelperWindow, WM_NULL, 0, 0);
 	}
 
 	void Platform::PumpMessages()
@@ -158,7 +340,7 @@ namespace Flux {
 	{
 		uint64 value = 0;
 		QueryPerformanceCounter((LARGE_INTEGER*)&value);
-		return static_cast<float>(value - s_TimerOffset) / static_cast<float>(s_TimerFrequency);
+		return static_cast<float>(value - s_Data->TimerOffset) / static_cast<float>(s_Data->TimerFrequency);
 	}
 
 	uint64 Platform::GetNanoTime()
@@ -166,7 +348,7 @@ namespace Flux {
 		uint64 value = 0;
 		QueryPerformanceCounter((LARGE_INTEGER*)&value);
 		constexpr uint64 nsPerSecond = 1000 * 1000 * 1000;
-		return value * (nsPerSecond / s_TimerFrequency);
+		return value * (nsPerSecond / s_Data->TimerFrequency);
 	}
 
 	DialogResult Platform::OpenFolderDialog(Window* window, std::string* outPath, const char* title)
@@ -451,7 +633,22 @@ namespace Flux {
 
 	WindowClassHandle Platform::GetWindowClass()
 	{
-		return static_cast<WindowClassHandle>(s_WindowClass);
+		return static_cast<WindowClassHandle>(s_Data->WindowClass);
+	}
+
+	int16 Platform::GetKeyCode(int32 scancode)
+	{
+		return s_Data->KeyCodes[scancode];
+	}
+
+	int16 Platform::GetScanCode(int16 key)
+	{
+		return s_Data->ScanCodes[key];
+	}
+
+	char* Platform::GetKeyName(int32 key)
+	{
+		return s_Data->KeyNames[key];
 	}
 
 }

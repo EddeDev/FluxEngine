@@ -10,6 +10,9 @@ namespace Flux {
 		KeyState* KeyStates;
 		MouseButtonState* MouseButtonStates;
 
+		int8 Keys[FLUX_KEY_LAST + 1];
+		int8 MouseButtons[FLUX_MOUSE_BUTTON_LAST + 1];
+
 		glm::vec2 MousePosition;
 		glm::vec2 MousePositionDelta;
 		glm::vec2 MouseScroll;
@@ -33,51 +36,19 @@ namespace Flux {
 			if (!window)
 				return;
 
-			window->AddKeyPressCallback([](auto key)
+			window->AddKeyCallback([](auto key, auto scancode, auto action, auto mods)
 			{
-				Engine::Get().SubmitToMainThread([key]()
+				Engine::Get().SubmitToMainThread([key, scancode, action, mods]()
 				{
-					s_Data->KeyStates[key] = KeyState::Pressed;
+					Input::OnKeyEvent(key, scancode, action, mods);
 				});
 			});
 
-			window->AddKeyReleaseCallback([](auto key)
+			window->AddMouseButtonCallback([](auto button, auto action, auto mods)
 			{
-				Engine::Get().SubmitToMainThread([key]()
+				Engine::Get().SubmitToMainThread([button, action, mods]()
 				{
-					s_Data->KeyStates[key] = KeyState::Released;
-				});
-			});
-
-			window->AddKeyRepeatCallback([](auto key)
-			{
-				Engine::Get().SubmitToMainThread([key]()
-				{
-					s_Data->KeyStates[key] = KeyState::Repeated;
-				});
-			});
-
-			window->AddMouseButtonPressCallback([](auto button)
-			{
-				Engine::Get().SubmitToMainThread([button]()
-				{
-					s_Data->MouseButtonStates[button] = MouseButtonState::Pressed;
-				});
-			});
-
-			window->AddMouseButtonReleaseCallback([](auto button)
-			{
-				Engine::Get().SubmitToMainThread([button]()
-				{
-					s_Data->MouseButtonStates[button] = MouseButtonState::Released;
-				});
-			});
-
-			window->AddScrollCallback([](auto xoffset, auto yoffset)
-			{
-				Engine::Get().SubmitToMainThread([xoffset, yoffset]()
-				{
-					s_Data->MouseScroll = { (float)xoffset, (float)yoffset };
+					Input::OnMouseButtonEvent(button, action, mods);
 				});
 			});
 		});
@@ -101,8 +72,10 @@ namespace Flux {
 		auto& window = Engine::Get().GetWindow();
 		if (window)
 		{
-			glm::vec2 mousePosition = window->GetMousePosition();
-			mousePosition.y = static_cast<float>(window->GetHeight()) - mousePosition.y;
+			// TODO
+			glm::vec2 mousePosition = {};
+			// glm::vec2 mousePosition = window->GetMousePosition();
+			// mousePosition.y = static_cast<float>(window->GetHeight()) - mousePosition.y;
 			s_Data->MousePositionDelta = s_Data->MousePosition - mousePosition;
 			s_Data->MousePosition = mousePosition;
 			s_Data->MouseScroll = {};
@@ -112,19 +85,97 @@ namespace Flux {
 		memset(s_Data->MouseButtonStates, 0, static_cast<int32>(MouseButtonCode::ButtonLast));
 	}
 
+	void Input::OnKeyEvent(int32 key, int32 scancode, int32 action, int32 mods)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(key >= 0 || key == FLUX_KEY_UNKNOWN);
+		FLUX_ASSERT(key <= FLUX_KEY_LAST);
+		FLUX_ASSERT(action == FLUX_ACTION_PRESS || action == FLUX_ACTION_RELEASE);
+		FLUX_ASSERT(mods == (mods & FLUX_MOD_MASK));
+
+		if (key >= 0 && key <= FLUX_KEY_LAST)
+		{
+			if (action == FLUX_ACTION_RELEASE && s_Data->Keys[key] == FLUX_ACTION_RELEASE)
+				return;
+
+			const bool repeated = action == FLUX_ACTION_PRESS && s_Data->Keys[key] == FLUX_ACTION_PRESS;
+
+			s_Data->Keys[key] = static_cast<int8>(action);
+
+			if (repeated)
+				action = FLUX_ACTION_REPEAT;
+		}
+
+		switch (action)
+		{
+		case FLUX_ACTION_PRESS:
+		{
+			s_Data->KeyStates[key] = KeyState::Pressed;
+			break;
+		}
+		case FLUX_ACTION_RELEASE:
+		{
+			s_Data->KeyStates[key] = KeyState::Released;
+			break;
+		}
+		case FLUX_ACTION_REPEAT:
+		{
+			s_Data->KeyStates[key] = KeyState::Repeated;
+			break;
+		}
+		}
+	}
+
+	void Input::OnMouseButtonEvent(int32 button, int32 action, int32 mods)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(button >= 0);
+		FLUX_ASSERT(button <= FLUX_MOUSE_BUTTON_LAST);
+		FLUX_ASSERT(action == FLUX_ACTION_PRESS || action == FLUX_ACTION_RELEASE);
+		FLUX_ASSERT(mods == (mods & FLUX_MOD_MASK));
+
+		if (button < 0 || button > FLUX_MOUSE_BUTTON_LAST)
+			return;
+
+		s_Data->MouseButtons[button] = (int8)action;
+
+		switch (action)
+		{
+		case FLUX_ACTION_PRESS:
+		{
+			s_Data->MouseButtonStates[button] = MouseButtonState::Pressed;
+			break;
+		}
+		case FLUX_ACTION_RELEASE:
+		{
+			s_Data->MouseButtonStates[button] = MouseButtonState::Released;
+			break;
+		}
+		}
+	}
+
 	bool Input::GetKey(KeyCode key)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		auto& window = Engine::Get().GetWindow();
-		if (window)
-			return window->IsKeyDown(static_cast<int32>(key));
-		return false;
+		if (key < KeyCode::Space || key > KeyCode::Last)
+		{
+			FLUX_ERROR("Invalid key {0}", static_cast<int32>(key));
+			return false;
+		}
+		
+		return s_Data->Keys[static_cast<int32>(key)] == FLUX_ACTION_PRESS;
 	}
 
 	bool Input::GetKeyDown(KeyCode key)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+
+		if (key < KeyCode::Space || key > KeyCode::Last)
+		{
+			FLUX_ERROR("Invalid key {0}", static_cast<int32>(key));
+			return false;
+		}
 
 		return s_Data->KeyStates[static_cast<int32>(key)] == KeyState::Pressed;
 	}
@@ -133,22 +184,37 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		if (key < KeyCode::Space || key > KeyCode::Last)
+		{
+			FLUX_ERROR("Invalid key {0}", static_cast<int32>(key));
+			return false;
+		}
+
 		return s_Data->KeyStates[static_cast<int32>(key)] == KeyState::Released;
 	}
 
 	bool Input::GetMouseButton(MouseButtonCode button)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+
+		if (button < MouseButtonCode::Button1 || button > MouseButtonCode::ButtonLast)
+		{
+			FLUX_ERROR("Invalid mouse button {0}", static_cast<int32>(button));
+			return false;
+		}
 	
-		auto& window = Engine::Get().GetWindow();
-		if (window)
-			return window->IsMouseButtonDown(static_cast<int32>(button));
-		return false;
+		return s_Data->MouseButtons[static_cast<int32>(button)] == FLUX_ACTION_PRESS;
 	}
 
 	bool Input::GetMouseButtonDown(MouseButtonCode button)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+
+		if (button < MouseButtonCode::Button1 || button > MouseButtonCode::ButtonLast)
+		{
+			FLUX_ERROR("Invalid mouse button {0}", static_cast<int32>(button));
+			return false;
+		}
 
 		return s_Data->MouseButtonStates[static_cast<int32>(button)] == MouseButtonState::Pressed;
 	}
@@ -157,7 +223,19 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		if (button < MouseButtonCode::Button1 || button > MouseButtonCode::ButtonLast)
+		{
+			FLUX_ERROR("Invalid mouse button {0}", static_cast<int32>(button));
+			return false;
+		}
+
 		return s_Data->MouseButtonStates[static_cast<int32>(button)] == MouseButtonState::Released;
+	}
+
+	glm::vec3 Input::GetMousePosition()
+	{
+		// TODO
+		return {};
 	}
 
 }

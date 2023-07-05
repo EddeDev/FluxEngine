@@ -1,7 +1,8 @@
 #include "FluxPCH.h"
-#include "WindowsWindow.h"
 
 #ifdef FLUX_PLATFORM_WINDOWS
+
+#include "WindowsWindow.h"
 
 #include <VersionHelpers.h>
 
@@ -191,33 +192,6 @@ namespace Flux {
 		return ::IsWindowVisible(m_WindowHandle);
 	}
 
-	bool WindowsWindow::IsKeyDown(int32 key) const
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
-
-		// TODO
-		return false;
-	}
-
-	bool WindowsWindow::IsMouseButtonDown(int32 button) const
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
-
-		// TODO
-		return false;
-	}
-
-	glm::vec2 WindowsWindow::GetMousePosition() const
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-		FLUX_ASSERT(::IsWindow(m_WindowHandle), "Invalid window handle.");
-
-		// TODO
-		return {};
-	}
-
 	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
 	{
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
@@ -246,50 +220,24 @@ namespace Flux {
 		m_MenuCallbacks.push_back(callback);
 	}
 
-	void WindowsWindow::AddKeyPressCallback(const KeyPressCallback& callback)
+	void WindowsWindow::AddKeyCallback(const KeyCallback& callback)
 	{
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
 
-		m_KeyPressCallbacks.push_back(callback);
+		m_KeyCallbacks.push_back(callback);
 	}
 
-	void WindowsWindow::AddKeyReleaseCallback(const KeyReleaseCallback& callback)
+	void WindowsWindow::AddMouseButtonCallback(const MouseButtonCallback& callback)
 	{
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
 
-		m_KeyReleaseCallbacks.push_back(callback);
-	}
-
-	void WindowsWindow::AddKeyRepeatCallback(const KeyRepeatCallback& callback)
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-
-		m_KeyRepeatCallbacks.push_back(callback);
-	}
-
-	void WindowsWindow::AddMouseButtonPressCallback(const MouseButtonPressCallback& callback)
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-
-		m_MouseButtonPressCallbacks.push_back(callback);
-	}
-
-	void WindowsWindow::AddMouseButtonReleaseCallback(const MouseButtonReleaseCallback& callback)
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-
-		m_MouseButtonReleaseCallbacks.push_back(callback);
-	}
-
-	void WindowsWindow::AddScrollCallback(const ScrollCallback& callback)
-	{
-		FLUX_ASSERT_IS_THREAD(m_ThreadID);
-		
-		m_ScrollCallbacks.push_back(callback);
+		m_MouseButtonCallbacks.push_back(callback);
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
 		switch (uMsg)
 		{
 		case WM_COMMAND:
@@ -334,8 +282,6 @@ namespace Flux {
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
 		{
-			const bool released = HIWORD(lParam) & KF_UP;
-
 			int32 scancode = (HIWORD(lParam) & (KF_EXTENDED | 0xff));
 			if (!scancode)
 				scancode = MapVirtualKeyW((UINT)wParam, MAPVK_VK_TO_VSC);
@@ -347,7 +293,123 @@ namespace Flux {
 			if (scancode == 0x136)
 				scancode = 0x36;
 
-			__debugbreak();
+			int32 key = Platform::GetKeyCode(scancode);
+
+			if (wParam == VK_CONTROL)
+			{
+				if (HIWORD(lParam) & KF_EXTENDED)
+				{
+					key = FLUX_KEY_RIGHT_CONTROL;
+				}
+				else
+				{
+					const DWORD time = GetMessageTime();
+
+					MSG msg;
+					while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
+					{
+						if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN || msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
+						{
+							if (msg.wParam == VK_MENU && (HIWORD(msg.lParam) & KF_EXTENDED) && msg.time == time)
+								break;
+						}
+					}
+
+					key = FLUX_KEY_LEFT_CONTROL;
+				}
+			}
+			else if (wParam == VK_PROCESSKEY)
+			{
+				break;
+			}
+
+			int32 action;
+			if (HIWORD(lParam) & KF_UP)
+				action = FLUX_ACTION_RELEASE;
+			else
+				action = FLUX_ACTION_PRESS;
+
+			int32 mods = 0;
+			if (GetKeyState(VK_SHIFT) & 0x8000)
+				mods |= FLUX_MOD_SHIFT;
+			if (GetKeyState(VK_CONTROL) & 0x8000)
+				mods |= FLUX_MOD_CONTROL;
+			if (GetKeyState(VK_MENU) & 0x8000)
+				mods |= FLUX_MOD_ALT;
+			if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
+				mods |= FLUX_MOD_SUPER;
+			if (GetKeyState(VK_CAPITAL) & 1)
+				mods |= FLUX_MOD_CAPS_LOCK;
+			if (GetKeyState(VK_NUMLOCK) & 1)
+				mods |= FLUX_MOD_NUM_LOCK;
+
+			if (action == FLUX_ACTION_RELEASE && wParam == VK_SHIFT)
+			{
+				for (auto& callback : m_KeyCallbacks)
+					callback(FLUX_KEY_LEFT_SHIFT, scancode, action, mods);
+
+				for (auto& callback : m_KeyCallbacks)
+					callback(FLUX_KEY_RIGHT_SHIFT, scancode, action, mods);
+			}
+			else if (wParam == VK_SNAPSHOT)
+			{
+				for (auto& callback : m_KeyCallbacks)
+					callback(key, scancode, FLUX_ACTION_PRESS, mods);
+
+				for (auto& callback : m_KeyCallbacks)
+					callback(key, scancode, FLUX_ACTION_RELEASE, mods);
+			}
+			else
+			{
+				for (auto& callback : m_KeyCallbacks)
+					callback(key, scancode, action, mods);
+			}
+
+			break;
+		}
+		case WM_LBUTTONDOWN:
+		case WM_RBUTTONDOWN:
+		case WM_MBUTTONDOWN:
+		case WM_XBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_XBUTTONUP:
+		{
+			int32 button;
+			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_LBUTTONUP)
+				button = FLUX_MOUSE_BUTTON_LEFT;
+			else if (uMsg == WM_RBUTTONDOWN || uMsg == WM_RBUTTONUP)
+				button = FLUX_MOUSE_BUTTON_RIGHT;
+			else if (uMsg == WM_MBUTTONDOWN || uMsg == WM_MBUTTONUP)
+				button = FLUX_MOUSE_BUTTON_MIDDLE;
+			else if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1)
+				button = FLUX_MOUSE_BUTTON_4;
+			else
+				button = FLUX_MOUSE_BUTTON_5;
+
+			int32 action;
+			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
+				action = FLUX_ACTION_PRESS;
+			else
+				action = FLUX_ACTION_RELEASE;
+
+			int32 mods = 0;
+			if (GetKeyState(VK_SHIFT) & 0x8000)
+				mods |= FLUX_MOD_SHIFT;
+			if (GetKeyState(VK_CONTROL) & 0x8000)
+				mods |= FLUX_MOD_CONTROL;
+			if (GetKeyState(VK_MENU) & 0x8000)
+				mods |= FLUX_MOD_ALT;
+			if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
+				mods |= FLUX_MOD_SUPER;
+			if (GetKeyState(VK_CAPITAL) & 1)
+				mods |= FLUX_MOD_CAPS_LOCK;
+			if (GetKeyState(VK_NUMLOCK) & 1)
+				mods |= FLUX_MOD_NUM_LOCK;
+
+			for (auto& callback : m_MouseButtonCallbacks)
+				callback(button, action, mods);
 
 			break;
 		}

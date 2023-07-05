@@ -1,9 +1,6 @@
 #include "FluxPCH.h"
 #include "Engine.h"
 
-#include "Platform.h"
-#include "Input.h"
-
 #include "Flux/Runtime/Renderer/Renderer.h"
 
 namespace Flux {
@@ -124,11 +121,14 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Input::Init();
 		Renderer::Init();
 
 		if (m_Application)
+		{
+			Input::Init();
+
 			m_Application->OnInit();
+		}
 
 		SubmitToEventThread([this]()
 		{
@@ -167,7 +167,11 @@ namespace Flux {
 		});
 
 		if (m_Application)
+		{
 			m_Application->OnExit();
+
+			Input::Shutdown();
+		}
 
 		Renderer::DestroyResources();
 
@@ -175,7 +179,6 @@ namespace Flux {
 		m_RenderThread->Wait();
 
 		Renderer::Shutdown();
-		Input::Shutdown();
 	}
 
 	void Engine::MT_UpdateAndRender()
@@ -199,7 +202,7 @@ namespace Flux {
 			m_Application->OnUpdate();
 			m_PerformanceTimers.ApplicationUpdate = timer.GetTime();
 
-			// TODO: Input
+			Input::Update();
 		}
 
 		// Wait for the previous frame to finish

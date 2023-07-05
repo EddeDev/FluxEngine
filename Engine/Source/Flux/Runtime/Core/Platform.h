@@ -87,6 +87,10 @@ namespace Flux {
 		static bool SetEnvironmentVariable(const char* variableName, const char* value);
 
 		static WindowClassHandle GetWindowClass();
+
+		static int16 GetKeyCode(int32 scancode);
+		static int16 GetScanCode(int16 key);
+		static char* GetKeyName(int32 key);
 	};
 
 }
