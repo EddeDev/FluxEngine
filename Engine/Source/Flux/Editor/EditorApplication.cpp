@@ -99,61 +99,209 @@ namespace Flux {
 
 		m_RenderPipeline->BeginRendering2D();
 
-		static glm::vec2 quadPosition = { 0.0f, 0.0f };
-		static glm::vec2 quadScale = { 5.0f, 1.0f };
-		static glm::vec4 initialQuadColor = { 0.8f, 0.4f, 0.2f, 1.0f };
-		static glm::vec4 quadColor = initialQuadColor;
+		struct Quad
+		{
+			glm::vec2 Position = { 0.0f, 0.0f };
+			glm::vec2 Scale = { 1.0f, 1.0f };
 
-#if 0
-		static float moveSpeed = 4.5f;
+			glm::vec4 Color = { 0.8f, 0.4f, 0.2f, 1.0f };
 
-		if (Input::GetKey(KeyCode::W))
-			quadPosition.y += moveSpeed * Engine::Get().GetFrameTime();
-		if (Input::GetKey(KeyCode::S))
-			quadPosition.y -= moveSpeed * Engine::Get().GetFrameTime();
+			bool Dragging = false;
 
-		if (Input::GetKey(KeyCode::A))
-			quadPosition.x -= moveSpeed * Engine::Get().GetFrameTime();
-		if (Input::GetKey(KeyCode::D))
-			quadPosition.x += moveSpeed * Engine::Get().GetFrameTime();
-#endif
+			bool ResizingLeft = false;
+			bool ResizingRight = false;
+			bool ResizingBottom = false;
+			bool ResizingTop = false;
+
+			static bool HoveringRect(const glm::vec2& position, const glm::vec2& scale, const glm::vec2& mouseOrthoPos)
+			{
+				float left = position.x - scale.x * 0.5f;
+				float right = position.x + scale.x * 0.5f;
+				float bottom = position.y - scale.y * 0.5f;
+				float top = position.y + scale.y * 0.5f;
+
+				return mouseOrthoPos.x >= left &&
+					mouseOrthoPos.x <= right &&
+					mouseOrthoPos.y >= bottom &&
+					mouseOrthoPos.y <= top;
+			}
+
+			bool Hovering(const glm::vec2& mouseOrthoPos) const
+			{
+				return HoveringRect(Position, Scale, mouseOrthoPos);
+			}
+
+			void Update(Ref<RenderPipeline> pipeline, const glm::vec2& mouseOrthoPos)
+			{
+				float left = Position.x - Scale.x * 0.5f;
+				float right = Position.x + Scale.x * 0.5f;
+				float bottom = Position.y - Scale.y * 0.5f;
+				float top = Position.y + Scale.y * 0.5f;
+
+				if (!Dragging)
+				{
+					glm::vec4 resizeGripColor = Color * glm::vec4(0.5f);
+
+					// Left side
+					{
+						glm::vec2 position = { left - 0.025f, Position.y };
+						glm::vec2 scale = { 0.1f, top - bottom };
+
+						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
+						if (hovering)
+						{
+							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
+								ResizingLeft = true;
+						}
+
+						if (hovering || ResizingLeft)
+						{
+							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
+						}
+
+						if (ResizingLeft)
+						{
+							float delta = Input::GetMousePositionDelta().x * 0.04f;
+							Scale.x -= delta;
+
+							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
+								ResizingLeft = false;
+						}
+					}
+
+					// Right side
+					{
+						glm::vec2 position = { right + 0.025f, Position.y };
+						glm::vec2 scale = { 0.1f, top - bottom };
+
+						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
+						if (hovering)
+						{
+							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
+								ResizingRight = true;
+						}
+
+						if (hovering || ResizingRight)
+						{
+							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
+						}
+
+						if (ResizingRight)
+						{
+							float delta = Input::GetMousePositionDelta().x * 0.04f;
+							Scale.x += delta;
+
+							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
+								ResizingRight = false;
+						}
+					}
+
+					// Bottom side
+					{
+						glm::vec2 position = { Position.x, bottom - 0.025f };
+						glm::vec2 scale = { right - left, 0.1f };
+
+						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
+						if (hovering)
+						{
+							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
+								ResizingBottom = true;
+						}
+
+						if (hovering || ResizingBottom)
+						{
+							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
+						}
+
+						if (ResizingBottom)
+						{
+							float delta = Input::GetMousePositionDelta().y * 0.04f;
+							Scale.y += delta;
+
+							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
+								ResizingBottom = false;
+						}
+					}
+
+					// Top side
+					{
+						glm::vec2 position = { Position.x, top + 0.025f };
+						glm::vec2 scale = { right - left, 0.1f };
+
+						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
+						if (hovering)
+						{
+							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
+								ResizingTop = true;
+						}
+
+						if (hovering || ResizingTop)
+						{
+							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
+						}
+
+						if (ResizingTop)
+						{
+							float delta = Input::GetMousePositionDelta().y * 0.04f;
+							Scale.y -= delta;
+
+							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
+								ResizingTop = false;
+						}
+					}
+				}
+
+				pipeline->DrawQuad(glm::vec3(Position, 0.0f), Scale, Color);
+
+				if (!Dragging)
+				{
+					if (Hovering(mouseOrthoPos))
+					{
+						if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
+							Dragging = true;
+					}
+				}
+
+				if (ResizingLeft || ResizingRight || ResizingBottom || ResizingTop)
+					Dragging = false;
+				
+				if (Dragging)
+				{
+					Position = glm::lerp(Position, mouseOrthoPos, 40.0f * Engine::Get().GetFrameTime());
+				
+					if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
+						Dragging = false;
+				}
+			}
+		};
 
 		glm::vec2 mouseOrthoPos = Input::GetMouseOrthoPosition(m_OrthoCamera.ViewMatrix, m_OrthoCamera.ProjectionMatrix);
 
-		float left = quadPosition.x - quadScale.x * 0.5f;
-		float right = quadPosition.x + quadScale.x * 0.5f;
-		float bottom = quadPosition.y - quadScale.y * 0.5f;
-		float top = quadPosition.y + quadScale.y * 0.5f;
+		static std::vector<Quad> quads;
 
-		static bool draggingQuad = false;
-
-		float hoveringQuad = mouseOrthoPos.x >= left && mouseOrthoPos.x <= right && mouseOrthoPos.y >= bottom && mouseOrthoPos.y <= top;
-		if (hoveringQuad)
+		static bool firstFrame = true;
+		if (firstFrame)
 		{
-			quadColor = glm::vec4(initialQuadColor.r * 0.8f, initialQuadColor.g * 0.8f, initialQuadColor.b * 0.8f, 1.0f);
-			
-			if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
-				draggingQuad = true;
-		}
-		else
-		{
-			quadColor = initialQuadColor;
+			quads.emplace_back();
+			firstFrame = false;
 		}
 
-		if (draggingQuad)
+		if (Input::GetKeyDown(KeyCode::Q))
 		{
-			quadPosition = glm::lerp(quadPosition, mouseOrthoPos, 40.0f * Engine::Get().GetFrameTime());
-		
-			if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
-				draggingQuad = false;
+			auto& quad = quads.emplace_back();
+
+			float r1 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			float r2 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			float r3 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			quad.Color = { r1, r2, r3, 1.0f };
+
+			float r4 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			float r5 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			quad.Position = { r4 * 5.0f - 2.5f, r5 * 2.0f - 1.0f };
 		}
 
-		if (Input::GetKeyUp(KeyCode::Space))
-		{
-			FLUX_INFO("SPACE!");
-		}
-
-		m_RenderPipeline->DrawQuad(glm::vec3(quadPosition, 0.0f), quadScale, quadColor);
+		for (auto& quad : quads)
+			quad.Update(m_RenderPipeline, mouseOrthoPos);
 
 		m_RenderPipeline->EndRendering2D();
 	}
