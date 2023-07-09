@@ -62,6 +62,8 @@ namespace Flux {
 	VulkanPipeline::~VulkanPipeline()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+
+		std::lock_guard<std::mutex> lock(m_Mutex);
 		
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([pipelineLayout = m_PipelineLayout, pipeline = m_Pipeline, descriptorPool = m_DescriptorPool]()
 		{
@@ -87,6 +89,8 @@ namespace Flux {
 	void VulkanPipeline::RT_Invalidate()
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
+
+		std::lock_guard<std::mutex> lock(m_Mutex);
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 		VkPipelineCache pipelineCache = VulkanDevice::Get()->GetPipelineCache();
@@ -262,7 +266,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
+		std::lock_guard<std::mutex> lock(m_Mutex);
+
+		const Descriptor* descriptor = m_CreateInfo.Shader->GetDescriptor(name, DescriptorType::UniformBuffer);
 		if (descriptor)
 			m_Descriptors[frameIndex][descriptor->DescriptorSet][DescriptorType::UniformBuffer][descriptor->Binding] = uniformBuffer;
 		else
@@ -270,11 +276,13 @@ namespace Flux {
 		return true;
 	}
 
-	Ref<UniformBuffer> VulkanPipeline::GetUniformBuffer(std::string_view name, uint32 frameIndex) const
+	Ref<UniformBuffer> VulkanPipeline::GetUniformBuffer(std::string_view name, uint32 frameIndex)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		const Descriptor* descriptor = GetDescriptor(name, DescriptorType::UniformBuffer);
+		std::lock_guard<std::mutex> lock(m_Mutex);
+
+		const Descriptor* descriptor = m_CreateInfo.Shader->GetDescriptor(name, DescriptorType::UniformBuffer);
 		if (descriptor)
 		{
 			auto frameIt = m_Descriptors.find(frameIndex);
@@ -296,28 +304,6 @@ namespace Flux {
 		return nullptr;
 	}
 
-	// TODO: cache this
-	const Descriptor* VulkanPipeline::GetDescriptor(std::string_view name, DescriptorType type) const
-	{
-		FLUX_CHECK_IS_MAIN_THREAD();
-
-		for (const auto& [set, descriptorSet] : m_CreateInfo.Shader->GetDescriptorSets())
-		{
-			for (const auto& [descriptorType, descriptors] : descriptorSet)
-			{
-				if (descriptorType != type)
-					continue;
-
-				for (const auto& [binding, descriptor] : descriptors)
-				{
-					if (descriptor.Name == name)
-						return &descriptor;
-				}
-			}
-		}
-		return nullptr;
-	}
-
 	void VulkanPipeline::Bake()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
@@ -332,6 +318,8 @@ namespace Flux {
 	void VulkanPipeline::RT_Bake()
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
+
+		std::lock_guard<std::mutex> lock(m_Mutex);
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 

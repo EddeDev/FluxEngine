@@ -5,6 +5,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "Texture.h"
+#include "RenderMaterial.h"
 
 namespace Flux {
 
@@ -45,6 +46,11 @@ namespace Flux {
 
 		virtual void SetViewportSize(uint32 width, uint32 height) = 0;
 
+		virtual Ref<Image2D> GetComposedImage() const = 0;
+
+		virtual uint32 GetViewportWidth() const = 0;
+		virtual uint32 GetViewportHeight() const = 0;
+
 		virtual CameraSettings& GetCameraSettings() = 0;
 		virtual const CameraSettings& GetCameraSettings() const = 0;
 
@@ -74,11 +80,18 @@ namespace Flux {
 
 		virtual void SetViewportSize(uint32 width, uint32 height) override;
 
+		virtual Ref<Image2D> GetComposedImage() const override { return m_QuadPipeline->GetFramebuffer()->GetColorAttachment(); }
+
+		virtual uint32 GetViewportWidth() const override { return m_ViewportWidth; }
+		virtual uint32 GetViewportHeight() const override { return m_ViewportHeight; }
+
 		virtual CameraSettings& GetCameraSettings() override { return m_CameraSettings; }
 		virtual const CameraSettings& GetCameraSettings() const override { return m_CameraSettings; }
 
 		virtual EnvironmentSettings& GetEnvironmentSettings() override { return m_EnvironmentSettings; }
 		virtual const EnvironmentSettings& GetEnvironmentSettings() const override { return m_EnvironmentSettings; }
+	private:
+		void UpdateUniformBuffers();
 	private:
 		uint32 m_ViewportWidth = 0;
 		uint32 m_ViewportHeight = 0;
@@ -102,7 +115,7 @@ namespace Flux {
 		inline static constexpr uint32 s_MaxTextureSlots = 32;
 
 		Ref<GraphicsPipeline> m_QuadPipeline;
-		Ref<Shader> m_QuadShader;
+		Ref<RenderMaterial> m_QuadMaterial;
 		std::vector<Ref<VertexBuffer>> m_QuadVertexBuffer;
 		std::vector<QuadVertex*> m_QuadVertexStorage;
 		QuadVertex* m_QuadVertexPointer = nullptr;

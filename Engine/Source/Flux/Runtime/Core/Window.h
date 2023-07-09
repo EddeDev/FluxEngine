@@ -23,6 +23,7 @@ namespace Flux {
 	typedef std::function<void(bool)> WindowMinimizeCallback;
 	typedef std::function<void(uint32, uint32)> WindowSizeCallback;
 	typedef std::function<void(WindowMenu, uint32)> WindowMenuCallback;
+	typedef std::function<void(const char** paths, uint32)> WindowDropCallback;
 	typedef std::function<void(int32, int32, int32, int32)> KeyCallback;
 	typedef std::function<void(int32, int32, int32)> MouseButtonCallback;
 	typedef std::function<void(float, float)> MouseMoveCallback;
@@ -45,6 +46,7 @@ namespace Flux {
 		virtual void AddMinimizeCallback(const WindowMinimizeCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) = 0;
+		virtual void AddDropCallback(const WindowDropCallback& callback) = 0;
 		virtual void AddKeyCallback(const KeyCallback& callback) = 0;
 		virtual void AddMouseButtonCallback(const MouseButtonCallback& callback) = 0;
 		virtual void AddMouseMoveCallback(const MouseMoveCallback& callback) = 0;

@@ -92,7 +92,7 @@ namespace Flux {
 		std::atomic<bool> m_Running = false;
 		std::atomic<bool> m_Minimized = false;
 
-		bool m_VSync = true;
+		bool m_VSync = false;
 		float m_FrameTime = 0.0f;
 		float m_LastFrameTime = 0.0f;
 

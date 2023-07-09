@@ -48,10 +48,10 @@ namespace Flux {
 		Texture2D(uint32 width, uint32 height, PixelFormat format = PixelFormat::RGBA, const void* data = nullptr, const TextureProperties& properties = {});
 
 		virtual Ref<Image> GetImage() const override { return m_Image; }
-		virtual Ref<Sampler> GetSampler() const { return m_Sampler; }
+		virtual Ref<Sampler> GetSampler() const override { return m_Sampler; }
 
-		virtual TextureProperties& GetProperties() { return m_Properties; }
-		virtual const TextureProperties& GetProperties() const { return m_Properties; }
+		virtual TextureProperties& GetProperties() override { return m_Properties; }
+		virtual const TextureProperties& GetProperties() const override { return m_Properties; }
 	private:
 		void CreateImage();
 		void CreateSampler();

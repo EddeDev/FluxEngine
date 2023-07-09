@@ -221,6 +221,13 @@ namespace Flux {
 		m_MenuCallbacks.push_back(callback);
 	}
 
+	void WindowsWindow::AddDropCallback(const WindowDropCallback& callback)
+	{
+		FLUX_ASSERT_IS_THREAD(m_ThreadID);
+
+		m_DropCallbacks.push_back(callback);
+	}
+
 	void WindowsWindow::AddKeyCallback(const KeyCallback& callback)
 	{
 		FLUX_ASSERT_IS_THREAD(m_ThreadID);
@@ -449,6 +456,43 @@ namespace Flux {
 			m_CursorTracked = false;
 			// TODO: callback?
 			break;
+		}
+		case WM_DROPFILES:
+		{
+			HDROP drop = (HDROP)wParam;
+
+			const uint32 count = DragQueryFileW(drop, 0xffffffff, NULL, 0);
+				
+			POINT point;
+			DragQueryPoint(drop, &point);
+
+			for (auto& callback : m_MouseMoveCallbacks)
+				callback(point.x, point.y);
+
+			char** paths = (char**)calloc(count, sizeof(char*));
+
+			for (uint32 i = 0; i < count; i++)
+			{
+				const size_t length = static_cast<size_t>(DragQueryFileW(drop, i, NULL, 0));
+
+				wchar_t* buffer = (wchar_t*)calloc(length + 1, sizeof(wchar_t));
+				DragQueryFileW(drop, i, buffer, length + 1);
+
+				paths[i] = (char*)calloc(length + 1, 1);
+				WideCharToMultiByte(CP_UTF8, 0, buffer, -1, paths[i], length + 1, NULL, NULL);
+
+				free(buffer);
+			}
+
+			for (auto& callback : m_DropCallbacks)
+				callback((const char**)paths, count);
+
+			for (uint32 i = 0; i < count; i++)
+				free(paths[i]);
+			free(paths);
+
+			DragFinish(drop);
+			return 0;
 		}
 		}
 

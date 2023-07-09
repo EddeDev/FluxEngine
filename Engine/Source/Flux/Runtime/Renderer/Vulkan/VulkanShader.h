@@ -14,11 +14,13 @@ namespace Flux {
 
 		virtual void Reload() override;
 
-		virtual const VertexInputLayout& GetVertexInputLayout() const { return m_VertexInputLayout; }
-		virtual const PushConstantMap& GetPushConstants() const { return m_PushConstants; }
-		virtual const DescriptorSetMap& GetDescriptorSets() const { return m_DescriptorSets; }
+		virtual const VertexInputLayout& GetVertexInputLayout() const override { return m_VertexInputLayout; }
+		virtual const PushConstantMap& GetPushConstants() const override { return m_PushConstants; }
+		virtual const DescriptorSetMap& GetDescriptorSets() const override { return m_DescriptorSets; }
 
-		virtual const std::filesystem::path& GetPath() const { return m_Path; }
+		virtual const Descriptor* GetDescriptor(std::string_view name, DescriptorType type) const override;
+
+		virtual const std::filesystem::path& GetPath() const override { return m_Path; }
 
 		VkDescriptorSet RT_CreateDescriptorSet(uint32 set) const;
 		VkDescriptorSetLayout GetDescriptorSetLayout(uint32 set) const { return m_DescriptorSetLayouts.at(set); }
@@ -62,6 +64,20 @@ namespace Flux {
 			}
 			FLUX_VERIFY(false, "Unknown shader stage");
 			return static_cast<VkShaderStageFlagBits>(0);
+		}
+
+		inline static VkDescriptorType VulkanDescriptorType(DescriptorType type)
+		{
+			switch (type)
+			{
+			case DescriptorType::UniformBuffer:        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case DescriptorType::StorageBuffer:        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case DescriptorType::CombinedImageSampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case DescriptorType::SampledImage:         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case DescriptorType::StorageImage:         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			}
+			FLUX_VERIFY(false, "Unknown descriptor type");
+			return static_cast<VkDescriptorType>(0);
 		}
 
 	}

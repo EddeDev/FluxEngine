@@ -16,7 +16,7 @@ namespace Flux {
 		virtual void RT_Invalidate() override;
 
 		virtual bool SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer, uint32 frameIndex) override;
-		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex) const override;
+		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex) override;
 
 		virtual void Bake() override;
 		virtual void RT_Bake() override;
@@ -34,10 +34,11 @@ namespace Flux {
 
 		virtual Ref<Shader> GetShader() const override { return m_CreateInfo.Shader; }
 		virtual Ref<Framebuffer> GetFramebuffer() const override { return m_CreateInfo.Framebuffer; }
-	private:
-		const Descriptor* GetDescriptor(std::string_view name, DescriptorType type) const;
+
+		VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
 	private:
 		GraphicsPipelineCreateInfo m_CreateInfo;
+		std::mutex m_Mutex;
 
 		VkPipeline m_Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;

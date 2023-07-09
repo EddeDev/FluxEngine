@@ -144,7 +144,7 @@ namespace Flux {
 			m_FrameCounter++;
 			if (m_Time >= m_LastTime + 1.0f)
 			{
-				FLUX_TRACE("Frame time: {0:.2f}ms, WaitForRenderThread: {1:.2f}ms, ApplicationUpdate: {2:.2f}ms ({3} fps)", m_FrameTime * 1000.0f, m_PerformanceTimers.WaitForRenderThread, m_PerformanceTimers.ApplicationUpdate, m_FrameCounter);
+				// FLUX_TRACE("Frame time: {0:.2f}ms, WaitForRenderThread: {1:.2f}ms, ApplicationUpdate: {2:.2f}ms ({3} fps)", m_FrameTime * 1000.0f, m_PerformanceTimers.WaitForRenderThread, m_PerformanceTimers.ApplicationUpdate, m_FrameCounter);
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;

@@ -66,20 +66,6 @@ namespace Flux {
 			return static_cast<shaderc_shader_kind>(0);
 		}
 
-		static VkDescriptorType VulkanDescriptorType(DescriptorType type)
-		{
-			switch (type)
-			{
-			case DescriptorType::UniformBuffer:        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			case DescriptorType::StorageBuffer:        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			case DescriptorType::CombinedImageSampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			case DescriptorType::SampledImage:         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			case DescriptorType::StorageImage:         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			}
-			FLUX_VERIFY(false, "Unknown descriptor type");
-			return static_cast<VkDescriptorType>(0);
-		}
-
 		static ShaderDataType SPIRTypeToShaderDataType(const spirv_cross::SPIRType& type)
 		{
 			switch (type.basetype)
@@ -285,6 +271,8 @@ namespace Flux {
 
 	void VulkanShader::Reflect()
 	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
 		FLUX_TRACE("Shader Reflection - {0}", m_Path.string());
 
 		for (const auto& [stage, binary] : m_Binaries)
@@ -575,6 +563,27 @@ namespace Flux {
 				VK_CHECK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &instance->m_DescriptorSetLayouts[set]));
 			}
 		});
+	}
+
+	const Descriptor* VulkanShader::GetDescriptor(std::string_view name, DescriptorType type) const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		for (const auto& [set, descriptorSet] : m_DescriptorSets)
+		{
+			for (const auto& [descriptorType, descriptors] : descriptorSet)
+			{
+				if (descriptorType != type)
+					continue;
+
+				for (const auto& [binding, descriptor] : descriptors)
+				{
+					if (descriptor.Name == name)
+						return &descriptor;
+				}
+			}
+		}
+		return nullptr;
 	}
 
 	VkDescriptorSet VulkanShader::RT_CreateDescriptorSet(uint32 set) const

@@ -50,12 +50,16 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		std::lock_guard<std::mutex> lock(m_Mutex);
+
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([renderPass = m_RenderPass, framebuffer = m_Framebuffer]()
 		{
 			VkDevice device = VulkanDevice::Get()->GetDevice();
 
-			vkDestroyRenderPass(device, renderPass, nullptr);
-			vkDestroyFramebuffer(device, framebuffer, nullptr);
+			if (renderPass)
+				vkDestroyRenderPass(device, renderPass, nullptr);
+			if (framebuffer)
+				vkDestroyFramebuffer(device, framebuffer, nullptr);
 		});
 	}
 
@@ -87,6 +91,8 @@ namespace Flux {
 	void VulkanFramebuffer::RT_Invalidate()
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
+
+		std::lock_guard<std::mutex> lock(m_Mutex);
 
 		VkDevice device = VulkanDevice::Get()->GetDevice();
 
@@ -296,20 +302,22 @@ namespace Flux {
 		VK_CHECK(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &m_Framebuffer));
 	}
 
-	void VulkanFramebuffer::Bind(Ref<CommandBuffer> commandBuffer) const
+	void VulkanFramebuffer::Bind(Ref<CommandBuffer> commandBuffer)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const VulkanFramebuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
+		Ref<VulkanFramebuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]() mutable
 		{
 			instance->RT_Bind(commandBuffer);
 		});
 	}
 
-	void VulkanFramebuffer::RT_Bind(Ref<CommandBuffer> commandBuffer) const
+	void VulkanFramebuffer::RT_Bind(Ref<CommandBuffer> commandBuffer)
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
+
+		std::lock_guard<std::mutex> lock(m_Mutex);
 
 		VkCommandBuffer activeCommandBuffer = commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer();
 
@@ -373,40 +381,46 @@ namespace Flux {
 		vkCmdBeginRenderPass(activeCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	void VulkanFramebuffer::Unbind(Ref<CommandBuffer> commandBuffer) const
+	void VulkanFramebuffer::Unbind(Ref<CommandBuffer> commandBuffer)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const VulkanFramebuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]()
+		Ref<VulkanFramebuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, commandBuffer]() mutable
 		{
 			instance->RT_Unbind(commandBuffer);
 		});
 	}
 
-	void VulkanFramebuffer::RT_Unbind(Ref<CommandBuffer> commandBuffer) const
+	void VulkanFramebuffer::RT_Unbind(Ref<CommandBuffer> commandBuffer)
 	{
 		FLUX_CHECK_IS_RENDER_THREAD();
 
 		vkCmdEndRenderPass(commandBuffer.As<VulkanCommandBuffer>()->GetActiveCommandBuffer());
 	}
 
-	uint32 VulkanFramebuffer::GetWidth() const
+	uint32 VulkanFramebuffer::GetWidth()
 	{
+		std::lock_guard<std::mutex> lock(m_Mutex);
+
 		if (m_CreateInfo.SwapchainTarget)
 			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetWidth();
 		return m_Width;
 	}
 
-	uint32 VulkanFramebuffer::GetHeight() const
+	uint32 VulkanFramebuffer::GetHeight()
 	{
+		std::lock_guard<std::mutex> lock(m_Mutex);
+
 		if (m_CreateInfo.SwapchainTarget)
 			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetHeight();
 		return m_Height;
 	}
 
-	VkRenderPass VulkanFramebuffer::GetRenderPass() const
+	VkRenderPass VulkanFramebuffer::GetRenderPass()
 	{
+		std::lock_guard<std::mutex> lock(m_Mutex);
+
 		if (m_CreateInfo.SwapchainTarget)
 			return Engine::Get().GetSwapchain().As<VulkanSwapchain>()->GetRenderPass();
 		return m_RenderPass;

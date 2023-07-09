@@ -10,6 +10,7 @@
 #include "IndexBuffer.h"
 #include "UniformBuffer.h"
 #include "Texture.h"
+#include "RenderMaterial.h"
 
 namespace Flux {
 
@@ -28,7 +29,8 @@ namespace Flux {
 		static void BeginRenderPass(Ref<CommandBuffer> commandBuffer, Ref<GraphicsPipeline> pipeline);
 		static void EndRenderPass(Ref<CommandBuffer> commandBuffer);
 		
-		static void RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32 indexCount = 0);
+		static void RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<RenderMaterial> material, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32 indexCount = 0);
+		static void RenderFullscreenQuad(Ref<CommandBuffer> commandBuffer, Ref<RenderMaterial> material);
 
 #ifndef FLUX_BUILD_SHIPPING
 		static void SubmitRenderCommand(const char* functionName, RenderCommand command);
@@ -49,6 +51,8 @@ namespace Flux {
 		static Ref<Texture2D> GetWhiteTexture();
 		static Ref<Texture2D> GetBlackTexture();
 
+		static Ref<Shader> GetShader(std::string_view name);
+
 		static Ref<UniformBuffer> GetUniformBuffer(std::string_view name);
 		static Ref<UniformBuffer> RT_GetUniformBuffer(std::string_view name);
 		static Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex);
@@ -67,6 +71,7 @@ namespace Flux {
 		inline static constexpr uint32 s_RenderCommandQueueCount = 2;
 		inline static constexpr uint32 s_ReleaseQueueCount = 3;
 
+		inline static std::unordered_map<std::string_view, Ref<Shader>> s_Shaders;
 		inline static std::unordered_map<uint32, std::unordered_map<uint32, Ref<UniformBuffer>>> s_UniformBuffers;
 		inline static std::unordered_map<std::string, uint32> s_UniformBufferBindings;
 		inline static std::mutex s_UniformBufferMutex;

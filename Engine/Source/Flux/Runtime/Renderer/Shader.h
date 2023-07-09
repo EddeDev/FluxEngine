@@ -110,6 +110,8 @@ namespace Flux {
 		virtual const PushConstantMap& GetPushConstants() const = 0;
 		virtual const DescriptorSetMap& GetDescriptorSets() const = 0;
 
+		virtual const Descriptor* GetDescriptor(std::string_view name, DescriptorType type) const = 0;
+
 		virtual const std::filesystem::path& GetPath() const = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path& path);

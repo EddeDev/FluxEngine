@@ -14,6 +14,9 @@ namespace Flux {
 		Ref<Texture2D> WhiteTexture;
 		Ref<Texture2D> BlackTexture;
 
+		Ref<VertexBuffer> FullscreenQuadVertexBuffer;
+		Ref<IndexBuffer> FullscreenQuadIndexBuffer;
+
 		Ref<GraphicsPipeline> ActivePipeline;
 
 		uint32 CurrentFrameIndex = 0;
@@ -62,6 +65,35 @@ namespace Flux {
 			uint32 blackTextureData = 0xff000000;
 			s_Data->BlackTexture = Ref<Texture2D>::Create(1, 1, PixelFormat::RGBA, &blackTextureData, textureProperties);
 		}
+
+		// Fullscreen quad
+		{
+			struct QuadVertex
+			{
+				glm::vec3 Position;
+				glm::vec2 TexCoord;
+			};
+
+			struct QuadIndex
+			{
+				uint32 V1;
+				uint32 V2;
+				uint32 V3;
+			};
+
+			QuadVertex quadVertices[4];
+			quadVertices[0] = { { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f } };
+			quadVertices[1] = { {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f } };
+			quadVertices[2] = { {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f } };
+			quadVertices[3] = { { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f } };
+
+			QuadIndex quadIndices[2];
+			quadIndices[0] = { 0, 1, 2 };
+			quadIndices[1] = { 2, 3, 0 };
+
+			s_Data->FullscreenQuadVertexBuffer = VertexBuffer::Create(quadVertices, sizeof(QuadVertex) * 4);
+			s_Data->FullscreenQuadIndexBuffer = IndexBuffer::Create(quadIndices, sizeof(QuadIndex) * 2);
+		}
 	}
 
 	void Renderer::Shutdown()
@@ -80,11 +112,16 @@ namespace Flux {
 
 		FLUX_VERIFY(s_ResourceAllocator);
 
+		s_Shaders.clear();
+
 		s_UniformBufferBindings.clear();
 		s_UniformBuffers.clear();
 
 		FLUX_VERIFY(s_Data->WhiteTexture->GetReferenceCount() == 1);
 		FLUX_VERIFY(s_Data->BlackTexture->GetReferenceCount() == 1);
+
+		FLUX_VERIFY(s_Data->FullscreenQuadVertexBuffer->GetReferenceCount() == 1);
+		FLUX_VERIFY(s_Data->FullscreenQuadIndexBuffer->GetReferenceCount() == 1);
 
 		delete s_Data;
 		s_Data = nullptr;
@@ -132,7 +169,7 @@ namespace Flux {
 		s_Data->ActivePipeline = nullptr;
 	}
 
-	void Renderer::RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32 indexCount)
+	void Renderer::RenderGeometry(Ref<CommandBuffer> commandBuffer, Ref<RenderMaterial> material, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, uint32 indexCount)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
@@ -140,11 +177,21 @@ namespace Flux {
 			indexCount = indexBuffer->GetCount();
 
 		vertexBuffer->Bind(commandBuffer);
-		// s_Data->ActivePipeline->Bind(commandBuffer);
 		indexBuffer->Bind(commandBuffer);
 
-		// pipeline->BindDescriptorSets(commandBuffer);
+		material->Bind(commandBuffer, s_Data->ActivePipeline);
+
 		s_Data->ActivePipeline->DrawIndexed(commandBuffer, indexCount);
+	}
+
+	void Renderer::RenderFullscreenQuad(Ref<CommandBuffer> commandBuffer, Ref<RenderMaterial> material)
+	{
+		s_Data->FullscreenQuadVertexBuffer->Bind(commandBuffer);
+		s_Data->FullscreenQuadIndexBuffer->Bind(commandBuffer);
+
+		material->Bind(commandBuffer, s_Data->ActivePipeline);
+
+		s_Data->ActivePipeline->DrawIndexed(commandBuffer, s_Data->FullscreenQuadIndexBuffer->GetCount());
 	}
 
 #ifndef FLUX_BUILD_SHIPPING
@@ -295,6 +342,26 @@ namespace Flux {
 		return s_Data->BlackTexture;
 	}
 
+	Ref<Shader> Renderer::GetShader(std::string_view name)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		auto it = s_Shaders.find(name);
+		if (it != s_Shaders.end())
+			return it->second;
+
+		// TODO: shader registry
+
+		std::filesystem::path path;
+		path /= "Resources";
+		path /= "Shaders";
+		path /= std::string(name) + ".glsl";
+
+		Ref<Shader> shader = Shader::Create(path);
+		s_Shaders[name] = shader;
+		return shader;
+	}
+
 	Ref<UniformBuffer> Renderer::GetUniformBuffer(std::string_view name)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
@@ -386,6 +453,8 @@ namespace Flux {
 	bool Renderer::RegisterUniformBuffer(const ShaderUniformBuffer& buffer)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
+
+		std::lock_guard<std::mutex> lock(s_UniformBufferMutex);
 
 		if (s_UniformBufferBindings.find(buffer.Name) != s_UniformBufferBindings.end())
 			return false;

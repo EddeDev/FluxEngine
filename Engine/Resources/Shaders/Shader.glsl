@@ -51,6 +51,11 @@ struct VertexOutput
 layout(location = 0) in VertexOutput Input;
 layout(location = 2) in flat float v_TextureIndex;
 
+layout(push_constant) uniform MaterialProperties
+{
+	vec4 TintColor;
+} u_MaterialProperties;
+
 void main()
 {
     vec4 color = Input.Color;
@@ -58,5 +63,5 @@ void main()
 	if (color.a == 0.0)
 		discard;
 
-	o_Color = color;
+	o_Color = color * u_MaterialProperties.TintColor;
 }

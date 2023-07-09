@@ -102,6 +102,11 @@ namespace Flux {
 		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
 
 		Ref<RenderPipeline> m_RenderPipeline;
+		
+		Ref<GraphicsPipeline> m_SwapchainPipeline;
+		Ref<CommandBuffer> m_SwapchainCommandBuffer;
+		Ref<RenderMaterial> m_SwapchainMaterial;
+
 		Ref<Texture2D> m_Texture;
 
 		OrthographicCamera m_OrthoCamera;

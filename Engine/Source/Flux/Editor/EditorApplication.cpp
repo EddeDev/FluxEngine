@@ -2,6 +2,7 @@
 #include "EditorApplication.h"
 
 #include "Flux/Runtime/Core/Engine.h"
+#include "Flux/Runtime/Renderer/Renderer.h"
 
 namespace Flux {
 
@@ -31,6 +32,15 @@ namespace Flux {
 
 		window->SetMenu(menu);
 		window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
+
+		window->AddDropCallback([](auto paths, auto count)
+		{
+			for (uint32 i = 0; i < count; i++)
+			{
+				const char* path = paths[i];
+				FLUX_TRACE("{0}", path);
+			}
+		});
 
 		WindowCreateInfo windowCreateInfo;
 		windowCreateInfo.ParentWindow = window.get();
@@ -73,11 +83,40 @@ namespace Flux {
 	void EditorApplication::OnInit()
 	{
 		m_RenderPipeline = Ref<ForwardRenderPipeline>::Create();
+		
+		FramebufferCreateInfo framebufferCreateInfo;
+		framebufferCreateInfo.Attachments = {
+			PixelFormat::RGBA,
+			PixelFormat::Depth24Stencil8
+		};
+		framebufferCreateInfo.SwapchainTarget = true;
+		framebufferCreateInfo.DebugLabel = "Swapchain";
+
+		GraphicsPipelineCreateInfo pipelineCreateInfo;
+		pipelineCreateInfo.Framebuffer = Framebuffer::Create(framebufferCreateInfo);
+		pipelineCreateInfo.Shader = Renderer::GetShader("Blit");
+		pipelineCreateInfo.DepthWrite = false;
+		pipelineCreateInfo.DebugLabel = "Swapchain Pass";
+		m_SwapchainPipeline = GraphicsPipeline::Create(pipelineCreateInfo);
+
+		m_SwapchainMaterial = RenderMaterial::Create(pipelineCreateInfo.Shader, "Swapchain-Blit");
+
+		CommandBufferCreateInfo commandBufferCreateInfo;
+		commandBufferCreateInfo.Transient = true;
+		commandBufferCreateInfo.CreateFromSwapchain = true;
+		commandBufferCreateInfo.DebugLabel = "Swapchain-CommandBuffer";
+		m_SwapchainCommandBuffer = CommandBuffer::Create(commandBufferCreateInfo);
+
 		m_Texture = Ref<Texture2D>::Create("Resources/Textures/Islandox.png");
 	}
 
 	void EditorApplication::OnExit()
 	{
+#if FLUX_SEPARATE_FRAMEBUFFERS
+		FLUX_VERIFY(m_SwapchainPipeline->GetReferenceCount() == 1);
+		m_SwapchainPipeline = nullptr;
+#endif
+
 		FLUX_VERIFY(m_RenderPipeline->GetReferenceCount() == 1);
 		m_RenderPipeline = nullptr;
 
@@ -90,6 +129,7 @@ namespace Flux {
 		uint32 width = Engine::Get().GetSwapchain()->GetWidth();
 		uint32 height = Engine::Get().GetSwapchain()->GetHeight();
 		m_RenderPipeline->SetViewportSize(width, height);
+		m_OrthoCamera.SetViewportSize(width, height);
 
 		auto& cameraSettings = m_RenderPipeline->GetCameraSettings();
 		cameraSettings.ViewMatrix = m_OrthoCamera.ViewMatrix;
@@ -98,212 +138,22 @@ namespace Flux {
 		cameraSettings.FarClip = 1.0f;
 
 		m_RenderPipeline->BeginRendering2D();
-
-		struct Quad
-		{
-			glm::vec2 Position = { 0.0f, 0.0f };
-			glm::vec2 Scale = { 1.0f, 1.0f };
-
-			glm::vec4 Color = { 0.8f, 0.4f, 0.2f, 1.0f };
-
-			bool Dragging = false;
-
-			bool ResizingLeft = false;
-			bool ResizingRight = false;
-			bool ResizingBottom = false;
-			bool ResizingTop = false;
-
-			static bool HoveringRect(const glm::vec2& position, const glm::vec2& scale, const glm::vec2& mouseOrthoPos)
-			{
-				float left = position.x - scale.x * 0.5f;
-				float right = position.x + scale.x * 0.5f;
-				float bottom = position.y - scale.y * 0.5f;
-				float top = position.y + scale.y * 0.5f;
-
-				return mouseOrthoPos.x >= left &&
-					mouseOrthoPos.x <= right &&
-					mouseOrthoPos.y >= bottom &&
-					mouseOrthoPos.y <= top;
-			}
-
-			bool Hovering(const glm::vec2& mouseOrthoPos) const
-			{
-				return HoveringRect(Position, Scale, mouseOrthoPos);
-			}
-
-			void Update(Ref<RenderPipeline> pipeline, const glm::vec2& mouseOrthoPos)
-			{
-				float left = Position.x - Scale.x * 0.5f;
-				float right = Position.x + Scale.x * 0.5f;
-				float bottom = Position.y - Scale.y * 0.5f;
-				float top = Position.y + Scale.y * 0.5f;
-
-				if (!Dragging)
-				{
-					glm::vec4 resizeGripColor = Color * glm::vec4(0.5f);
-
-					// Left side
-					{
-						glm::vec2 position = { left - 0.025f, Position.y };
-						glm::vec2 scale = { 0.1f, top - bottom };
-
-						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
-						if (hovering)
-						{
-							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
-								ResizingLeft = true;
-						}
-
-						if (hovering || ResizingLeft)
-						{
-							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
-						}
-
-						if (ResizingLeft)
-						{
-							float delta = Input::GetMousePositionDelta().x * 0.04f;
-							Scale.x -= delta;
-
-							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
-								ResizingLeft = false;
-						}
-					}
-
-					// Right side
-					{
-						glm::vec2 position = { right + 0.025f, Position.y };
-						glm::vec2 scale = { 0.1f, top - bottom };
-
-						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
-						if (hovering)
-						{
-							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
-								ResizingRight = true;
-						}
-
-						if (hovering || ResizingRight)
-						{
-							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
-						}
-
-						if (ResizingRight)
-						{
-							float delta = Input::GetMousePositionDelta().x * 0.04f;
-							Scale.x += delta;
-
-							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
-								ResizingRight = false;
-						}
-					}
-
-					// Bottom side
-					{
-						glm::vec2 position = { Position.x, bottom - 0.025f };
-						glm::vec2 scale = { right - left, 0.1f };
-
-						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
-						if (hovering)
-						{
-							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
-								ResizingBottom = true;
-						}
-
-						if (hovering || ResizingBottom)
-						{
-							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
-						}
-
-						if (ResizingBottom)
-						{
-							float delta = Input::GetMousePositionDelta().y * 0.04f;
-							Scale.y += delta;
-
-							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
-								ResizingBottom = false;
-						}
-					}
-
-					// Top side
-					{
-						glm::vec2 position = { Position.x, top + 0.025f };
-						glm::vec2 scale = { right - left, 0.1f };
-
-						bool hovering = HoveringRect(position, scale, mouseOrthoPos);
-						if (hovering)
-						{
-							if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
-								ResizingTop = true;
-						}
-
-						if (hovering || ResizingTop)
-						{
-							pipeline->DrawQuad({ position, 0.1f }, scale, resizeGripColor);
-						}
-
-						if (ResizingTop)
-						{
-							float delta = Input::GetMousePositionDelta().y * 0.04f;
-							Scale.y -= delta;
-
-							if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
-								ResizingTop = false;
-						}
-					}
-				}
-
-				pipeline->DrawQuad(glm::vec3(Position, 0.0f), Scale, Color);
-
-				if (!Dragging)
-				{
-					if (Hovering(mouseOrthoPos))
-					{
-						if (Input::GetMouseButtonDown(MouseButtonCode::ButtonLeft))
-							Dragging = true;
-					}
-				}
-
-				if (ResizingLeft || ResizingRight || ResizingBottom || ResizingTop)
-					Dragging = false;
-				
-				if (Dragging)
-				{
-					Position = glm::lerp(Position, mouseOrthoPos, 40.0f * Engine::Get().GetFrameTime());
-				
-					if (Input::GetMouseButtonUp(MouseButtonCode::ButtonLeft))
-						Dragging = false;
-				}
-			}
-		};
-
-		glm::vec2 mouseOrthoPos = Input::GetMouseOrthoPosition(m_OrthoCamera.ViewMatrix, m_OrthoCamera.ProjectionMatrix);
-
-		static std::vector<Quad> quads;
-
-		static bool firstFrame = true;
-		if (firstFrame)
-		{
-			quads.emplace_back();
-			firstFrame = false;
-		}
-
-		if (Input::GetKeyDown(KeyCode::Q))
-		{
-			auto& quad = quads.emplace_back();
-
-			float r1 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-			float r2 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-			float r3 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-			quad.Color = { r1, r2, r3, 1.0f };
-
-			float r4 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-			float r5 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-			quad.Position = { r4 * 5.0f - 2.5f, r5 * 2.0f - 1.0f };
-		}
-
-		for (auto& quad : quads)
-			quad.Update(m_RenderPipeline, mouseOrthoPos);
-
+		m_RenderPipeline->DrawQuad({ 0.0f, 0.0f, 0.0f }, { 5.0f, 5.0f });
 		m_RenderPipeline->EndRendering2D();
+
+		m_SwapchainCommandBuffer->Begin();
+
+		Renderer::BeginRenderPass(m_SwapchainCommandBuffer, m_SwapchainPipeline);
+		auto finalImage = m_RenderPipeline->GetComposedImage();
+		if (finalImage)
+		{
+			m_SwapchainMaterial->Set("u_Texture", finalImage);
+			Renderer::RenderFullscreenQuad(m_SwapchainCommandBuffer, m_SwapchainMaterial);
+		}
+		Renderer::EndRenderPass(m_SwapchainCommandBuffer);
+
+		m_SwapchainCommandBuffer->End();
+		m_SwapchainCommandBuffer->Submit();
 	}
 
 	void EditorApplication::OnMenuCallback(WindowMenu menu, uint32 itemID)

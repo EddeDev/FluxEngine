@@ -44,7 +44,7 @@ namespace Flux {
 		virtual void RT_Invalidate() = 0;
 
 		virtual bool SetUniformBuffer(std::string_view name, Ref<UniformBuffer> uniformBuffer, uint32 frameIndex) = 0;
-		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex) const = 0;
+		virtual Ref<UniformBuffer> GetUniformBuffer(std::string_view name, uint32 frameIndex) = 0;
 
 		virtual void Bake() = 0;
 		virtual void RT_Bake() = 0;

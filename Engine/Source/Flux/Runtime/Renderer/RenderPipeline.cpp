@@ -7,8 +7,6 @@
 
 namespace Flux {
 
-	static const bool s_SwapchainTarget = true;
-
 	ForwardRenderPipeline::ForwardRenderPipeline()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
@@ -21,7 +19,6 @@ namespace Flux {
 		CommandBufferCreateInfo commandBufferCreateInfo;
 		commandBufferCreateInfo.Count = framesInFlight;
 		commandBufferCreateInfo.Transient = true;
-		commandBufferCreateInfo.CreateFromSwapchain = s_SwapchainTarget; // Optional?
 		commandBufferCreateInfo.DebugLabel = "Forward RP-CommandBuffer";
 		m_CommandBuffer = CommandBuffer::Create(commandBufferCreateInfo);
 
@@ -30,20 +27,19 @@ namespace Flux {
 			PixelFormat::RGBA,
 			PixelFormat::Depth24Stencil8
 		};
-		framebufferCreateInfo.SwapchainTarget = s_SwapchainTarget;
 		framebufferCreateInfo.DebugLabel = "Main FB";
 		Ref<Framebuffer> framebuffer = Framebuffer::Create(framebufferCreateInfo);
 
 		// Quads
 		{
-			m_QuadShader = Shader::Create("Resources/Shaders/Shader.glsl");
-
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
-			pipelineCreateInfo.Shader = m_QuadShader;
+			pipelineCreateInfo.Shader = Renderer::GetShader("Shader");
 			pipelineCreateInfo.Framebuffer = framebuffer;
 			pipelineCreateInfo.DebugLabel = "Quad Pipeline";
 			m_QuadPipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 			m_QuadPipeline->Bake();
+
+			m_QuadMaterial = RenderMaterial::Create(pipelineCreateInfo.Shader, "Forward RP-QuadMaterial");
 
 			m_QuadVertexBuffer.resize(framesInFlight);
 			m_QuadVertexStorage.resize(framesInFlight);
@@ -89,36 +85,8 @@ namespace Flux {
 			delete m_QuadVertexStorage[i];
 	}
 
-	void ForwardRenderPipeline::BeginRendering()
+	void ForwardRenderPipeline::UpdateUniformBuffers()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
-		FLUX_ASSERT(m_State == State::None);
-
-		m_State = State::Render3D;
-	}
-
-	void ForwardRenderPipeline::EndRendering()
-	{
-		FLUX_CHECK_IS_MAIN_THREAD();
-		FLUX_ASSERT(m_State == State::Render3D);
-
-		m_State = State::None;
-	}
-
-	void ForwardRenderPipeline::BeginRendering2D()
-	{
-		FLUX_CHECK_IS_MAIN_THREAD();
-		FLUX_ASSERT(m_State == State::None);
-
-		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
-
-		m_QuadVertexPointer = m_QuadVertexStorage[frameIndex];
-		m_QuadIndexCount = 0;
-
-		m_QuadTextureSlotIndex = 1;
-		for (uint32_t i = m_QuadTextureSlotIndex; i < m_QuadTextureSlots.size(); i++)
-			m_QuadTextureSlots[i] = nullptr;
-
 		Ref<UniformBuffer> cameraUniformBuffer = Renderer::GetUniformBuffer("Camera");
 		if (cameraUniformBuffer)
 		{
@@ -138,8 +106,43 @@ namespace Flux {
 		{
 			timeUniformBuffer->Set("u_Time", Engine::Get().GetTime());
 		}
+	}
+
+	void ForwardRenderPipeline::BeginRendering()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::None);
+
+		m_State = State::Render3D;
+
+		UpdateUniformBuffers();
+	}
+
+	void ForwardRenderPipeline::EndRendering()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::Render3D);
+
+		m_State = State::None;
+	}
+
+	void ForwardRenderPipeline::BeginRendering2D()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_ASSERT(m_State == State::None);
 
 		m_State = State::Render2D;
+
+		uint32 frameIndex = Renderer::GetCurrentFrameIndex();
+
+		m_QuadVertexPointer = m_QuadVertexStorage[frameIndex];
+		m_QuadIndexCount = 0;
+
+		m_QuadTextureSlotIndex = 1;
+		for (uint32_t i = m_QuadTextureSlotIndex; i < m_QuadTextureSlots.size(); i++)
+			m_QuadTextureSlots[i] = nullptr;
+
+		UpdateUniformBuffers();
 	}
 
 	void ForwardRenderPipeline::EndRendering2D()
@@ -158,8 +161,10 @@ namespace Flux {
 				uint32 dataSize = static_cast<uint32>((uint8*)m_QuadVertexPointer - (uint8*)m_QuadVertexStorage[frameIndex]);
 				m_QuadVertexBuffer[frameIndex]->SetData(m_CommandBuffer, m_QuadVertexStorage[frameIndex], dataSize);
 
+				m_QuadMaterial->Set("u_MaterialProperties.TintColor", glm::vec4(0.7f, 0.3f, 0.5f, 1.0f));
+
 				Renderer::BeginRenderPass(m_CommandBuffer, m_QuadPipeline);
-				Renderer::RenderGeometry(m_CommandBuffer, m_QuadVertexBuffer[frameIndex], m_QuadIndexBuffer, m_QuadIndexCount);
+				Renderer::RenderGeometry(m_CommandBuffer, m_QuadMaterial, m_QuadVertexBuffer[frameIndex], m_QuadIndexBuffer, m_QuadIndexCount);
 				Renderer::EndRenderPass(m_CommandBuffer);
 			}
 		}

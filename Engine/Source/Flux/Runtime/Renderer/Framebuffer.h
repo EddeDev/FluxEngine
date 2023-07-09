@@ -60,14 +60,17 @@ namespace Flux {
 
 		virtual void Resize(uint32 width, uint32 height, bool forceRecreate = false) = 0;
 
-		virtual void Bind(Ref<CommandBuffer> commandBuffer) const = 0;
-		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) const = 0;
+		virtual void Bind(Ref<CommandBuffer> commandBuffer) = 0;
+		virtual void RT_Bind(Ref<CommandBuffer> commandBuffer) = 0;
 
-		virtual void Unbind(Ref<CommandBuffer> commandBuffer) const = 0;
-		virtual void RT_Unbind(Ref<CommandBuffer> commandBuffer) const = 0;
+		virtual void Unbind(Ref<CommandBuffer> commandBuffer) = 0;
+		virtual void RT_Unbind(Ref<CommandBuffer> commandBuffer) = 0;
 
-		virtual uint32 GetWidth() const = 0;
-		virtual uint32 GetHeight() const = 0;
+		virtual Ref<Image2D> GetColorAttachment(uint32 index = 0) = 0;
+		virtual Ref<Image2D> GetDepthAttachment() = 0;
+
+		virtual uint32 GetWidth() = 0;
+		virtual uint32 GetHeight() = 0;
 
 		static Ref<Framebuffer> Create(const FramebufferCreateInfo& createInfo);
 	};

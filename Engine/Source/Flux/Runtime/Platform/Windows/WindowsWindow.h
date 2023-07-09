@@ -25,6 +25,7 @@ namespace Flux {
 		virtual void AddMinimizeCallback(const WindowMinimizeCallback& callback) override;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
 		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
+		virtual void AddDropCallback(const WindowDropCallback& callback) override;
 		virtual void AddKeyCallback(const KeyCallback& callback) override;
 		virtual void AddMouseButtonCallback(const MouseButtonCallback& callback) override;
 		virtual void AddMouseMoveCallback(const MouseMoveCallback& callback) override;
@@ -51,6 +52,7 @@ namespace Flux {
 		std::vector<WindowMinimizeCallback> m_MinimizeCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;
 		std::vector<WindowMenuCallback> m_MenuCallbacks;
+		std::vector<WindowDropCallback> m_DropCallbacks;
 		std::vector<KeyCallback> m_KeyCallbacks;
 		std::vector<MouseButtonCallback> m_MouseButtonCallbacks;
 		std::vector<MouseMoveCallback> m_MouseMoveCallbacks;
