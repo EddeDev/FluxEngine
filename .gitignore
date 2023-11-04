@@ -1,0 +1,19 @@
+# Binaries
+Build/
+**/Binaries/
+**/Intermediate/
+
+# Log files
+**.log
+
+# Visual Studio
+.vs/
+**.sln
+**.vcxproj
+**.vcxproj.filters
+**.vcxproj.user
+**.user
+
+# LFS folders
+lfs/
+hooks/
