@@ -53,8 +53,8 @@ namespace Flux {
 		std::mutex m_MainThreadMutex;
 
 		std::atomic<bool> m_Running = true;
-		std::atomic<bool> m_VSync = true;
 
+		bool m_VSync = true;
 		float m_FrameTime = 0.0f;
 		float m_LastFrameTime = 0.0f;
 

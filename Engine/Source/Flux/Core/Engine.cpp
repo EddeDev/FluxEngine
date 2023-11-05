@@ -1,6 +1,10 @@
 #include "FluxPCH.h"
 #include "Engine.h"
 
+#include "Flux/Renderer/Renderer.h"
+
+#include <glad/glad.h>
+
 namespace Flux {
 
 	namespace Utils {
@@ -114,6 +118,8 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		Renderer::Init();
+
 		// Show window
 		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
 
@@ -126,7 +132,7 @@ namespace Flux {
 			m_FrameCounter++;
 			if (m_Time >= m_LastTime + 1.0f)
 			{
-				FLUX_TRACE("{0} fps", m_FrameCounter);
+				FLUX_TRACE("{0} fps{1}", m_FrameCounter, m_VSync ? " (V-Sync)" : "");
 
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
@@ -135,16 +141,54 @@ namespace Flux {
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
 
+			// Flush release queue
+			FLUX_SUBMIT_RENDER_COMMAND([]()
+			{
+				Renderer::FlushReleaseQueue();
+			});
+
+			Renderer::BeginFrame();
+
+			// update app
+
 			// Wait for the previous frame to finish
 			m_RenderThread->Wait();
 
-			m_RenderThread->Submit([this]()
+			// Clear color (TODO: remove)
+			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
 			{
-				m_Context->SwapBuffers(m_VSync);
+				glClear(GL_COLOR_BUFFER_BIT);
+				glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 			});
+
+			// Swap buffers
+			FLUX_SUBMIT_RENDER_COMMAND([context = m_Context, vsync = m_VSync]() mutable
+			{
+				context->SwapBuffers(vsync);
+			});
+
+			// Flush render command queue
+			m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
+			{
+				Renderer::FlushRenderCommands(queueIndex);
+			});
+
+			Renderer::EndFrame();
 		}
 
+		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
+		{
+			Renderer::FlushRenderCommands(queueIndex);
+		});
+
 		m_RenderThread->Wait();
+
+		// destroy resources
+
+		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });
+		m_RenderThread->Wait();
+
+		Renderer::Shutdown();
 	}
 
 	void Engine::OnWindowClose()

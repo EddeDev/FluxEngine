@@ -88,8 +88,7 @@ namespace Flux {
 
 	void Platform::Init()
 	{
-		s_Data = new WindowsPlatformData;
-		memset(s_Data, 0, sizeof(WindowsPlatformData));
+		s_Data = new WindowsPlatformData();
 
 		if (!QueryPerformanceCounter((LARGE_INTEGER*)&s_Data->TimerOffset))
 			FLUX_ASSERT(false, "QueryPerformanceCounter failed. ({0})", Platform::GetErrorMessage());
