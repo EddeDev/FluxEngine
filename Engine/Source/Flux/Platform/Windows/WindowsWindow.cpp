@@ -119,11 +119,26 @@ namespace Flux {
 		return ::IsWindowVisible(m_WindowHandle);
 	}
 
+	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_CloseCallbacks.push_back(callback);
+	}
+
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		FLUX_CHECK_IS_THREAD(m_ThreadID);
 
-		FLUX_INFO("ProcessMessage - {0}, {1}, {2}", uMsg, wParam, lParam);
+		switch (uMsg)
+		{
+		case WM_CLOSE:
+		{
+			for (auto& callback : m_CloseCallbacks)
+				callback();
+			return 0;
+		}
+		}
 
 		return static_cast<int32>(DefWindowProcW(m_WindowHandle, uMsg, wParam, lParam));
 	}

@@ -35,6 +35,7 @@ namespace Flux {
 		windowCreateInfo.Height = 720;
 
 		m_Window = Window::Create(windowCreateInfo);
+		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
 	}
 
 	Engine::~Engine()
@@ -61,13 +62,10 @@ namespace Flux {
 		m_MainThreadID = m_MainThread->GetID();
 		m_RenderThreadID = m_RenderThread->GetID();
 
-		m_RenderThread->Submit([]()
+		m_RenderThread->Submit([this]()
 		{
-			// TODO: Initialize renderer
-			// - Context
-			// - Adapter
-			// - Device
-			// - Swapchain
+			m_Context = GraphicsContext::Create(m_Window->GetNativeHandle());
+			m_Context->Init();
 		});
 		m_RenderThread->Wait();
 
@@ -83,9 +81,10 @@ namespace Flux {
 
 		m_MainThread.reset();
 
-		m_RenderThread->Submit([]()
+		m_RenderThread->Submit([this]()
 		{
-			// TODO: Shutdown
+			FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
+			m_Context = nullptr;
 		});
 		m_RenderThread.reset();
 	}
@@ -115,8 +114,6 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_WARNING_CATEGORY("Main Thread", "Entering main loop...");
-
 		// Show window
 		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
 
@@ -138,9 +135,26 @@ namespace Flux {
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
 
-			// update here
-			Platform::Sleep(0.01f);
+			// Wait for the previous frame to finish
+			m_RenderThread->Wait();
+
+			m_RenderThread->Submit([this]()
+			{
+				m_Context->SwapBuffers(m_VSync);
+			});
 		}
+
+		m_RenderThread->Wait();
+	}
+
+	void Engine::OnWindowClose()
+	{
+		FLUX_CHECK_IS_EVENT_THREAD();
+
+		SubmitToMainThread([this]()
+		{
+			Close();
+		});
 	}
 
 }

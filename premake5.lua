@@ -25,12 +25,25 @@ project "FluxEngine"
     includedirs
     {
         "Engine/Source",
-        "Engine/Libraries/spdlog/include"
+        "Engine/Libraries/spdlog/include",
+        "Engine/Libraries/Glad/include"
+    }
+
+    links
+    {
+        "Glad"
     }
 
     filter "system:windows"
         systemversion "latest"
         defines "FLUX_PLATFORM_WINDOWS"
+        
+        links
+        {
+            "opengl32.lib",
+            "Gdi32.lib",
+            "glu32.lib"
+        }
 
     filter "system:macosx"
         systemversion "latest"
@@ -58,3 +71,7 @@ project "FluxEngine"
         runtime "Release"
         optimize "On"
         symbols "Off"
+
+group "Libraries"
+    include "Engine/Libraries/Glad"
+group ""

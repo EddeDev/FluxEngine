@@ -15,6 +15,8 @@ namespace Flux {
 		virtual void SetVisible(bool visible) const override;
 		virtual bool IsVisible() const override;
 
+		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
+
 		virtual uint32 GetWidth() const override { return m_Width; }
 		virtual uint32 GetHeight() const override { return m_Height; }
 
@@ -29,6 +31,8 @@ namespace Flux {
 		std::atomic<uint32> m_Width = 0;
 		std::atomic<uint32> m_Height = 0;
 		std::string m_Title;
+
+		std::vector<WindowCloseCallback> m_CloseCallbacks;
 	};
 }
 

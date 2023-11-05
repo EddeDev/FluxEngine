@@ -332,6 +332,11 @@ namespace Flux {
 		return static_cast<WindowClassHandle>(s_Data->WindowClass);
 	}
 
+	WindowHandle Platform::GetHelperWindowHandle()
+	{
+		return s_Data->HelperWindowHandle;
+	}
+
 }
 
 #endif

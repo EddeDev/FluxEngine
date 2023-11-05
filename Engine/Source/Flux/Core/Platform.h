@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Window.h"
 #include "Thread.h"
 
 namespace Flux {
@@ -82,6 +83,7 @@ namespace Flux {
 		static uint32 GetLastError();
 
 		static WindowClassHandle GetWindowClass();
+		static WindowHandle GetHelperWindowHandle();
 	};
 
 }

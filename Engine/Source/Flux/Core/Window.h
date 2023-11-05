@@ -21,6 +21,8 @@ namespace Flux {
 
 	using WindowHandle = void*;
 
+	typedef std::function<void()> WindowCloseCallback;
+
 	class Window
 	{
 	public:
@@ -28,6 +30,8 @@ namespace Flux {
 
 		virtual void SetVisible(bool visible) const = 0;
 		virtual bool IsVisible() const = 0;
+
+		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
 
 		virtual uint32 GetWidth() const = 0;
 		virtual uint32 GetHeight() const = 0;

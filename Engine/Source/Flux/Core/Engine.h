@@ -3,6 +3,9 @@
 #include "Window.h"
 #include "Thread.h"
 
+#include "Flux/Renderer/GraphicsAPI.h"
+#include "Flux/Renderer/GraphicsContext.h"
+
 namespace Flux {
 
 	class Engine
@@ -16,6 +19,8 @@ namespace Flux {
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
 		
+		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
+
 		ThreadID GetMainThreadID() const { return m_MainThreadID; }
 		ThreadID GetEventThreadID() const { return m_EventThreadID; }
 		ThreadID GetRenderThreadID() const { return m_RenderThreadID; }
@@ -23,10 +28,16 @@ namespace Flux {
 		static Engine& Get() { return *(Engine*)s_Instance; }
 	private:
 		void MainLoop();
+
+		void OnWindowClose();
 	private:
 		inline static Engine* s_Instance = nullptr;
 
 		Unique<Window> m_Window;
+
+		Ref<GraphicsContext> m_Context;
+
+		GraphicsAPI m_GraphicsAPI = GraphicsAPI::OpenGL;
 
 		Unique<Thread> m_MainThread;
 		Unique<Thread> m_RenderThread;
@@ -42,8 +53,8 @@ namespace Flux {
 		std::mutex m_MainThreadMutex;
 
 		std::atomic<bool> m_Running = true;
+		std::atomic<bool> m_VSync = true;
 
-		bool m_VSync = false;
 		float m_FrameTime = 0.0f;
 		float m_LastFrameTime = 0.0f;
 
