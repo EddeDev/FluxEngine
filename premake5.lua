@@ -24,7 +24,8 @@ project "FluxEngine"
 
     includedirs
     {
-        "Engine/Source"
+        "Engine/Source",
+        "Engine/Libraries/spdlog/include"
     }
 
     filter "system:windows"
