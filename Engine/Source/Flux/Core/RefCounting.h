@@ -47,8 +47,8 @@ namespace Flux {
 		{
 		}
 
-		Ref(T* instance)
-			: m_Reference(instance)
+		Ref(T* reference)
+			: m_Reference(reference)
 		{
 			IncrementReferenceCount();
 		}

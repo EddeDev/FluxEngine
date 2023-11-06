@@ -13,6 +13,9 @@ namespace Flux {
 	public:
 		virtual ~VertexBuffer() {}
 
+		virtual void SetData(const void* data, uint64 size, uint64 offset = 0) = 0;
+
+		static Ref<VertexBuffer> Create(uint64 size, VertexBufferUsage usage = VertexBufferUsage::Static);
 		static Ref<VertexBuffer> Create(const void* data, uint64 size, VertexBufferUsage usage = VertexBufferUsage::Static);
 	};
 

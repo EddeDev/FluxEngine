@@ -233,7 +233,7 @@ namespace Flux {
 	bool Platform::SetThreadName(ThreadHandle handle, std::string_view name)
 	{
 		wchar_t* buffer = new wchar_t[name.size() + 1];
-		MultiByteToWideChar(CP_UTF8, 0, name.data(), -1, buffer, name.size() + 1);
+		MultiByteToWideChar(CP_UTF8, 0, name.data(), -1, buffer, static_cast<int32>(name.size()) + 1);
 		bool success = SUCCEEDED(::SetThreadDescription((HANDLE)handle, buffer));
 		FLUX_VERIFY(success, "SetThreadDescription failed. ({0})", Platform::GetErrorMessage());
 		delete[] buffer;

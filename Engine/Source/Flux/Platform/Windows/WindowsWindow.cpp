@@ -60,7 +60,7 @@ namespace Flux {
 		}
 
 		wchar_t* title = new wchar_t[createInfo.Title.size() + 1];
-		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, title, createInfo.Title.size() + 1);
+		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, title, static_cast<int32>(createInfo.Title.size()) + 1);
 
 		m_WindowHandle = CreateWindowExW(
 			exStyle,

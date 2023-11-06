@@ -120,6 +120,16 @@ namespace Flux {
 
 		Renderer::Init();
 
+		float vertices[] =
+		{
+			-0.5f, 0.5f,  0.0f,
+			-0.5f, -0.5f, 0.0f,
+			 0.5f, -0.5f, 0.0f,
+			 0.5f, 0.5f,  0.0f
+		};
+
+		m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
+
 		// Show window
 		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
 
@@ -150,14 +160,14 @@ namespace Flux {
 			Renderer::BeginFrame();
 
 			// update app
-
+			
 			// Wait for the previous frame to finish
 			m_RenderThread->Wait();
 
 			// Clear color (TODO: remove)
 			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
 			{
-				glClear(GL_COLOR_BUFFER_BIT);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 			});
 
@@ -184,6 +194,12 @@ namespace Flux {
 		m_RenderThread->Wait();
 
 		// destroy resources
+		
+		// TODO
+		{
+			FLUX_VERIFY(m_VertexBuffer->GetReferenceCount() == 1);
+			m_VertexBuffer = nullptr;
+		}
 
 		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });
 		m_RenderThread->Wait();
