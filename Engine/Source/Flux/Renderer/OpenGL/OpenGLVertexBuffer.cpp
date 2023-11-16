@@ -65,6 +65,27 @@ namespace Flux {
 		});
 	}
 
+	void OpenGLVertexBuffer::Bind() const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		Ref<const OpenGLVertexBuffer> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance]()
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, instance->m_BufferID);
+		});
+	}
+
+	void OpenGLVertexBuffer::Unbind() const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		FLUX_SUBMIT_RENDER_COMMAND([]()
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		});
+	}
+
 	void OpenGLVertexBuffer::SetData(const void* data, uint64 size, uint64 offset)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();

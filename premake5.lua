@@ -26,12 +26,14 @@ project "FluxEngine"
     {
         "Engine/Source",
         "Engine/Libraries/spdlog/include",
-        "Engine/Libraries/Glad/include"
+        "Engine/Libraries/Glad/include",
+        "Engine/Libraries/ImGui"
     }
 
     links
     {
-        "Glad"
+        "Glad",
+        "ImGui"
     }
 
     filter "system:windows"
@@ -74,4 +76,5 @@ project "FluxEngine"
 
 group "Libraries"
     include "Engine/Libraries/Glad"
+    include "Engine/Libraries/ImGui"
 group ""

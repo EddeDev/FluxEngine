@@ -78,30 +78,24 @@ namespace Flux {
 		~RenderThreadStorage()
 		{
 			BufferPoolMutex.lock();
-			FLUX_INFO("[Render Thread Storage {0}] Releasing {1} buffers", (void*)this, BufferPool.size());
 			for (auto& buffer : BufferPool)
 				buffer.Buffer.Release();
 			BufferPoolMutex.unlock();
 		}
 
-		void Allocate(uint32 size)
+		void Allocate(uint64 size)
 		{
 			BufferPoolMutex.lock();
-
-			FLUX_INFO("[Render Thread Storage {0}] Allocating {1} bytes ({2} buffers)", (void*)this, size, BufferPool.size());
-
 			Size = size;
-
 			for (auto& buffer : BufferPool)
 			{
 				buffer.Buffer.Allocate(size);
 				buffer.Buffer.FillWithZeros();
 			}
-
 			BufferPoolMutex.unlock();
 		}
 
-		uint32 SetData(const void* data, uint32 size, uint64 offset = 0)
+		uint32 SetData(const void* data, uint64 size, uint64 offset = 0)
 		{
 			BufferPoolMutex.lock();
 
@@ -117,12 +111,9 @@ namespace Flux {
 
 			if (bufferIndex == -1)
 			{
-				FLUX_WARNING("[Render Thread Storage {0}] Resizing buffer pool to {1}", (void*)this, BufferPool.size() * 2);
 				BufferPool.resize(BufferPool.size() * 2);
 				bufferIndex = static_cast<int32>(BufferPool.size() / 2);
 			}
-
-			FLUX_INFO("[Render Thread Storage {0}] Setting data to buffer index {1}", (void*)this, bufferIndex);
 
 			auto& buffer = BufferPool[bufferIndex];
 			buffer.IsAvailable = false;
@@ -134,16 +125,13 @@ namespace Flux {
 			}
 
 			memcpy(buffer.Buffer.Data, (uint8*)data + offset, size);
-			
 			BufferPoolMutex.unlock();
-
 			return bufferIndex;
 		}
 
 		void SetBufferAvailable(uint32 bufferIndex)
 		{
 			BufferPoolMutex.lock();
-			FLUX_INFO("[Render Thread Storage {0}] Setting buffer state at index {1} to Available", (void*)this, bufferIndex);
 			BufferPool[bufferIndex].IsAvailable = true;
 			BufferPoolMutex.unlock();
 		}

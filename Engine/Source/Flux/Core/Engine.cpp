@@ -70,6 +70,12 @@ namespace Flux {
 		{
 			m_Context = GraphicsContext::Create(m_Window->GetNativeHandle());
 			m_Context->Init();
+
+			// Initialize ImGui
+			// m_ImGuiRenderer = Ref<ImGuiRenderer>::Create(m_Window->GetNativeHandle());
+
+			// if (m_ImGuiRenderer)
+			// 	m_ImGuiRenderer->InitResources();
 		});
 		m_RenderThread->Wait();
 
@@ -122,13 +128,77 @@ namespace Flux {
 
 		float vertices[] =
 		{
-			-0.5f, 0.5f,  0.0f,
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.5f, 0.5f,  0.0f
+			-0.5f,  0.5f, 0.0f, 0.8, 0.2, 0.2,
+			-0.5f, -0.5f, 0.0f, 0.8, 0.8, 0.2,
+			 0.5f, -0.5f, 0.0f, 0.2, 0.8, 0.8,
+			 0.5f,  0.5f, 0.0f, 0.8, 0.2, 0.8
+		};
+
+		uint32 indices[] = {
+			0, 1, 3,
+			3, 1, 2
 		};
 
 		m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
+		m_IndexBuffer = IndexBuffer::Create(indices, sizeof(indices));
+
+		static const char* s_VertexShaderSource =
+			"#version 450 core\n"
+			"layout(location = 0) in vec3 a_Position;\n"
+			"layout(location = 1) in vec3 a_Color;\n"
+			"layout(location = 0) out vec3 v_Color;\n"
+			"void main()\n"
+			"{\n"
+			"    v_Color = a_Color;\n"
+			"    gl_Position = vec4(a_Position, 1.0);\n"
+			"}\n";
+
+		static const char* s_FragmentShaderSource =
+			"#version 450 core\n"
+			"layout(location = 0) out vec4 o_Color;\n"
+			"layout(location = 0) in vec3 v_Color;\n"
+			"void main()\n"
+			"{\n"
+			"    o_Color = vec4(v_Color, 1.0);\n"
+			"}\n";
+
+		FLUX_SUBMIT_RENDER_COMMAND([this]()
+		{
+			glCreateVertexArrays(1, &m_VertexArrayID);
+
+			uint32 vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+			uint32 fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+			
+			int32 vsLength = strlen(s_VertexShaderSource);
+			glShaderSource(vertexShaderID, 1, &s_VertexShaderSource, &vsLength);
+
+			int32 fsLength = strlen(s_FragmentShaderSource);
+			glShaderSource(fragmentShaderID, 1, &s_FragmentShaderSource, &fsLength);
+
+			glCompileShader(vertexShaderID);
+			int32 vsCompileStatus;
+			glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &vsCompileStatus);
+			std::cout << "Compile VS: " << vsCompileStatus << std::endl;
+
+			glCompileShader(fragmentShaderID);
+			int32 fsCompileStatus;
+			glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &fsCompileStatus);
+			std::cout << "Compile FS: " << fsCompileStatus << std::endl;
+
+			m_ProgramID = glCreateProgram();
+
+			glAttachShader(m_ProgramID, vertexShaderID);
+			glAttachShader(m_ProgramID, fragmentShaderID);
+
+			glLinkProgram(m_ProgramID);
+
+			int32 linkStatus;
+			glGetProgramiv(m_ProgramID, GL_LINK_STATUS, &linkStatus);
+			std::cout << "Link: " << linkStatus << std::endl;
+
+			glDeleteShader(vertexShaderID);
+			glDeleteShader(fragmentShaderID);
+		});
 
 		// Show window
 		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
@@ -160,16 +230,46 @@ namespace Flux {
 			Renderer::BeginFrame();
 
 			// update app
-			
-			// Wait for the previous frame to finish
-			m_RenderThread->Wait();
 
 			// Clear color (TODO: remove)
 			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
 			{
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			});
+
+			m_VertexBuffer->Bind();
+
+			FLUX_SUBMIT_RENDER_COMMAND([this]() mutable
+			{
+				glBindVertexArray(m_VertexArrayID);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, 0);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, (uintptr*)12);
+				glEnableVertexAttribArray(1);
+
+				glUseProgram(m_ProgramID);
+			});
+
+			m_IndexBuffer->Bind();
+
+			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
+			{
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+			});
+
+			FLUX_SUBMIT_RENDER_COMMAND([this]() mutable
+			{
+				if (m_ImGuiRenderer)
+				{
+					m_ImGuiRenderer->BeginFrame();
+					ImGui::ShowDemoWindow();
+					m_ImGuiRenderer->EndFrame();
+				}
+			});
+			
+			// Wait for the previous frame to finish
+			m_RenderThread->Wait();
 
 			// Swap buffers
 			FLUX_SUBMIT_RENDER_COMMAND([context = m_Context, vsync = m_VSync]() mutable
@@ -199,6 +299,9 @@ namespace Flux {
 		{
 			FLUX_VERIFY(m_VertexBuffer->GetReferenceCount() == 1);
 			m_VertexBuffer = nullptr;
+
+			FLUX_VERIFY(m_IndexBuffer->GetReferenceCount() == 1);
+			m_IndexBuffer = nullptr;
 		}
 
 		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });

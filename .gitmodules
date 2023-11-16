@@ -1,3 +1,7 @@
 [submodule "Engine/Libraries/spdlog"]
 	path = Engine/Libraries/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "Engine/Libraries/ImGui"]
+	path = Engine/Libraries/ImGui
+	url = https://github.com/EddeDev/imgui.git
+	branch = docking

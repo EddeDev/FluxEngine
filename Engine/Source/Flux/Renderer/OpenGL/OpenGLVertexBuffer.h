@@ -11,6 +11,9 @@ namespace Flux {
 		OpenGLVertexBuffer(const void* data, uint64 size, VertexBufferUsage usage);
 		virtual ~OpenGLVertexBuffer();
 
+		virtual void Bind() const override;
+		virtual void Unbind() const override;
+
 		virtual void SetData(const void* data, uint64 size, uint64 offset = 0) override;
 	private:
 		RenderThreadStorage m_Storage;
