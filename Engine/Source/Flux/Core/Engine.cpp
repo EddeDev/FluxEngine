@@ -164,10 +164,13 @@ namespace Flux {
 
 		m_Shader = Shader::Create(s_VertexShaderSource, s_FragmentShaderSource);
 
-		FLUX_SUBMIT_RENDER_COMMAND([this]()
-		{
-			glCreateVertexArrays(1, &m_VertexArrayID);
-		});
+		GraphicsPipelineCreateInfo pipelineCreateInfo;
+		pipelineCreateInfo.VertexDeclaration = {
+			VertexElementFormat::Float3,
+			VertexElementFormat::Float3
+		};
+
+		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 
 		// Show window
 		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
@@ -208,16 +211,7 @@ namespace Flux {
 			});
 
 			m_VertexBuffer->Bind();
-
-			FLUX_SUBMIT_RENDER_COMMAND([this]() mutable
-			{
-				glBindVertexArray(m_VertexArrayID);
-				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, 0);
-				glEnableVertexAttribArray(0);
-				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, (uintptr*)12);
-				glEnableVertexAttribArray(1);
-			});
-
+			m_Pipeline->Bind();
 			m_IndexBuffer->Bind();
 
 			m_Shader->Bind();
@@ -274,6 +268,9 @@ namespace Flux {
 
 			FLUX_VERIFY(m_Shader->GetReferenceCount() == 1);
 			m_Shader = nullptr;
+
+			FLUX_VERIFY(m_Pipeline->GetReferenceCount() == 1);
+			m_Pipeline = nullptr;
 		}
 
 		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });

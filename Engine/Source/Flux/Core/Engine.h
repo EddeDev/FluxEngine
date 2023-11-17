@@ -9,6 +9,7 @@
 #include "Flux/Renderer/VertexBuffer.h"
 #include "Flux/Renderer/IndexBuffer.h"
 #include "Flux/Renderer/Shader.h"
+#include "Flux/Renderer/GraphicsPipeline.h"
 
 namespace Flux {
 
@@ -41,11 +42,11 @@ namespace Flux {
 
 		Ref<GraphicsContext> m_Context;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;
+
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
 		Ref<Shader> m_Shader;
-		uint32 m_VertexArrayID = 0;
-		uint32 m_ProgramID = 0;
+		Ref<GraphicsPipeline> m_Pipeline;
 
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::OpenGL;
 
