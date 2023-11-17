@@ -162,42 +162,11 @@ namespace Flux {
 			"    o_Color = vec4(v_Color, 1.0);\n"
 			"}\n";
 
+		m_Shader = Shader::Create(s_VertexShaderSource, s_FragmentShaderSource);
+
 		FLUX_SUBMIT_RENDER_COMMAND([this]()
 		{
 			glCreateVertexArrays(1, &m_VertexArrayID);
-
-			uint32 vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-			uint32 fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-			
-			int32 vsLength = strlen(s_VertexShaderSource);
-			glShaderSource(vertexShaderID, 1, &s_VertexShaderSource, &vsLength);
-
-			int32 fsLength = strlen(s_FragmentShaderSource);
-			glShaderSource(fragmentShaderID, 1, &s_FragmentShaderSource, &fsLength);
-
-			glCompileShader(vertexShaderID);
-			int32 vsCompileStatus;
-			glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &vsCompileStatus);
-			std::cout << "Compile VS: " << vsCompileStatus << std::endl;
-
-			glCompileShader(fragmentShaderID);
-			int32 fsCompileStatus;
-			glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &fsCompileStatus);
-			std::cout << "Compile FS: " << fsCompileStatus << std::endl;
-
-			m_ProgramID = glCreateProgram();
-
-			glAttachShader(m_ProgramID, vertexShaderID);
-			glAttachShader(m_ProgramID, fragmentShaderID);
-
-			glLinkProgram(m_ProgramID);
-
-			int32 linkStatus;
-			glGetProgramiv(m_ProgramID, GL_LINK_STATUS, &linkStatus);
-			std::cout << "Link: " << linkStatus << std::endl;
-
-			glDeleteShader(vertexShaderID);
-			glDeleteShader(fragmentShaderID);
 		});
 
 		// Show window
@@ -247,11 +216,11 @@ namespace Flux {
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, (uintptr*)12);
 				glEnableVertexAttribArray(1);
-
-				glUseProgram(m_ProgramID);
 			});
 
 			m_IndexBuffer->Bind();
+
+			m_Shader->Bind();
 
 			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
 			{
@@ -302,6 +271,9 @@ namespace Flux {
 
 			FLUX_VERIFY(m_IndexBuffer->GetReferenceCount() == 1);
 			m_IndexBuffer = nullptr;
+
+			FLUX_VERIFY(m_Shader->GetReferenceCount() == 1);
+			m_Shader = nullptr;
 		}
 
 		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });
