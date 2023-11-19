@@ -10,7 +10,8 @@ namespace Flux {
 	enum class VertexElementFormat : uint8
 	{
 		None = 0,
-		Float, Float2, Float3, Float4
+		Float, Float2, Float3, Float4,
+		UByte, UByte2, UByte3, UByte4
 	};
 
 	namespace Utils {
@@ -19,10 +20,14 @@ namespace Flux {
 		{
 			switch (format)
 			{
-			case VertexElementFormat::Float:  return 4 * 1;
-			case VertexElementFormat::Float2: return 4 * 2;
-			case VertexElementFormat::Float3: return 4 * 3;
-			case VertexElementFormat::Float4: return 4 * 4;
+			case VertexElementFormat::Float:  return sizeof(float) * 1;
+			case VertexElementFormat::Float2: return sizeof(float) * 2;
+			case VertexElementFormat::Float3: return sizeof(float) * 3;
+			case VertexElementFormat::Float4: return sizeof(float) * 4;
+			case VertexElementFormat::UByte:  return sizeof(uint8) * 1;
+			case VertexElementFormat::UByte2: return sizeof(uint8) * 2;
+			case VertexElementFormat::UByte3: return sizeof(uint8) * 3;
+			case VertexElementFormat::UByte4: return sizeof(uint8) * 4;
 			}
 			FLUX_VERIFY(false, "Unknown vertex element format!");
 			return 0;
@@ -36,6 +41,10 @@ namespace Flux {
 			case VertexElementFormat::Float2: return 2;
 			case VertexElementFormat::Float3: return 3;
 			case VertexElementFormat::Float4: return 4;
+			case VertexElementFormat::UByte:  return 1;
+			case VertexElementFormat::UByte2: return 2;
+			case VertexElementFormat::UByte3: return 3;
+			case VertexElementFormat::UByte4: return 4;
 			}
 			FLUX_VERIFY(false, "Unknown vertex element format!");
 			return 0;
@@ -45,14 +54,16 @@ namespace Flux {
 
 	struct VertexElement
 	{
+		std::string_view Name;
 		VertexElementFormat Format = VertexElementFormat::None;
 		uint32 Size = 0;
 		uint32 ComponentCount = 0;
 		uint32 Offset = 0;
+		bool Normalized = false;
 
 		VertexElement() = default;
-		VertexElement(VertexElementFormat format)
-			: Format(format)
+		VertexElement(std::string_view name, VertexElementFormat format, bool normalized = false)
+			: Name(name), Format(format), Normalized(normalized)
 		{
 			Size = Utils::VertexElementFormatSize(format);
 			ComponentCount = Utils::VertexElementComponentCount(format);

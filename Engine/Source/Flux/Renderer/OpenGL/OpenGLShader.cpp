@@ -40,8 +40,7 @@ namespace Flux {
 				uint32 shaderID = glCreateShader(Utils::OpenGLShaderStage(stage));
 
 				const char* sourceCStr = source.c_str();
-				int32 sourceLength = source.size();
-				glShaderSource(shaderID, 1, &sourceCStr, &sourceLength);
+				glShaderSource(shaderID, 1, &sourceCStr, nullptr);
 
 				glCompileShader(shaderID);
 
@@ -49,6 +48,7 @@ namespace Flux {
 				glGetShaderiv(shaderID, GL_COMPILE_STATUS, &isCompiled);
 				if (isCompiled == GL_FALSE)
 				{
+					FLUX_VERIFY(false);
 					// TODO: handle
 				}
 
@@ -65,6 +65,7 @@ namespace Flux {
 			glGetProgramiv(instance->m_ProgramID, GL_LINK_STATUS, &isLinked);
 			if (isLinked == GL_FALSE)
 			{
+				FLUX_VERIFY(false);
 				// TODO: handle
 			}
 
@@ -104,6 +105,22 @@ namespace Flux {
 		FLUX_SUBMIT_RENDER_COMMAND([]()
 		{
 			glUseProgram(0);
+		});
+	}
+
+	void OpenGLShader::SetUniformMatrix4x4(const std::string& name, const float* data) const
+	{
+		float* storage = new float[4 * 4];
+		memcpy(storage, data, sizeof(float) * 4 * 4);
+
+		Ref<const OpenGLShader> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, name, storage]()
+		{
+			int32 location = glGetUniformLocation(instance->m_ProgramID, name.c_str());
+			if (location == -1)
+				__debugbreak();
+			glUniformMatrix4fv(location, 1, GL_FALSE, storage);
+			delete[] storage;
 		});
 	}
 

@@ -24,6 +24,13 @@ namespace Flux {
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
 		
+		float GetFrameTime() const { return m_FrameTime; }
+
+		// TODO: remove
+		const Unique<Thread>& GetRenderThread() const { return m_RenderThread; }
+
+		const Unique<Window>& GetWindow() const { return m_Window; }
+
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
 
 		ThreadID GetMainThreadID() const { return m_MainThreadID; }
@@ -42,11 +49,6 @@ namespace Flux {
 
 		Ref<GraphicsContext> m_Context;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;
-
-		Ref<VertexBuffer> m_VertexBuffer;
-		Ref<IndexBuffer> m_IndexBuffer;
-		Ref<Shader> m_Shader;
-		Ref<GraphicsPipeline> m_Pipeline;
 
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::OpenGL;
 

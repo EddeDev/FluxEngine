@@ -18,8 +18,46 @@ namespace Flux {
 			case VertexElementFormat::Float2: return GL_FLOAT;
 			case VertexElementFormat::Float3: return GL_FLOAT;
 			case VertexElementFormat::Float4: return GL_FLOAT;
+			case VertexElementFormat::UByte:  return GL_UNSIGNED_BYTE;
+			case VertexElementFormat::UByte2: return GL_UNSIGNED_BYTE;
+			case VertexElementFormat::UByte3: return GL_UNSIGNED_BYTE;
+			case VertexElementFormat::UByte4: return GL_UNSIGNED_BYTE;
 			}
 			FLUX_VERIFY(false, "Unknown vertex element format!");
+			return 0;
+		}
+
+		static uint32 OpenGLPrimitiveTopology(PrimitiveTopology topology)
+		{
+			switch (topology)
+			{
+			case PrimitiveTopology::Triangles: return GL_TRIANGLES;
+			}
+			FLUX_VERIFY(false, "Unknown primitive topology!");
+			return 0;
+		}
+
+		static uint32 OpenGLIndexBufferDataType(IndexBufferDataType dataType)
+		{
+			switch (dataType)
+			{
+			case IndexBufferDataType::UInt32: return GL_UNSIGNED_INT;
+			case IndexBufferDataType::UInt16: return GL_UNSIGNED_SHORT;
+			case IndexBufferDataType::UInt8:  return GL_UNSIGNED_BYTE;
+			}
+			FLUX_VERIFY(false, "Unknown index buffer data type!");
+			return 0;
+		}
+
+		static uint32 IndexBufferDataTypeSize(IndexBufferDataType dataType)
+		{
+			switch (dataType)
+			{
+			case IndexBufferDataType::UInt32: return sizeof(uint32);
+			case IndexBufferDataType::UInt16: return sizeof(uint16);
+			case IndexBufferDataType::UInt8:  return sizeof(uint8);
+			}
+			FLUX_VERIFY(false, "Unknown index buffer data type!");
 			return 0;
 		}
 
@@ -73,9 +111,9 @@ namespace Flux {
 						i,
 						element.ComponentCount,
 						type,
-						GL_FALSE,
+						element.Normalized ? GL_TRUE : GL_FALSE,
 						stride,
-						(const void*)element.Offset
+						(const void*)(intptr)element.Offset
 					);
 				}
 				else
@@ -85,10 +123,19 @@ namespace Flux {
 						element.ComponentCount,
 						type,
 						stride,
-						(const void*)element.Offset
+						(const void*)(intptr)element.Offset
 					);
 				}
 			}
+
+			glEnable(GL_BLEND);
+			glBlendEquation(GL_FUNC_ADD);
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			glDisable(GL_CULL_FACE);
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_STENCIL_TEST);
+			glEnable(GL_SCISSOR_TEST);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		});
 	}
 
@@ -104,6 +151,23 @@ namespace Flux {
 				glDisableVertexAttribArray(i);
 
 			glBindVertexArray(0);
+		});
+	}
+
+	void OpenGLPipeline::DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		Ref<const OpenGLPipeline> instance = this;
+		FLUX_SUBMIT_RENDER_COMMAND([instance, dataType, indexCount, startIndexLocation, baseVertexLocation]()
+		{
+			glDrawElementsBaseVertex(
+				Utils::OpenGLPrimitiveTopology(instance->m_CreateInfo.Topology),
+				indexCount,
+				Utils::OpenGLIndexBufferDataType(dataType),
+				(const void*)(intptr)(startIndexLocation * Utils::IndexBufferDataTypeSize(dataType)),
+				baseVertexLocation
+			);
 		});
 	}
 

@@ -70,12 +70,6 @@ namespace Flux {
 		{
 			m_Context = GraphicsContext::Create(m_Window->GetNativeHandle());
 			m_Context->Init();
-
-			// Initialize ImGui
-			// m_ImGuiRenderer = Ref<ImGuiRenderer>::Create(m_Window->GetNativeHandle());
-
-			// if (m_ImGuiRenderer)
-			// 	m_ImGuiRenderer->InitResources();
 		});
 		m_RenderThread->Wait();
 
@@ -126,51 +120,8 @@ namespace Flux {
 
 		Renderer::Init();
 
-		float vertices[] =
-		{
-			-0.5f,  0.5f, 0.0f, 0.8, 0.2, 0.2,
-			-0.5f, -0.5f, 0.0f, 0.8, 0.8, 0.2,
-			 0.5f, -0.5f, 0.0f, 0.2, 0.8, 0.8,
-			 0.5f,  0.5f, 0.0f, 0.8, 0.2, 0.8
-		};
-
-		uint32 indices[] = {
-			0, 1, 3,
-			3, 1, 2
-		};
-
-		m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
-		m_IndexBuffer = IndexBuffer::Create(indices, sizeof(indices));
-
-		static const char* s_VertexShaderSource =
-			"#version 450 core\n"
-			"layout(location = 0) in vec3 a_Position;\n"
-			"layout(location = 1) in vec3 a_Color;\n"
-			"layout(location = 0) out vec3 v_Color;\n"
-			"void main()\n"
-			"{\n"
-			"    v_Color = a_Color;\n"
-			"    gl_Position = vec4(a_Position, 1.0);\n"
-			"}\n";
-
-		static const char* s_FragmentShaderSource =
-			"#version 450 core\n"
-			"layout(location = 0) out vec4 o_Color;\n"
-			"layout(location = 0) in vec3 v_Color;\n"
-			"void main()\n"
-			"{\n"
-			"    o_Color = vec4(v_Color, 1.0);\n"
-			"}\n";
-
-		m_Shader = Shader::Create(s_VertexShaderSource, s_FragmentShaderSource);
-
-		GraphicsPipelineCreateInfo pipelineCreateInfo;
-		pipelineCreateInfo.VertexDeclaration = {
-			VertexElementFormat::Float3,
-			VertexElementFormat::Float3
-		};
-
-		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
+		// Initialize ImGui
+		m_ImGuiRenderer = Ref<ImGuiRenderer>::Create();
 
 		// Show window
 		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
@@ -210,27 +161,13 @@ namespace Flux {
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			});
 
-			m_VertexBuffer->Bind();
-			m_Pipeline->Bind();
-			m_IndexBuffer->Bind();
-
-			m_Shader->Bind();
-
-			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
+			if (m_ImGuiRenderer)
 			{
-				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-			});
+				m_ImGuiRenderer->BeginFrame();
+				ImGui::ShowDemoWindow();
+				m_ImGuiRenderer->EndFrame();
+			}
 
-			FLUX_SUBMIT_RENDER_COMMAND([this]() mutable
-			{
-				if (m_ImGuiRenderer)
-				{
-					m_ImGuiRenderer->BeginFrame();
-					ImGui::ShowDemoWindow();
-					m_ImGuiRenderer->EndFrame();
-				}
-			});
-			
 			// Wait for the previous frame to finish
 			m_RenderThread->Wait();
 
@@ -257,20 +194,9 @@ namespace Flux {
 		m_RenderThread->Wait();
 
 		// destroy resources
-		
-		// TODO
 		{
-			FLUX_VERIFY(m_VertexBuffer->GetReferenceCount() == 1);
-			m_VertexBuffer = nullptr;
-
-			FLUX_VERIFY(m_IndexBuffer->GetReferenceCount() == 1);
-			m_IndexBuffer = nullptr;
-
-			FLUX_VERIFY(m_Shader->GetReferenceCount() == 1);
-			m_Shader = nullptr;
-
-			FLUX_VERIFY(m_Pipeline->GetReferenceCount() == 1);
-			m_Pipeline = nullptr;
+			FLUX_VERIFY(m_ImGuiRenderer->GetReferenceCount() == 1);
+			m_ImGuiRenderer = nullptr;
 		}
 
 		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });

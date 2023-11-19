@@ -68,7 +68,7 @@ namespace Flux {
 		uint64 Size = 0;
 
 		std::vector<BufferData> BufferPool;
-		std::mutex BufferPoolMutex;
+		mutable std::mutex BufferPoolMutex;
 	public:
 		RenderThreadStorage()
 		{
@@ -83,15 +83,10 @@ namespace Flux {
 			BufferPoolMutex.unlock();
 		}
 
-		void Allocate(uint64 size)
+		void SetSize(uint64 size)
 		{
 			BufferPoolMutex.lock();
 			Size = size;
-			for (auto& buffer : BufferPool)
-			{
-				buffer.Buffer.Allocate(size);
-				buffer.Buffer.FillWithZeros();
-			}
 			BufferPoolMutex.unlock();
 		}
 
@@ -118,7 +113,7 @@ namespace Flux {
 			auto& buffer = BufferPool[bufferIndex];
 			buffer.IsAvailable = false;
 
-			if (!buffer.Buffer)
+			if (buffer.Buffer.Size != Size)
 			{
 				buffer.Buffer.Allocate(Size);
 				buffer.Buffer.FillWithZeros();
@@ -136,12 +131,20 @@ namespace Flux {
 			BufferPoolMutex.unlock();
 		}
 
-		Buffer GetBuffer(uint32 bufferIndex)
+		Buffer GetBuffer(uint32 bufferIndex) const
 		{
 			BufferPoolMutex.lock();
 			Buffer buffer = BufferPool.at(bufferIndex).Buffer;
 			BufferPoolMutex.unlock();
 			return buffer;
+		}
+
+		uint64 GetSize() const
+		{
+			BufferPoolMutex.lock();
+			uint64 size = Size;
+			BufferPoolMutex.unlock();
+			return size;
 		}
 	};
 
