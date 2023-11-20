@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef FLUX_PLATFORM_WINDOWS
+	#define OEMRESOURCE
 	#include <Windows.h>
 
 	#ifdef UNICODE

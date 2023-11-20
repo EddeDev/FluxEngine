@@ -141,6 +141,23 @@ namespace Flux {
 			return ImGuiKey_None;
 		}
 
+		static CursorShape CursorShapeFromImGuiMouseCursor(ImGuiMouseCursor cursor)
+		{
+			switch (cursor)
+			{
+			case ImGuiMouseCursor_Arrow:      return CursorShape::Arrow;
+			case ImGuiMouseCursor_TextInput:  return CursorShape::IBeam;
+			case ImGuiMouseCursor_ResizeAll:  return CursorShape::ResizeAll;
+			case ImGuiMouseCursor_ResizeNS:   return CursorShape::ResizeNS;
+			case ImGuiMouseCursor_ResizeEW:   return CursorShape::ResizeEW;
+			case ImGuiMouseCursor_ResizeNESW: return CursorShape::ResizeNESW;
+			case ImGuiMouseCursor_ResizeNWSE: return CursorShape::ResizeNWSE;
+			case ImGuiMouseCursor_Hand:       return CursorShape::Hand;
+			case ImGuiMouseCursor_NotAllowed: return CursorShape::NotAllowed;
+			}
+			return CursorShape::None;
+		}
+
 	}
 
 	ImGuiRenderer::ImGuiRenderer()
@@ -238,7 +255,7 @@ namespace Flux {
 			WindowHandle windowHandle = window->GetNativeHandle();
 
 			ImGuiViewport* mainViewport = ImGui::GetMainViewport();
-			mainViewport->PlatformHandle = windowHandle;
+			mainViewport->PlatformHandle = window.get();
 			mainViewport->PlatformHandleRaw = windowHandle;
 
 			ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
@@ -330,8 +347,20 @@ namespace Flux {
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = Engine::Get().GetFrameTime();
 
-		// Win32 NewFrame
-		// Graphics API NewFrame
+		ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
+
+		ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
+		for (int32 viewportIndex = 0; viewportIndex < platformIO.Viewports.Size; viewportIndex++)
+		{
+			Window* window = (Window*)platformIO.Viewports[viewportIndex]->PlatformHandle;
+			if (cursor != ImGuiMouseCursor_None)
+			{
+				Engine::Get().SubmitToEventThread([window, cursor]()
+				{
+					window->SetCursorShape(Utils::CursorShapeFromImGuiMouseCursor(cursor));
+				});
+			}
+		}
 
 		ImGui::NewFrame();
 	}
@@ -349,8 +378,6 @@ namespace Flux {
 			int32 viewportHeight = static_cast<uint32>(drawData->DisplaySize.y);
 			if (viewportWidth <= 0 || viewportHeight <= 0)
 				return;
-
-			std::cout << "Viewport Size: " << viewportWidth << ", " << viewportHeight << std::endl;
 
 			m_Shader->Bind();
 

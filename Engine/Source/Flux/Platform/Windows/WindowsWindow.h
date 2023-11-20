@@ -15,6 +15,9 @@ namespace Flux {
 		virtual void SetVisible(bool visible) const override;
 		virtual bool IsVisible() const override;
 
+		virtual void SetCursorShape(CursorShape shape);
+		virtual CursorShape GetCursorShape() const override { return m_CursorShape; }
+
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
 		virtual void AddFocusCallback(const WindowFocusCallback& callback) override;
@@ -38,6 +41,9 @@ namespace Flux {
 		std::atomic<uint32> m_Width = 0;
 		std::atomic<uint32> m_Height = 0;
 		std::string m_Title;
+
+		std::unordered_map<CursorShape, HCURSOR> m_CursorImageMap;
+		std::atomic<CursorShape> m_CursorShape = CursorShape::Arrow;
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;

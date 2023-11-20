@@ -4,6 +4,7 @@
 
 #include "WindowsWindow.h"
 
+#include <WinUser.h>
 #include <VersionHelpers.h>
 #include <windowsx.h>
 
@@ -95,11 +96,29 @@ namespace Flux {
 			m_Width = clientRect.right;
 			m_Height = clientRect.bottom;
 		}
+
+		m_CursorImageMap[CursorShape::Arrow] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_NORMAL), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::IBeam] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_IBEAM), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::Cross] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_CROSS), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::Hand] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_HAND), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::ResizeEW] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_SIZEWE), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::ResizeNS] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_SIZENS), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::ResizeNWSE] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_SIZENWSE), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::ResizeNESW] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_SIZENESW), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::ResizeAll] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_SIZEALL), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		m_CursorImageMap[CursorShape::NotAllowed] = (HCURSOR)LoadImageW(NULL, MAKEINTRESOURCEW(OCR_NO), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+
+		// Set default cursor
+		::SetCursor(m_CursorImageMap[m_CursorShape]);
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
 		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		for (auto& [cursorShape, cursorHandle] : m_CursorImageMap)
+			DestroyCursor(cursorHandle);
+		m_CursorImageMap.clear();
 
 		RemovePropW(m_WindowHandle, L"Window");
 		DestroyWindow(m_WindowHandle);
@@ -117,6 +136,17 @@ namespace Flux {
 		FLUX_CHECK_IS_THREAD(m_ThreadID);
 
 		return ::IsWindowVisible(m_WindowHandle);
+	}
+
+	void WindowsWindow::SetCursorShape(CursorShape shape)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		if (m_CursorShape != shape)
+		{
+			::SetCursor(m_CursorImageMap[shape]);
+			m_CursorShape = shape;
+		}
 	}
 
 	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
@@ -418,6 +448,15 @@ namespace Flux {
 
 			for (auto& callback : m_MouseWheelCallbacks)
 				callback((float)x, (float)y);
+			break;
+		}
+		case WM_SETCURSOR:
+		{
+			if (LOWORD(lParam) == HTCLIENT)
+			{
+				::SetCursor(m_CursorImageMap[m_CursorShape]);
+				return TRUE;
+			}
 			break;
 		}
 		}

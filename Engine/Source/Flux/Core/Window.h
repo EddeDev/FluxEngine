@@ -19,6 +19,22 @@ namespace Flux {
 		WindowMode Mode = WindowMode::Windowed;
 	};
 
+	enum class CursorShape : uint8
+	{
+		None = 0,
+
+		Arrow,
+		IBeam,
+		Cross,
+		Hand,
+		ResizeEW,
+		ResizeNS,
+		ResizeNWSE,
+		ResizeNESW,
+		ResizeAll,
+		NotAllowed
+	};
+
 	using WindowHandle = void*;
 
 	typedef std::function<void()> WindowCloseCallback;
@@ -37,6 +53,9 @@ namespace Flux {
 
 		virtual void SetVisible(bool visible) const = 0;
 		virtual bool IsVisible() const = 0;
+
+		virtual void SetCursorShape(CursorShape shape) = 0;
+		virtual CursorShape GetCursorShape() const = 0;
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) = 0;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) = 0;
