@@ -84,6 +84,10 @@ namespace Flux {
 
 		static WindowClassHandle GetWindowClass();
 		static WindowHandle GetHelperWindowHandle();
+
+		static int16 GetKeyCode(int32 scancode);
+		static int16 GetScanCode(int16 key);
+		static char* GetKeyName(int32 key);
 	};
 
 }

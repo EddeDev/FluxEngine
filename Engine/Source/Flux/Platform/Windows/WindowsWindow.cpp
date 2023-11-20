@@ -126,17 +126,299 @@ namespace Flux {
 		m_CloseCallbacks.push_back(callback);
 	}
 
+	void WindowsWindow::AddSizeCallback(const WindowSizeCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_SizeCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddFocusCallback(const WindowFocusCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_FocusCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddKeyCallback(const KeyCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_KeyCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddCharCallback(const CharCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_CharCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMouseButtonCallback(const MouseButtonCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_MouseButtonCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMouseMoveCallback(const MouseMoveCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_MouseMoveCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMouseWheelCallback(const MouseWheelCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_MouseWheelCallbacks.push_back(callback);
+	}
+
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		FLUX_CHECK_IS_THREAD(m_ThreadID);
 
 		switch (uMsg)
 		{
+		case WM_SETFOCUS:
+		{
+			for (auto& callback : m_FocusCallbacks)
+				callback(true);
+			break;
+		}
+		case WM_KILLFOCUS:
+		{
+			for (auto& callback : m_FocusCallbacks)
+				callback(false);
+			break;
+		}
+		case WM_SIZE:
+		{
+			const uint32 width = LOWORD(lParam);
+			const uint32 height = HIWORD(lParam);
+
+			if (width != m_Width || height != m_Height)
+			{
+				m_Width = width;
+				m_Height = height;
+
+				for (auto& callback : m_SizeCallbacks)
+					callback(width, height);
+			}
+			break;
+		}
 		case WM_CLOSE:
 		{
 			for (auto& callback : m_CloseCallbacks)
 				callback();
 			return 0;
+		}
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+		{
+			int32 scancode = (HIWORD(lParam) & (KF_EXTENDED | 0xff));
+			if (!scancode)
+				scancode = MapVirtualKeyW((UINT)wParam, MAPVK_VK_TO_VSC);
+
+			if (scancode == 0x54)
+				scancode = 0x137;
+			if (scancode == 0x146)
+				scancode = 0x45;
+			if (scancode == 0x136)
+				scancode = 0x36;
+
+			int32 key = Platform::GetKeyCode(scancode);
+
+			if (wParam == VK_CONTROL)
+			{
+				if (HIWORD(lParam) & KF_EXTENDED)
+				{
+					key = FLUX_KEY_RIGHT_CONTROL;
+				}
+				else
+				{
+					const DWORD time = GetMessageTime();
+
+					MSG msg;
+					while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
+					{
+						if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN || msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
+						{
+							if (msg.wParam == VK_MENU && (HIWORD(msg.lParam) & KF_EXTENDED) && msg.time == time)
+								break;
+						}
+					}
+
+					key = FLUX_KEY_LEFT_CONTROL;
+				}
+			}
+			else if (wParam == VK_PROCESSKEY)
+			{
+				break;
+			}
+
+			int32 action;
+			if (HIWORD(lParam) & KF_UP)
+				action = FLUX_ACTION_RELEASE;
+			else
+				action = FLUX_ACTION_PRESS;
+
+			int32 mods = 0;
+			if (GetKeyState(VK_SHIFT) & 0x8000)
+				mods |= FLUX_MOD_SHIFT;
+			if (GetKeyState(VK_CONTROL) & 0x8000)
+				mods |= FLUX_MOD_CONTROL;
+			if (GetKeyState(VK_MENU) & 0x8000)
+				mods |= FLUX_MOD_ALT;
+			if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
+				mods |= FLUX_MOD_SUPER;
+			if (GetKeyState(VK_CAPITAL) & 1)
+				mods |= FLUX_MOD_CAPS_LOCK;
+			if (GetKeyState(VK_NUMLOCK) & 1)
+				mods |= FLUX_MOD_NUM_LOCK;
+
+			if (action == FLUX_ACTION_RELEASE && wParam == VK_SHIFT)
+			{
+				for (auto& callback : m_KeyCallbacks)
+					callback(FLUX_KEY_LEFT_SHIFT, scancode, action, mods);
+
+				for (auto& callback : m_KeyCallbacks)
+					callback(FLUX_KEY_RIGHT_SHIFT, scancode, action, mods);
+			}
+			else if (wParam == VK_SNAPSHOT)
+			{
+				for (auto& callback : m_KeyCallbacks)
+					callback(key, scancode, FLUX_ACTION_PRESS, mods);
+
+				for (auto& callback : m_KeyCallbacks)
+					callback(key, scancode, FLUX_ACTION_RELEASE, mods);
+			}
+			else
+			{
+				for (auto& callback : m_KeyCallbacks)
+					callback(key, scancode, action, mods);
+			}
+			break;
+		}
+		case WM_CHAR:
+		case WM_SYSCHAR:
+		{
+			if (IS_HIGH_SURROGATE(wParam))
+			{
+				m_HighSurrogate = (WCHAR)wParam;
+				break;
+			}
+			else
+			{
+				char32 codepoint = 0;
+
+				if (IS_LOW_SURROGATE(wParam))
+				{
+					if (m_HighSurrogate)
+					{
+						codepoint += (m_HighSurrogate - HIGH_SURROGATE_START) << 10;
+						codepoint += (WCHAR)wParam - LOW_SURROGATE_START;
+						codepoint += 0x10000;
+					}
+				}
+				else
+				{
+					codepoint = (WCHAR)wParam;
+				}
+
+				m_HighSurrogate = 0;
+
+				if (uMsg != WM_SYSCHAR)
+				{
+					for (auto& callback : m_CharCallbacks)
+						callback(codepoint);
+				}
+			}
+			return 0;
+		}
+		case WM_UNICHAR:
+		{
+			if (wParam == UNICODE_NOCHAR)
+				return TRUE;
+
+			for (auto& callback : m_CharCallbacks)
+				callback((char32)wParam);
+			break;
+		}
+		case WM_LBUTTONDOWN:
+		case WM_RBUTTONDOWN:
+		case WM_MBUTTONDOWN:
+		case WM_XBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_XBUTTONUP:
+		{
+			int32 button;
+			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_LBUTTONUP)
+				button = FLUX_MOUSE_BUTTON_LEFT;
+			else if (uMsg == WM_RBUTTONDOWN || uMsg == WM_RBUTTONUP)
+				button = FLUX_MOUSE_BUTTON_RIGHT;
+			else if (uMsg == WM_MBUTTONDOWN || uMsg == WM_MBUTTONUP)
+				button = FLUX_MOUSE_BUTTON_MIDDLE;
+			else if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1)
+				button = FLUX_MOUSE_BUTTON_4;
+			else
+				button = FLUX_MOUSE_BUTTON_5;
+
+			int32 action;
+			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
+				action = FLUX_ACTION_PRESS;
+			else
+				action = FLUX_ACTION_RELEASE;
+
+			int32 mods = 0;
+			if (GetKeyState(VK_SHIFT) & 0x8000)
+				mods |= FLUX_MOD_SHIFT;
+			if (GetKeyState(VK_CONTROL) & 0x8000)
+				mods |= FLUX_MOD_CONTROL;
+			if (GetKeyState(VK_MENU) & 0x8000)
+				mods |= FLUX_MOD_ALT;
+			if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
+				mods |= FLUX_MOD_SUPER;
+			if (GetKeyState(VK_CAPITAL) & 1)
+				mods |= FLUX_MOD_CAPS_LOCK;
+			if (GetKeyState(VK_NUMLOCK) & 1)
+				mods |= FLUX_MOD_NUM_LOCK;
+
+			for (auto& callback : m_MouseButtonCallbacks)
+				callback(button, action, mods);
+			break;
+		}
+		case WM_MOUSEMOVE:
+		{
+			const int32 x = GET_X_LPARAM(lParam);
+			const int32 y = GET_Y_LPARAM(lParam);
+
+			for (auto& callback : m_MouseMoveCallbacks)
+				callback((float)x, (float)y);
+			break;
+		}
+		case WM_MOUSEWHEEL:
+		{
+			const float x = 0.0f;
+			const float y = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+
+			for (auto& callback : m_MouseWheelCallbacks)
+				callback(x, y);
+			break;
+		}
+		case WM_MOUSEHWHEEL:
+		{
+			const float x = -GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+			const float y = 0.0f;
+
+			for (auto& callback : m_MouseWheelCallbacks)
+				callback((float)x, (float)y);
+			break;
 		}
 		}
 

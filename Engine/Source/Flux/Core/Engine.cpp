@@ -152,21 +152,26 @@ namespace Flux {
 
 			Renderer::BeginFrame();
 
-			// update app
+			if (m_ImGuiRenderer)
+			{
+				m_ImGuiRenderer->NewFrame();
+				ImGui::ShowDemoWindow();
+			}
 
 			// Clear color (TODO: remove)
-			FLUX_SUBMIT_RENDER_COMMAND([]() mutable
+			FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_Window->GetWidth(), windowHeight = m_Window->GetHeight()]() mutable
 			{
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+				
+				glDisable(GL_SCISSOR_TEST);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				glEnable(GL_SCISSOR_TEST);
+
+				glViewport(0, 0, windowWidth, windowHeight);
 			});
 
 			if (m_ImGuiRenderer)
-			{
-				m_ImGuiRenderer->BeginFrame();
-				ImGui::ShowDemoWindow();
-				m_ImGuiRenderer->EndFrame();
-			}
+				m_ImGuiRenderer->Render();
 
 			// Wait for the previous frame to finish
 			m_RenderThread->Wait();

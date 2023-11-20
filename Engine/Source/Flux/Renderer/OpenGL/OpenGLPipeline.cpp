@@ -150,6 +150,8 @@ namespace Flux {
 			for (uint32 i = 0; i < static_cast<uint32>(elements.size()); i++)
 				glDisableVertexAttribArray(i);
 
+			glDisable(GL_SCISSOR_TEST);
+
 			glBindVertexArray(0);
 		});
 	}

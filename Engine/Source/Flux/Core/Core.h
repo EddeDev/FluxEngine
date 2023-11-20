@@ -5,6 +5,7 @@
 #include "LogMacros.h"
 #include "AssertionMacros.h"
 #include "Platform.h"
+#include "Input.h"
 #include "Buffer.h"
 
 #define FLUX_BIND_CALLBACK(func, ...) \

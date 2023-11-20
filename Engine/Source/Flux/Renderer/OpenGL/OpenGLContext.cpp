@@ -126,15 +126,19 @@ namespace Flux {
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback([](uint32 source, uint32 type, uint32 id, uint32 severity, int32 length, const char* message, const void* userParam)
-			{
-				Ref<OpenGLContext> instance = (OpenGLContext*)userParam;
+		{
+			Ref<OpenGLContext> instance = (OpenGLContext*)userParam;
 
-				if (id == 131185 || id == 131204)
-					return;
+			if (id == 131185 || id == 131204)
+				return;
 
-				std::cout << message << std::endl;
-				__debugbreak();
-			}, this);
+			// TODO
+			if (id == 131139)
+				return;
+
+			std::cout << message << std::endl;
+			__debugbreak();
+		}, this);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 		return true;

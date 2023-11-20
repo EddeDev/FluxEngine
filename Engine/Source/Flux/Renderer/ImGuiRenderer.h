@@ -15,8 +15,8 @@ namespace Flux {
 		ImGuiRenderer();
 		virtual ~ImGuiRenderer();
 
-		void BeginFrame();
-		void EndFrame();
+		void NewFrame();
+		void Render();
 	private:
 		ImGuiContext* m_Context = nullptr;
 

@@ -16,6 +16,13 @@ namespace Flux {
 		virtual bool IsVisible() const override;
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
+		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
+		virtual void AddFocusCallback(const WindowFocusCallback& callback) override;
+		virtual void AddKeyCallback(const KeyCallback& callback) override;
+		virtual void AddCharCallback(const CharCallback& callback) override;
+		virtual void AddMouseButtonCallback(const MouseButtonCallback& callback) override;
+		virtual void AddMouseMoveCallback(const MouseMoveCallback& callback) override;
+		virtual void AddMouseWheelCallback(const MouseWheelCallback& callback) override;
 
 		virtual uint32 GetWidth() const override { return m_Width; }
 		virtual uint32 GetHeight() const override { return m_Height; }
@@ -33,6 +40,15 @@ namespace Flux {
 		std::string m_Title;
 
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
+		std::vector<WindowSizeCallback> m_SizeCallbacks;
+		std::vector<WindowFocusCallback> m_FocusCallbacks;
+		std::vector<KeyCallback> m_KeyCallbacks;
+		std::vector<CharCallback> m_CharCallbacks;
+		std::vector<MouseButtonCallback> m_MouseButtonCallbacks;
+		std::vector<MouseMoveCallback> m_MouseMoveCallbacks;
+		std::vector<MouseWheelCallback> m_MouseWheelCallbacks;
+
+		WCHAR m_HighSurrogate = 0;
 	};
 }
 
