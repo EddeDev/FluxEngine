@@ -135,8 +135,6 @@ namespace Flux {
 			m_FrameCounter++;
 			if (m_Time >= m_LastTime + 1.0f)
 			{
-				FLUX_TRACE("{0} fps{1}", m_FrameCounter, m_VSync ? " (V-Sync)" : "");
-
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
 				m_LastTime = m_Time;
@@ -155,7 +153,12 @@ namespace Flux {
 			if (m_ImGuiRenderer)
 			{
 				m_ImGuiRenderer->NewFrame();
-				ImGui::ShowDemoWindow();
+				// ImGui::ShowDemoWindow();
+			
+				ImGui::Begin("Flux Engine");
+				ImGui::Text("%d fps %s", m_FramesPerSecond, m_VSync ? "(V-Sync)" : "");
+				ImGui::Text("Frame Time: %.2fms", m_FrameTime * 1000.0f);
+				ImGui::End();
 			}
 
 			// Clear color (TODO: remove)

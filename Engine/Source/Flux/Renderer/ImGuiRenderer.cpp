@@ -178,89 +178,87 @@ namespace Flux {
 		auto& window = Engine::Get().GetWindow();
 		io.DisplaySize = ImVec2(window->GetWidth(), window->GetHeight());
 
-		// Backend
+		io.BackendPlatformUserData = this;
+		io.BackendPlatformName = "FluxEngine";
+		io.BackendRendererName = "FluxEngine";
+		io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+		io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+		io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+		io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+
+		Engine::Get().SubmitToEventThread([]()
 		{
-			io.BackendPlatformUserData = this;
-			io.BackendPlatformName = "FluxEngine";
-			io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
-			io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
-			io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-			io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
-
-			Engine::Get().SubmitToEventThread([]()
+			auto& window = Engine::Get().GetWindow();
+			window->AddFocusCallback([](auto focused)
 			{
-				auto& window = Engine::Get().GetWindow();
-				window->AddFocusCallback([](auto focused)
+				Engine::Get().SubmitToMainThread([focused]()
 				{
-					Engine::Get().SubmitToMainThread([focused]()
-					{
-						ImGuiIO& io = ImGui::GetIO();
-						io.AddFocusEvent(focused);
-					});
-				});
-				window->AddSizeCallback([](auto width, auto height)
-				{
-					Engine::Get().SubmitToMainThread([width, height]()
-					{
-						ImGuiIO& io = ImGui::GetIO();
-						io.DisplaySize = ImVec2(width, height);
-						io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-					});
-				});
-				window->AddKeyCallback([](auto key, auto scancode, auto action, auto mods)
-				{
-					Engine::Get().SubmitToMainThread([key, scancode, action, mods]()
-					{
-						if (action != FLUX_ACTION_PRESS && action != FLUX_ACTION_RELEASE)
-							return;
-
-						ImGuiIO& io = ImGui::GetIO();
-						io.AddKeyEvent(Utils::KeyCodeToImGuiKey(key), action == FLUX_ACTION_PRESS);
-					});
-				});
-				window->AddCharCallback([](auto codepoint)
-				{
-					Engine::Get().SubmitToMainThread([codepoint]()
-					{
-						ImGuiIO& io = ImGui::GetIO();
-						io.AddInputCharacter(codepoint);
-					});
-				});
-				window->AddMouseMoveCallback([](auto x, auto y)
-				{
-					Engine::Get().SubmitToMainThread([x, y]()
-					{
-						ImGuiIO& io = ImGui::GetIO();
-						io.AddMousePosEvent(x, y);
-					});
-				});
-				window->AddMouseButtonCallback([](auto button, auto action, auto mods)
-				{
-					Engine::Get().SubmitToMainThread([button, action, mods]()
-					{
-						ImGuiIO& io = ImGui::GetIO();
-						io.AddMouseButtonEvent(button, action == FLUX_ACTION_PRESS);
-					});
-				});
-				window->AddMouseWheelCallback([](auto x, auto y)
-				{
-					Engine::Get().SubmitToMainThread([x, y]()
-					{
-						ImGuiIO& io = ImGui::GetIO();
-						io.AddMouseWheelEvent(x, y);
-					});
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddFocusEvent(focused);
 				});
 			});
+			window->AddSizeCallback([](auto width, auto height)
+			{
+				Engine::Get().SubmitToMainThread([width, height]()
+				{
+					ImGuiIO& io = ImGui::GetIO();
+					io.DisplaySize = ImVec2(width, height);
+					io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+				});
+			});
+			window->AddKeyCallback([](auto key, auto scancode, auto action, auto mods)
+			{
+				Engine::Get().SubmitToMainThread([key, scancode, action, mods]()
+				{
+					if (action != FLUX_ACTION_PRESS && action != FLUX_ACTION_RELEASE)
+						return;
 
-			WindowHandle windowHandle = window->GetNativeHandle();
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddKeyEvent(Utils::KeyCodeToImGuiKey(key), action == FLUX_ACTION_PRESS);
+				});
+			});
+			window->AddCharCallback([](auto codepoint)
+			{
+				Engine::Get().SubmitToMainThread([codepoint]()
+				{
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddInputCharacter(codepoint);
+				});
+			});
+			window->AddMouseMoveCallback([](auto x, auto y)
+			{
+				Engine::Get().SubmitToMainThread([x, y]()
+				{
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddMousePosEvent(x, y);
+				});
+			});
+			window->AddMouseButtonCallback([](auto button, auto action, auto mods)
+			{
+				Engine::Get().SubmitToMainThread([button, action, mods]()
+				{
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddMouseButtonEvent(button, action == FLUX_ACTION_PRESS);
+				});
+			});
+			window->AddMouseWheelCallback([](auto x, auto y)
+			{
+				Engine::Get().SubmitToMainThread([x, y]()
+				{
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddMouseWheelEvent(x, y);
+				});
+			});
+		});
 
-			ImGuiViewport* mainViewport = ImGui::GetMainViewport();
-			mainViewport->PlatformHandle = window.get();
-			mainViewport->PlatformHandleRaw = windowHandle;
+		WindowHandle windowHandle = window->GetNativeHandle();
 
-			ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
-			// platformIO.Platform_CreateWindow = ImGui_CreateWindow;
-		}
+		ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+		mainViewport->PlatformHandle = window.get();
+		mainViewport->PlatformHandleRaw = windowHandle;
+
+		ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
+		// platformIO.Platform_CreateWindow = ImGui_CreateWindow;
 
 		// TODO: HACK
 		// Submit immediately to render thread
@@ -350,9 +348,15 @@ namespace Flux {
 		ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
 
 		ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
-		for (int32 viewportIndex = 0; viewportIndex < platformIO.Viewports.Size; viewportIndex++)
+		for (int32 i = 0; i < platformIO.Viewports.Size; i++)
 		{
-			Window* window = (Window*)platformIO.Viewports[viewportIndex]->PlatformHandle;
+			Window* window = (Window*)platformIO.Viewports[i]->PlatformHandle;
+			if (!window)
+			{
+				FLUX_VERIFY(false);
+				continue;
+			}
+
 			if (cursor != ImGuiMouseCursor_None)
 			{
 				Engine::Get().SubmitToEventThread([window, cursor]()

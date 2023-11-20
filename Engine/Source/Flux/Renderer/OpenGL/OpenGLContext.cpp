@@ -123,23 +123,29 @@ namespace Flux {
 
 		wglSwapIntervalEXT(m_SwapInterval);
 
+#ifndef FLUX_BUILD_SHIPPING
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback([](uint32 source, uint32 type, uint32 id, uint32 severity, int32 length, const char* message, const void* userParam)
 		{
-			Ref<OpenGLContext> instance = (OpenGLContext*)userParam;
-
-			if (id == 131185 || id == 131204)
-				return;
-
-			// TODO
-			if (id == 131139)
-				return;
-
-			std::cout << message << std::endl;
-			__debugbreak();
+			switch (severity) {
+			case GL_DEBUG_SEVERITY_HIGH:
+				FLUX_CRITICAL("[OpenGL] {0}", message);
+				FLUX_VERIFY(false);
+				break;
+			case GL_DEBUG_SEVERITY_MEDIUM:
+				FLUX_ERROR("[OpenGL] {0}", message);
+				break;
+			case GL_DEBUG_SEVERITY_LOW:
+				FLUX_WARNING("[OpenGL] {0}", message);
+				break;
+			case GL_DEBUG_SEVERITY_NOTIFICATION:
+				// FLUX_INFO("[OpenGL] {0}", message);
+				break;
+			}
 		}, this);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+#endif
 
 		return true;
 	}
