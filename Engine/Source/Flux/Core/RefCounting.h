@@ -29,6 +29,9 @@ namespace Flux {
 		uint32 DecrementReferenceCount() const { return --m_ReferenceCount; }
 
 		uint32 GetReferenceCount() const { return m_ReferenceCount; }
+
+		virtual bool operator==(const ReferenceCounted& other) const { return this == &other; }
+		virtual bool operator!=(const ReferenceCounted& other) const { return this != &other; }
 	private:
 		mutable std::atomic<uint32> m_ReferenceCount;
 	};

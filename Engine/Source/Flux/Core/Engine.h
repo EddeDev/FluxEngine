@@ -26,9 +26,6 @@ namespace Flux {
 		
 		float GetFrameTime() const { return m_FrameTime; }
 
-		// TODO: remove
-		const Unique<Thread>& GetRenderThread() const { return m_RenderThread; }
-
 		const Unique<Window>& GetWindow() const { return m_Window; }
 
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }

@@ -26,6 +26,8 @@ namespace Flux {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
+		virtual void Scissor(int32 x, int32 y, int32 width, int32 height) const = 0;
+
 		virtual void DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const = 0;
 
 		static Ref<GraphicsPipeline> Create(const GraphicsPipelineCreateInfo& createInfo);

@@ -165,7 +165,7 @@ namespace Flux {
 			FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_Window->GetWidth(), windowHeight = m_Window->GetHeight()]() mutable
 			{
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-				
+
 				glDisable(GL_SCISSOR_TEST);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glEnable(GL_SCISSOR_TEST);

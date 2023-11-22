@@ -4,6 +4,7 @@
 #include "GraphicsPipeline.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "Texture.h"
 
 #include <imgui_internal.h>
 
@@ -24,8 +25,7 @@ namespace Flux {
 		Ref<GraphicsPipeline> m_Pipeline;
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
-
-		uint32 m_FontTextureID = 0;
+		Ref<Texture2D> m_FontTexture;
 	};
 
 }

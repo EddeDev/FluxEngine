@@ -156,6 +156,16 @@ namespace Flux {
 		});
 	}
 
+	void OpenGLPipeline::Scissor(int32 x, int32 y, int32 width, int32 height) const
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		FLUX_SUBMIT_RENDER_COMMAND([x, y, width, height]()
+		{
+			glScissor(x, y, width, height);
+		});
+	}
+
 	void OpenGLPipeline::DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();

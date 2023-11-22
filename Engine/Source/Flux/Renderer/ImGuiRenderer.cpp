@@ -6,12 +6,6 @@
 
 #include <imgui.h>
 
-
-
-
-// Temp
-#include <glad/glad.h>
-
 namespace Flux {
 
 	namespace Utils {
@@ -189,14 +183,6 @@ namespace Flux {
 		Engine::Get().SubmitToEventThread([]()
 		{
 			auto& window = Engine::Get().GetWindow();
-			window->AddFocusCallback([](auto focused)
-			{
-				Engine::Get().SubmitToMainThread([focused]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-					io.AddFocusEvent(focused);
-				});
-			});
 			window->AddSizeCallback([](auto width, auto height)
 			{
 				Engine::Get().SubmitToMainThread([width, height]()
@@ -204,6 +190,14 @@ namespace Flux {
 					ImGuiIO& io = ImGui::GetIO();
 					io.DisplaySize = ImVec2(width, height);
 					io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+				});
+			});
+			window->AddFocusCallback([](auto focused)
+			{
+				Engine::Get().SubmitToMainThread([focused]()
+				{
+					ImGuiIO& io = ImGui::GetIO();
+					io.AddFocusEvent(focused);
 				});
 			});
 			window->AddKeyCallback([](auto key, auto scancode, auto action, auto mods)
@@ -260,28 +254,21 @@ namespace Flux {
 		ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
 		// platformIO.Platform_CreateWindow = ImGui_CreateWindow;
 
-		// TODO: HACK
-		// Submit immediately to render thread
-		// and wait
-		auto& renderThread = Engine::Get().GetRenderThread();
-		renderThread->Submit([this]()
+		// Font texture
 		{
-			ImGuiIO& io = ImGui::GetIO();
-
 			uint8* pixels;
-			int32 width, height;
-			io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+			int32 width, height, bytesPerPixel;
+			io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytesPerPixel);
 
-			glCreateTextures(GL_TEXTURE_2D, 1, &m_FontTextureID);
-			glTextureParameteri(m_FontTextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTextureParameteri(m_FontTextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-			glTextureStorage2D(m_FontTextureID, 1, GL_RGBA8, width, height);
-			glTextureSubImage2D(m_FontTextureID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			TextureFormat format = TextureFormat::None;
+			if (bytesPerPixel == 4)
+				format = TextureFormat::RGBA32;
+			else
+				FLUX_VERIFY(false);
 
-			io.Fonts->SetTexID((ImTextureID)(uintptr)m_FontTextureID);
-		});
-		renderThread->Wait();
+			m_FontTexture = Texture2D::Create(width, height, format);
+			m_FontTexture->SetPixelData(pixels, width * height);
+		}
 
 		static const char* s_VertexShaderSource =
 			"#version 450 core\n"
@@ -457,12 +444,14 @@ namespace Flux {
 						if (clipMax.x <= clipMin.x || clipMax.y <= clipMin.y)
 							continue;
 
-						FLUX_SUBMIT_RENDER_COMMAND([clip_min = clipMin, clip_max = clipMax, fb_width = viewportWidth, fb_height = viewportHeight, textureID = command->GetTexID()]()
-						{
-							glScissor((int)clip_min.x, (int)((float)fb_height - clip_max.y), (int)(clip_max.x - clip_min.x), (int)(clip_max.y - clip_min.y));
+						m_Pipeline->Scissor(
+							(int32)clipMin.x,
+							(int32)((float)viewportHeight - clipMax.y),
+							(int32)(clipMax.x - clipMin.x),
+							(int32)(clipMax.y - clipMin.y)
+						);
 
-							glBindTexture(GL_TEXTURE_2D, (uint32)(intptr)textureID);
-						});
+						m_FontTexture->Bind();
 
 						m_Pipeline->DrawIndexed(
 							m_IndexBuffer->GetDataType(),
