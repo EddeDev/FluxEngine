@@ -79,9 +79,10 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([vertexArrayID = m_VertexArrayID]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([vertexArrayID = m_VertexArrayID]()
 		{
-			glDeleteVertexArrays(1, &vertexArrayID);
+			if (vertexArrayID)
+				glDeleteVertexArrays(1, &vertexArrayID);
 		});
 	}
 

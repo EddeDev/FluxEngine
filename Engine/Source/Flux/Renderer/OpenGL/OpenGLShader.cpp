@@ -81,9 +81,10 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([programID = m_ProgramID]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([programID = m_ProgramID]()
 		{
-			glDeleteProgram(programID);
+			if (programID)
+				glDeleteProgram(programID);
 		});
 	}
 

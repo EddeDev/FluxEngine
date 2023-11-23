@@ -20,7 +20,7 @@ namespace Flux {
 		static void SubmitRenderCommand(RenderCommand command);
 		static void SubmitRenderCommandRelease(RenderCommand command);
 #endif
-		static void FlushRenderCommands(int32 queueIndex);
+		static void FlushRenderCommands(uint32 queueIndex);
 		static void FlushReleaseQueue();
 
 		static uint32 GetCurrentQueueIndex();

@@ -64,7 +64,8 @@ namespace Flux {
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([bufferID = m_BufferID]() mutable
 		{
-			glDeleteBuffers(1, &bufferID);
+			if (bufferID)
+				glDeleteBuffers(1, &bufferID);
 		});
 	}
 

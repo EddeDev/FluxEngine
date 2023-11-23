@@ -142,18 +142,12 @@ namespace Flux {
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
 
-			// Flush release queue
-			FLUX_SUBMIT_RENDER_COMMAND([]()
-			{
-				Renderer::FlushReleaseQueue();
-			});
-
 			Renderer::BeginFrame();
 
 			if (m_ImGuiRenderer)
 			{
 				m_ImGuiRenderer->NewFrame();
-				// ImGui::ShowDemoWindow();
+				ImGui::ShowDemoWindow();
 			
 				ImGui::Begin("Flux Engine");
 				ImGui::Text("%d fps %s", m_FramesPerSecond, m_VSync ? "(V-Sync)" : "");
@@ -182,7 +176,7 @@ namespace Flux {
 			// Swap buffers
 			FLUX_SUBMIT_RENDER_COMMAND([context = m_Context, vsync = m_VSync]() mutable
 			{
-				context->SwapBuffers(vsync);
+				context->SwapBuffers(vsync ? 1 : 0);
 			});
 
 			// Flush render command queue
@@ -194,20 +188,17 @@ namespace Flux {
 			Renderer::EndFrame();
 		}
 
-		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
-		{
-			Renderer::FlushRenderCommands(queueIndex);
-		});
-
-		m_RenderThread->Wait();
-
 		// destroy resources
 		{
 			FLUX_VERIFY(m_ImGuiRenderer->GetReferenceCount() == 1);
 			m_ImGuiRenderer = nullptr;
 		}
 
-		m_RenderThread->Submit([]() { Renderer::FlushReleaseQueue(); });
+		m_RenderThread->Submit([queueIndex = Renderer::GetCurrentQueueIndex()]()
+		{
+			Renderer::FlushRenderCommands(queueIndex);
+			Renderer::FlushReleaseQueue();
+		});
 		m_RenderThread->Wait();
 
 		Renderer::Shutdown();

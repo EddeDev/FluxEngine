@@ -57,7 +57,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([textureID = m_TextureID]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([textureID = m_TextureID]()
 		{
 			if (textureID)
 				glDeleteTextures(1, &textureID);

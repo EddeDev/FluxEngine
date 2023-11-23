@@ -397,7 +397,7 @@ namespace Flux {
 				const uint32 vertexBufferSize = commandList->VtxBuffer.Size * sizeof(ImDrawVert);
 				if (!m_VertexBuffer)
 					m_VertexBuffer = VertexBuffer::Create(vertexBufferSize, VertexBufferUsage::Stream);
-				if (vertexBufferSize> m_VertexBuffer->GetSize())
+				if (vertexBufferSize > m_VertexBuffer->GetSize())
 					m_VertexBuffer->Resize(vertexBufferSize);
 				m_VertexBuffer->SetData(commandList->VtxBuffer.Data, vertexBufferSize);
 
