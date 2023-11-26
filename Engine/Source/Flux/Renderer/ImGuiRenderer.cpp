@@ -170,7 +170,7 @@ namespace Flux {
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		
 		auto& window = Engine::Get().GetWindow();
-		io.DisplaySize = ImVec2(window->GetWidth(), window->GetHeight());
+		io.DisplaySize = ImVec2((float)window->GetWidth(), (float)window->GetHeight());
 
 		io.BackendPlatformUserData = this;
 		io.BackendPlatformName = "FluxEngine";
@@ -188,7 +188,7 @@ namespace Flux {
 				Engine::Get().SubmitToMainThread([width, height]()
 				{
 					ImGuiIO& io = ImGui::GetIO();
-					io.DisplaySize = ImVec2(width, height);
+					io.DisplaySize = ImVec2((float)width, (float)height);
 					io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
 				});
 			});
@@ -395,17 +395,13 @@ namespace Flux {
 				const ImDrawList* commandList = drawData->CmdLists[commandListIndex];
 
 				const uint32 vertexBufferSize = commandList->VtxBuffer.Size * sizeof(ImDrawVert);
-				if (!m_VertexBuffer)
+				if (!m_VertexBuffer || vertexBufferSize > m_VertexBuffer->GetSize())
 					m_VertexBuffer = VertexBuffer::Create(vertexBufferSize, VertexBufferUsage::Stream);
-				if (vertexBufferSize > m_VertexBuffer->GetSize())
-					m_VertexBuffer->Resize(vertexBufferSize);
 				m_VertexBuffer->SetData(commandList->VtxBuffer.Data, vertexBufferSize);
 
 				const uint32 indexBufferSize = commandList->IdxBuffer.Size * sizeof(ImDrawIdx);
-				if (!m_IndexBuffer)
+				if (!m_IndexBuffer || indexBufferSize > m_IndexBuffer->GetSize())
 					m_IndexBuffer = IndexBuffer::Create(indexBufferSize, sizeof(ImDrawIdx) == 2 ? IndexBufferDataType::UInt16 : IndexBufferDataType::UInt32, IndexBufferUsage::Stream);
-				if (indexBufferSize > m_IndexBuffer->GetSize())
-					m_IndexBuffer->Resize(indexBufferSize);
 				m_IndexBuffer->SetData(commandList->IdxBuffer.Data, indexBufferSize);
 
 				m_VertexBuffer->Bind();

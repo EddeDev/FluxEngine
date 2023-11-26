@@ -14,20 +14,23 @@ namespace Flux {
 		virtual void Bind() const override;
 		virtual void Unbind() const override;
 
-		virtual void Resize(uint64 size) override;
 		virtual void SetData(const void* data, uint64 size, uint64 offset = 0) override;
 
-		virtual uint64 GetSize() const override { return m_Storage.GetSize(); }
+		virtual uint64 GetSize() const override { return m_Data->Storage.GetSize(); }
 
 		virtual IndexBufferDataType GetDataType() const override { return m_DataType; }
 		virtual IndexBufferUsage GetUsage() const override { return m_Usage; }
 	private:
-		IndexBufferDataType m_DataType;
 		IndexBufferUsage m_Usage;
+		IndexBufferDataType m_DataType;
 
-		RenderThreadStorage m_Storage;
+		struct OpenGLIndexBufferData
+		{
+			RenderThreadStorage Storage;
+			uint32 BufferID = 0;
+		};
 
-		uint32 m_BufferID = 0;
+		OpenGLIndexBufferData* m_Data = nullptr;
 	};
 
 }

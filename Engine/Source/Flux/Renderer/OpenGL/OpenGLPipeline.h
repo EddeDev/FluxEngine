@@ -17,9 +17,15 @@ namespace Flux {
 
 		virtual void DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const override;
 	private:
-		GraphicsPipelineCreateInfo m_CreateInfo;
+		PrimitiveTopology m_Topology = PrimitiveTopology::None;
+	
+		struct OpenGLPipelineData
+		{
+			Flux::VertexDeclaration VertexDeclaration;
+			uint32 VertexArrayID = 0;
+		};
 
-		uint32 m_VertexArrayID = 0;
+		OpenGLPipelineData* m_Data = nullptr;
 	};
 
 }

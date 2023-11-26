@@ -27,12 +27,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
+		m_Data = new OpenGLShaderData();
+
 		std::unordered_map<ShaderStage, std::string> sources;
 		sources[ShaderStage::Vertex] = vertexShaderSource;
 		sources[ShaderStage::Fragment] = fragmentShaderSource;
 	
-		Ref<OpenGLShader> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, sources]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, sources]() mutable
 		{
 			std::vector<uint32> shaderIDs;
 			for (auto& [stage, source] : sources)
@@ -55,14 +56,14 @@ namespace Flux {
 				shaderIDs.push_back(shaderID);
 			}
 
-			instance->m_ProgramID = glCreateProgram();
+			data->ProgramID = glCreateProgram();
 			for (uint32 shaderID : shaderIDs)
-				glAttachShader(instance->m_ProgramID, shaderID);
+				glAttachShader(data->ProgramID, shaderID);
 
-			glLinkProgram(instance->m_ProgramID);
+			glLinkProgram(data->ProgramID);
 
 			int32 isLinked;
-			glGetProgramiv(instance->m_ProgramID, GL_LINK_STATUS, &isLinked);
+			glGetProgramiv(data->ProgramID, GL_LINK_STATUS, &isLinked);
 			if (isLinked == GL_FALSE)
 			{
 				FLUX_VERIFY(false);
@@ -71,7 +72,7 @@ namespace Flux {
 
 			for (uint32 shaderID : shaderIDs)
 			{
-				glDetachShader(instance->m_ProgramID, shaderID);
+				glDetachShader(data->ProgramID, shaderID);
 				glDeleteShader(shaderID);
 			}
 		});
@@ -81,10 +82,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([programID = m_ProgramID]()
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]()
 		{
-			if (programID)
-				glDeleteProgram(programID);
+			if (data->ProgramID)
+				glDeleteProgram(data->ProgramID);
+			delete data;
 		});
 	}
 
@@ -92,10 +94,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const OpenGLShader> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
-			glUseProgram(instance->m_ProgramID);
+			glUseProgram(data->ProgramID);
 		});
 	}
 
@@ -114,10 +115,9 @@ namespace Flux {
 		float* storage = new float[4 * 4];
 		memcpy(storage, data, sizeof(float) * 4 * 4);
 
-		Ref<const OpenGLShader> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, name, storage]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, storage]()
 		{
-			int32 location = glGetUniformLocation(instance->m_ProgramID, name.c_str());
+			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
 			if (location == -1)
 				__debugbreak();
 			glUniformMatrix4fv(location, 1, GL_FALSE, storage);

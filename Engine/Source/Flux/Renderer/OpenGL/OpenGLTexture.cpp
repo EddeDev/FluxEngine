@@ -37,19 +37,19 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		m_Storage.SetSize(width * height * Utils::GetTextureFormatBPP(format));
+		m_Data = new OpenGLTextureData();
+		m_Data->Storage.SetSize(width * height * Utils::GetTextureFormatBPP(format));
 
-		Ref<OpenGLTexture2D> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, width, height, format]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, width, height, format]() mutable
 		{
-			glCreateTextures(GL_TEXTURE_2D, 1, &instance->m_TextureID);
+			glCreateTextures(GL_TEXTURE_2D, 1, &data->TextureID);
 
-			glTextureParameteri(instance->m_TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTextureParameteri(instance->m_TextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTextureParameteri(data->TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTextureParameteri(data->TextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 			// TODO: optional
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-			glTextureStorage2D(instance->m_TextureID, 1, Utils::OpenGLInternalTextureFormat(format), width, height);
+			glTextureStorage2D(data->TextureID, 1, Utils::OpenGLInternalTextureFormat(format), width, height);
 		});
 	}
 
@@ -57,10 +57,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([textureID = m_TextureID]()
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]()
 		{
-			if (textureID)
-				glDeleteTextures(1, &textureID);
+			if (data->TextureID)
+				glDeleteTextures(1, &data->TextureID);
+			delete data;
 		});
 	}
 
@@ -68,10 +69,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const OpenGLTexture2D> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, slot]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, slot]()
 		{
-			glBindTextureUnit(slot, instance->m_TextureID);
+			glBindTextureUnit(slot, data->TextureID);
 		});
 	}
 
@@ -89,14 +89,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		uint32 bufferIndex = m_Storage.SetData(data, count * Utils::GetTextureFormatBPP(m_Format));
+		uint32 bufferIndex = m_Data->Storage.SetData(data, count * Utils::GetTextureFormatBPP(m_Format));
 
-		Ref<OpenGLTexture2D> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, bufferIndex, width = m_Width, height = m_Height, format = m_Format]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, width = m_Width, height = m_Height, format = m_Format]() mutable
 		{
-			Buffer buffer = instance->m_Storage.GetBuffer(bufferIndex);
-			glTextureSubImage2D(instance->m_TextureID, 0, 0, 0, width, height, Utils::OpenGLTextureFormat(format), GL_UNSIGNED_BYTE, buffer.Data);
-			instance->m_Storage.SetBufferAvailable(bufferIndex);
+			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
+			glTextureSubImage2D(data->TextureID, 0, 0, 0, width, height, Utils::OpenGLTextureFormat(format), GL_UNSIGNED_BYTE, buffer.Data);
+			data->Storage.SetBufferAvailable(bufferIndex);
 		});
 	}
 

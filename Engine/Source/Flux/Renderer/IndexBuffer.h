@@ -24,7 +24,6 @@ namespace Flux {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
-		virtual void Resize(uint64 size) = 0;
 		virtual void SetData(const void* data, uint64 size, uint64 offset = 0) = 0;
 
 		virtual uint64 GetSize() const = 0;

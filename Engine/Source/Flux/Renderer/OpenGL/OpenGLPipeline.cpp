@@ -64,14 +64,15 @@ namespace Flux {
 	}
 
 	OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineCreateInfo& createInfo)
-		: m_CreateInfo(createInfo)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<OpenGLPipeline> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance]() mutable
+		m_Data = new OpenGLPipelineData();
+		m_Data->VertexDeclaration = createInfo.VertexDeclaration;
+
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]() mutable
 		{
-			glCreateVertexArrays(1, &instance->m_VertexArrayID);
+			glCreateVertexArrays(1, &data->VertexArrayID);
 		});
 	}
 
@@ -79,10 +80,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([vertexArrayID = m_VertexArrayID]()
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]()
 		{
-			if (vertexArrayID)
-				glDeleteVertexArrays(1, &vertexArrayID);
+			if (data->VertexArrayID)
+				glDeleteVertexArrays(1, &data->VertexArrayID);
+			delete data;
 		});
 	}
 
@@ -90,14 +92,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 	
-		Ref<const OpenGLPipeline> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
-			glBindVertexArray(instance->m_VertexArrayID);
+			glBindVertexArray(data->VertexArrayID);
 
-			auto& elements = instance->m_CreateInfo.VertexDeclaration.GetElements();
+			auto& elements = data->VertexDeclaration.GetElements();
 
-			uint32 stride = instance->m_CreateInfo.VertexDeclaration.GetStride();
+			uint32 stride = data->VertexDeclaration.GetStride();
 
 			for (uint32 i = 0; i < static_cast<uint32>(elements.size()); i++)
 			{
@@ -144,10 +145,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const OpenGLPipeline> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
-			auto& elements = instance->m_CreateInfo.VertexDeclaration.GetElements();
+			auto& elements = data->VertexDeclaration.GetElements();
 			for (uint32 i = 0; i < static_cast<uint32>(elements.size()); i++)
 				glDisableVertexAttribArray(i);
 
@@ -171,11 +171,10 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const OpenGLPipeline> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, dataType, indexCount, startIndexLocation, baseVertexLocation]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, topology = m_Topology, dataType, indexCount, startIndexLocation, baseVertexLocation]()
 		{
 			glDrawElementsBaseVertex(
-				Utils::OpenGLPrimitiveTopology(instance->m_CreateInfo.Topology),
+				Utils::OpenGLPrimitiveTopology(topology),
 				indexCount,
 				Utils::OpenGLIndexBufferDataType(dataType),
 				(const void*)(intptr)(startIndexLocation * Utils::IndexBufferDataTypeSize(dataType)),

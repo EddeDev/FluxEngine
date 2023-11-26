@@ -19,9 +19,13 @@ namespace Flux {
 		uint32 m_Height;
 		TextureFormat m_Format;
 
-		uint32 m_TextureID = 0;
+		struct OpenGLTextureData
+		{
+			RenderThreadStorage Storage;
+			uint32 TextureID = 0;
+		};
 
-		RenderThreadStorage m_Storage;
+		OpenGLTextureData* m_Data = nullptr;
 	};
 
 }

@@ -8,7 +8,9 @@ namespace Flux {
 
 	enum class PrimitiveTopology : uint8
 	{
-		Triangles = 0
+		None = 0,
+
+		Triangles
 	};
 
 	struct GraphicsPipelineCreateInfo

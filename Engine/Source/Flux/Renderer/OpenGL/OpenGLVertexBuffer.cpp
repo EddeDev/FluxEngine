@@ -29,13 +29,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		m_Storage.SetSize(size);
+		m_Data = new OpenGLVertexBufferData();
+		m_Data->Storage.SetSize(size);
 
-		Ref<OpenGLVertexBuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, size, usage]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, size, usage]() mutable
 		{
-			glCreateBuffers(1, &instance->m_BufferID);
-			glNamedBufferData(instance->m_BufferID, size, nullptr, Utils::OpenGLBufferUsage(usage));
+			glCreateBuffers(1, &data->BufferID);
+			glNamedBufferData(data->BufferID, size, nullptr, Utils::OpenGLBufferUsage(usage));
 		});
 	}
 
@@ -44,17 +44,17 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		m_Storage.SetSize(size);
+		m_Data = new OpenGLVertexBufferData();
+		m_Data->Storage.SetSize(size);
 
-		uint32 bufferIndex = m_Storage.SetData(data, size);
+		uint32 bufferIndex = m_Data->Storage.SetData(data, size);
 
-		Ref<OpenGLVertexBuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, bufferIndex, usage]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, usage]() mutable
 		{
-			Buffer buffer = instance->m_Storage.GetBuffer(bufferIndex);
-			glCreateBuffers(1, &instance->m_BufferID);
-			glNamedBufferData(instance->m_BufferID, buffer.Size, buffer.Data, Utils::OpenGLBufferUsage(usage));
-			instance->m_Storage.SetBufferAvailable(bufferIndex);
+			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
+			glCreateBuffers(1, &data->BufferID);
+			glNamedBufferData(data->BufferID, buffer.Size, buffer.Data, Utils::OpenGLBufferUsage(usage));
+			data->Storage.SetBufferAvailable(bufferIndex);
 		});
 	}
 
@@ -62,10 +62,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([bufferID = m_BufferID]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]() mutable
 		{
-			if (bufferID)
-				glDeleteBuffers(1, &bufferID);
+			if (data->BufferID)
+				glDeleteBuffers(1, &data->BufferID);
+			delete data;
 		});
 	}
 
@@ -73,10 +74,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Ref<const OpenGLVertexBuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, instance->m_BufferID);
+			glBindBuffer(GL_ARRAY_BUFFER, data->BufferID);
 		});
 	}
 
@@ -90,31 +90,17 @@ namespace Flux {
 		});
 	}
 
-	void OpenGLVertexBuffer::Resize(uint64 size)
-	{
-		FLUX_CHECK_IS_MAIN_THREAD();
-
-		m_Storage.SetSize(size);
-
-		Ref<OpenGLVertexBuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, size, usage = m_Usage]() mutable
-		{
-			glNamedBufferData(instance->m_BufferID, size, nullptr, Utils::OpenGLBufferUsage(usage));
-		});
-	}
-
 	void OpenGLVertexBuffer::SetData(const void* data, uint64 size, uint64 offset)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		uint32 bufferIndex = m_Storage.SetData(data, size, offset);
+		uint32 bufferIndex = m_Data->Storage.SetData(data, size, offset);
 
-		Ref<OpenGLVertexBuffer> instance = this;
-		FLUX_SUBMIT_RENDER_COMMAND([instance, bufferIndex, size, offset]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, size, offset]() mutable
 		{
-			Buffer buffer = instance->m_Storage.GetBuffer(bufferIndex);
-			glNamedBufferSubData(instance->m_BufferID, offset, size, buffer.GetData(offset));
-			instance->m_Storage.SetBufferAvailable(bufferIndex);
+			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
+			glNamedBufferSubData(data->BufferID, offset, size, buffer.GetData(offset));
+			data->Storage.SetBufferAvailable(bufferIndex);
 		});
 	}
 
