@@ -2,8 +2,10 @@
 
 #include "Platform.h"
 
+#pragma warning(push, 0)
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/fmt.h>
+#pragma warning(pop)
 
 namespace Flux {
 

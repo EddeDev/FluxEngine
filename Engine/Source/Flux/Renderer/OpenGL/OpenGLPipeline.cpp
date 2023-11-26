@@ -64,6 +64,7 @@ namespace Flux {
 	}
 
 	OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineCreateInfo& createInfo)
+		: m_Topology(createInfo.Topology)
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
