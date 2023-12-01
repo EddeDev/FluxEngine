@@ -32,14 +32,20 @@ namespace Flux {
 
 		void Allocate(uint64 size)
 		{
-			free(Data);
-			Data = malloc(size);
-			Size = size;
+			Release();
+
+			if (size > 0)
+			{
+				Data = malloc(size);
+				Size = size;
+			}
 		}
 
 		void Release()
 		{
 			free(Data);
+			Data = nullptr;
+
 			Size = 0;
 		}
 

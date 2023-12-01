@@ -15,12 +15,19 @@ namespace Flux {
 		virtual void SetVisible(bool visible) const override;
 		virtual bool IsVisible() const override;
 
+		virtual WindowMenu CreateMenu() const override;
+		virtual bool SetMenu(WindowMenu menu) const override;
+		virtual bool AddMenu(WindowMenu menu, uint32 menuID = 0, const char* name = "", bool disabled = false) const override;
+		virtual bool AddMenuSeparator(WindowMenu menu) const override;
+		virtual bool AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name = "", bool disabled = false) const override;
+
 		virtual void SetCursorShape(CursorShape shape);
 		virtual CursorShape GetCursorShape() const override { return m_CursorShape; }
 
 		virtual void AddCloseCallback(const WindowCloseCallback& callback) override;
 		virtual void AddSizeCallback(const WindowSizeCallback& callback) override;
 		virtual void AddFocusCallback(const WindowFocusCallback& callback) override;
+		virtual void AddMenuCallback(const WindowMenuCallback& callback) override;
 		virtual void AddKeyCallback(const KeyCallback& callback) override;
 		virtual void AddCharCallback(const CharCallback& callback) override;
 		virtual void AddMouseButtonCallback(const MouseButtonCallback& callback) override;
@@ -48,6 +55,7 @@ namespace Flux {
 		std::vector<WindowCloseCallback> m_CloseCallbacks;
 		std::vector<WindowSizeCallback> m_SizeCallbacks;
 		std::vector<WindowFocusCallback> m_FocusCallbacks;
+		std::vector<WindowMenuCallback> m_MenuCallbacks;
 		std::vector<KeyCallback> m_KeyCallbacks;
 		std::vector<CharCallback> m_CharCallbacks;
 		std::vector<MouseButtonCallback> m_MouseButtonCallbacks;
@@ -55,6 +63,8 @@ namespace Flux {
 		std::vector<MouseWheelCallback> m_MouseWheelCallbacks;
 
 		WCHAR m_HighSurrogate = 0;
+
+		WindowMenu m_Menu = nullptr;
 	};
 }
 

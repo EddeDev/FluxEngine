@@ -159,4 +159,11 @@ namespace Flux {
 		return s_Data->CurrentQueueIndex;
 	}
 
+	uint32 Renderer::GetQueueCount()
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		return s_RenderCommandQueueCount;
+	}
+
 }

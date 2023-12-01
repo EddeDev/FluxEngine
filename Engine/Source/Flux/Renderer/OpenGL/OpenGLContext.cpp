@@ -123,6 +123,11 @@ namespace Flux {
 
 		wglSwapIntervalEXT(m_SwapInterval);
 
+		FLUX_INFO_CATEGORY("Renderer", "GPU Info:");
+		FLUX_INFO_CATEGORY("Renderer", "  Vendor: {0}", (const char*)glGetString(GL_VENDOR));
+		FLUX_INFO_CATEGORY("Renderer", "  Renderer: {0}", (const char*)glGetString(GL_RENDERER));
+		FLUX_INFO_CATEGORY("Renderer", "  Version: {0}", (const char*)glGetString(GL_VERSION));
+
 #ifndef FLUX_BUILD_SHIPPING
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);

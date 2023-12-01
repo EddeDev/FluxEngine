@@ -18,6 +18,8 @@ namespace Flux {
 
 		void NewFrame();
 		void Render();
+
+		void Image(Ref<Texture2D> texture, const ImVec2& size);
 	private:
 		ImGuiContext* m_Context = nullptr;
 
@@ -26,6 +28,8 @@ namespace Flux {
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
 		Ref<Texture2D> m_FontTexture;
+
+		std::unordered_map<ImTextureID, Ref<Texture2D>> m_TextureMap;
 	};
 
 }

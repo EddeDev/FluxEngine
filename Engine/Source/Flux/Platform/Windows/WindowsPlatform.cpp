@@ -6,6 +6,8 @@
 
 #include "WindowsWindow.h"
 
+#include <ShObjIdl.h>
+
 namespace Flux {
 
 	extern HINSTANCE g_Instance;
@@ -36,8 +38,34 @@ namespace Flux {
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 
+	static BOOL CALLBACK MonitorEnum(HMONITOR handle, HDC hDC, RECT* rect, LPARAM data)
+	{
+		MONITORINFOEXW info = {};
+		info.cbSize = sizeof(MONITORINFO);
+		if (GetMonitorInfoW(handle, (MONITORINFO*)&info))
+		{
+			// TODO
+		}
+
+		return TRUE;
+	}
+
+	static void UpdateMonitors()
+	{
+		::EnumDisplayMonitors(NULL, NULL, MonitorEnum, NULL);
+	}
+
 	static LRESULT CALLBACK HelperWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
+		switch (uMsg)
+		{
+		case WM_DISPLAYCHANGE:
+		{
+			UpdateMonitors();
+			break;
+		}
+		}
+
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 
@@ -285,6 +313,8 @@ namespace Flux {
 		UpdateKeyNames();
 
 		CreateHelperWindow();
+
+		UpdateMonitors();
 	}
 
 	void Platform::Shutdown()
@@ -342,6 +372,103 @@ namespace Flux {
 		QueryPerformanceCounter((LARGE_INTEGER*)&value);
 		constexpr uint64 nsPerSecond = 1000 * 1000 * 1000;
 		return value * (nsPerSecond / s_Data->TimerFrequency);
+	}
+
+	DialogResult Platform::OpenFolderDialog(Window* window, std::string* outPath, const std::string& title)
+	{
+		IFileOpenDialog* fileDialog = NULL;
+
+		HRESULT result = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_PPV_ARGS(&fileDialog));
+		if (!SUCCEEDED(result))
+		{
+			FLUX_ASSERT(false, "CoCreateInstance failed. ({0})", Platform::GetErrorMessage());
+			return DialogResult::None;
+		}
+
+		DWORD dwOptions = 0;
+		if (!SUCCEEDED(fileDialog->GetOptions(&dwOptions)))
+		{
+			FLUX_ASSERT(false, "GetOptions for IFileDialog failed.");
+
+			fileDialog->Release();
+			return DialogResult::None;
+		}
+
+		if (!SUCCEEDED(fileDialog->SetOptions(dwOptions | FOS_PICKFOLDERS)))
+		{
+			FLUX_ASSERT(false, "SetOptions for IFileDialog failed.");
+
+			fileDialog->Release();
+			return DialogResult::None;
+		}
+
+		wchar_t* titleBuffer = new wchar_t[title.size() + 1];
+		MultiByteToWideChar(CP_UTF8, 0, title.data(), -1, titleBuffer, static_cast<int32>(title.size()) + 1);
+		if (!SUCCEEDED(fileDialog->SetTitle(titleBuffer)))
+		{
+			FLUX_ASSERT(false, "SetTitle for IFileDialog failed.");
+
+			fileDialog->Release();
+			delete[] titleBuffer;
+			return DialogResult::None;
+		}
+		delete[] titleBuffer;
+
+		HWND hWnd = static_cast<HWND>(window ? window->GetNativeHandle() : NULL);
+
+		result = fileDialog->Show(hWnd);
+		if (SUCCEEDED(result))
+		{
+			IShellItem* shellItem = NULL;
+
+			result = fileDialog->GetResult(&shellItem);
+			if (!SUCCEEDED(result))
+			{
+				FLUX_ASSERT(false, "GetResult for IFileDialog failed.");
+
+				fileDialog->Release();
+				return DialogResult::None;
+			}
+
+			wchar_t* path = NULL;
+			result = shellItem->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, &path);
+			if (!SUCCEEDED(result))
+			{
+				FLUX_ASSERT(false, "GetDisplayName for IShellItem failed.");
+
+				shellItem->Release();
+				fileDialog->Release();
+				return DialogResult::None;
+			}
+
+			if (outPath)
+			{
+				int32 pathSize = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
+				outPath->resize(pathSize - 1);
+				WideCharToMultiByte(CP_UTF8, 0, path, -1, outPath->data(), pathSize - 1, NULL, NULL);
+			}
+
+			CoTaskMemFree(path);
+
+			shellItem->Release();
+			fileDialog->Release();
+			return DialogResult::Ok;
+		}
+		else if (result == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+		{
+			fileDialog->Release();
+			return DialogResult::Cancel;
+		}
+		else
+		{
+			FLUX_ASSERT(false, "Show for IFileDialog failed.");
+
+			fileDialog->Release();
+			return DialogResult::None;
+		}
+
+		FLUX_ASSERT(false);
+		return DialogResult::None;
 	}
 
 	DialogResult Platform::MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const std::string& text, const std::string& caption)

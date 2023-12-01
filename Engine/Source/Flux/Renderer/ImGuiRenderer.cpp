@@ -154,6 +154,73 @@ namespace Flux {
 
 	}
 
+	static void ImGui_Platform_CreateWindow(ImGuiViewport* viewport)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Creating window...");
+	}
+
+	static void ImGui_Platform_DestroyWindow(ImGuiViewport* viewport)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Detroying window...");
+	}
+
+	static void ImGui_Platform_ShowWindow(ImGuiViewport* viewport)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Showing window...");
+	}
+
+	static ImVec2 ImGui_Platform_GetWindowPos(ImGuiViewport* viewport)
+	{
+		return {};
+	}
+
+	static void ImGui_Platform_SetWindowPos(ImGuiViewport* viewport, ImVec2 pos)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Setting window position...");
+	}
+
+	static ImVec2 ImGui_Platform_GetWindowSize(ImGuiViewport* viewport)
+	{
+		return {};
+	}
+
+	static void ImGui_Platform_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Setting window size...");
+	}
+
+	static void ImGui_Platform_SetWindowFocus(ImGuiViewport* viewport)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Setting window focus...");
+	}
+
+	static bool ImGui_Platform_GetWindowFocus(ImGuiViewport* viewport)
+	{
+		return true;
+	}
+
+	static bool ImGui_Platform_GetWindowMinimized(ImGuiViewport* viewport)
+	{
+		return false;
+	}
+
+	static void ImGui_Platform_SetWindowTitle(ImGuiViewport* viewport, const char* title)
+	{
+		FLUX_INFO_CATEGORY("ImGui", "Setting window title...");
+	}
+
+	static void ImGui_Renderer_CreateWindow(ImGuiViewport* viewport)
+	{
+	}
+
+	static void ImGui_Renderer_DestroyWindow(ImGuiViewport* viewport)
+	{
+	}
+
+	static void ImGui_Renderer_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
+	{
+	}
+
 	ImGuiRenderer::ImGuiRenderer()
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
@@ -166,7 +233,7 @@ namespace Flux {
 		io.IniFilename = "Config/ImGui.ini";
 		io.LogFilename = "Logs/ImGui.log";
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		
 		auto& window = Engine::Get().GetWindow();
@@ -178,7 +245,100 @@ namespace Flux {
 		io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 		io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 		io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+		io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 		io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+		
+		io.ConfigWindowsMoveFromTitleBarOnly = true;
+
+#if 0
+		ImFontConfig fontConfig;
+		fontConfig.PixelSnapH = true;
+		io.Fonts->AddFontFromFileTTF("Resources/Fonts/Segoe UI/segoeui.ttf", 16.0f, &fontConfig, io.Fonts->GetGlyphRangesCyrillic());
+
+		auto& style = ImGui::GetStyle();
+		style.Alpha = 1.0f;
+		style.DisabledAlpha = 0.6f;
+		style.WindowPadding = { 8.0f, 8.0f };
+		style.WindowRounding = 1.0f;
+		style.WindowBorderSize = 1.0f;
+		style.WindowMinSize = { 32.0f, 32.0f };
+		style.WindowTitleAlign = { 0.02f, 0.5f };
+		style.ChildRounding = 1.0f;
+		style.ChildBorderSize = 1.0f;
+		style.PopupRounding = 0.0f;
+		style.PopupBorderSize = 1.0f;
+		style.FramePadding = { 4.0f, 3.0f };
+		style.FrameRounding = 4.0f;
+		style.FrameBorderSize = 1.0f;
+		style.ItemSpacing = { 8.0f, 4.0f };
+		style.ItemInnerSpacing = { 4.0f, 4.0f };
+		style.IndentSpacing = 18.0f;
+		style.CellPadding = { 4.0f, 2.0f };
+		style.ScrollbarSize = 16.0f;
+		style.ScrollbarRounding = 9.0f;
+		style.GrabMinSize = 12.0f;
+		style.GrabRounding = 2.0f;
+		style.TabRounding = 5.0f;
+		style.ButtonTextAlign = { 0.5f, 0.5f };
+		style.SelectableTextAlign = { 0.0f, 0.0f };
+
+		auto& colors = style.Colors;
+		colors[ImGuiCol_Text] = ImVec4(0.779221f, 0.779221f, 0.779221f, 1.0f);
+		colors[ImGuiCol_TextDisabled] = ImVec4(0.513726f, 0.509804f, 0.513726f, 1.0f);
+		colors[ImGuiCol_WindowBg] = ImVec4(0.0823529f, 0.0823529f, 0.0823529f, 1.0f);
+		colors[ImGuiCol_ChildBg] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
+		colors[ImGuiCol_PopupBg] = ImVec4(0.101961f, 0.0980392f, 0.105882f, 1.0f);
+		colors[ImGuiCol_Border] = ImVec4(0.203922f, 0.2f, 0.203922f, 1.0f);
+		colors[ImGuiCol_BorderShadow] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+		colors[ImGuiCol_FrameBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);
+		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.1589f, 0.1608f, 0.1589f, 1.0f);
+		colors[ImGuiCol_FrameBgActive] = ImVec4(0.2392f, 0.2373f, 0.2392f, 1.0f);
+		colors[ImGuiCol_TitleBg] = ImVec4(0.0883f, 0.0902f, 0.0883f, 1.0f);
+		colors[ImGuiCol_TitleBgActive] = ImVec4(0.1608f, 0.1588f, 0.1608f, 1.0f);
+		colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.0f, 0.0f, 0.0f, 0.51f);
+		colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.0f);
+		colors[ImGuiCol_ScrollbarBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+		colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.341176f, 0.341176f, 0.341176f, 1.0f);
+		colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.392157f, 0.392157f, 0.392157f, 1.0f);
+		colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.0f);
+		colors[ImGuiCol_CheckMark] = ImVec4(0.25f, 0.58f, 0.7f, 1.0f);
+		colors[ImGuiCol_SliderGrab] = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
+		colors[ImGuiCol_SliderGrabActive] = ImVec4(0.2902f, 0.2882f, 0.2902f, 1.0f);
+		colors[ImGuiCol_Button] = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
+		colors[ImGuiCol_ButtonHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+		colors[ImGuiCol_ButtonActive] = ImVec4(0.3098f, 0.3078f, 0.3098f, 1.0f);
+		colors[ImGuiCol_Header] = ImVec4(0.18f, 0.18f, 0.19f, 1.0f);
+		colors[ImGuiCol_HeaderHovered] = ImVec4(0.23f, 0.23f, 0.24f, 1.0f);
+		colors[ImGuiCol_HeaderActive] = ImVec4(0.31f, 0.3f, 0.31f, 1.0f);
+		colors[ImGuiCol_Separator] = ImVec4(0.196078f, 0.182238f, 0.195916f, 1.0f);
+		colors[ImGuiCol_SeparatorHovered] = ImVec4(0.1f, 0.4f, 0.75f, 0.78f);
+		colors[ImGuiCol_SeparatorActive] = ImVec4(0.1f, 0.4f, 0.75f, 1.0f);
+		colors[ImGuiCol_ResizeGrip] = ImVec4(0.2f, 0.760784f, 0.964706f, 0.784314f);
+		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+		colors[ImGuiCol_Tab] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
+		colors[ImGuiCol_TabHovered] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
+		colors[ImGuiCol_TabActive] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
+		colors[ImGuiCol_TabUnfocused] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
+		colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
+		colors[ImGuiCol_DockingPreview] = ImVec4(0.71f, 0.66f, 0.14f, 0.7f);
+		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+		colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.0f);
+		colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.0f, 0.43f, 0.35f, 1.0f);
+		colors[ImGuiCol_PlotHistogram] = ImVec4(0.9f, 0.7f, 0.0f, 1.0f);
+		colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.0f, 0.6f, 0.0f, 1.0f);
+		colors[ImGuiCol_TableHeaderBg] = ImVec4(0.1863f, 0.1863f, 0.1882f, 1.0f);
+		colors[ImGuiCol_TableBorderStrong] = ImVec4(0.3098f, 0.3098f, 0.3078f, 1.0f);
+		colors[ImGuiCol_TableBorderLight] = ImVec4(0.2314f, 0.2314f, 0.2294f, 1.0f);
+		colors[ImGuiCol_TableRowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+		colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.06f);
+		colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+		colors[ImGuiCol_DragDropTarget] = ImVec4(1.0f, 1.0f, 0.0f, 0.9f);
+		colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
+		colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
+		colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.2f);
+		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
+#endif
 
 		Engine::Get().SubmitToEventThread([]()
 		{
@@ -208,6 +368,12 @@ namespace Flux {
 						return;
 
 					ImGuiIO& io = ImGui::GetIO();
+					
+					io.AddKeyEvent(ImGuiMod_Ctrl, Input::GetKey(KeyCode::LeftControl) || Input::GetKey(KeyCode::RightControl));
+					io.AddKeyEvent(ImGuiMod_Shift, Input::GetKey(KeyCode::LeftShift) || Input::GetKey(KeyCode::RightShift));
+					io.AddKeyEvent(ImGuiMod_Alt, Input::GetKey(KeyCode::LeftAlt) || Input::GetKey(KeyCode::RightAlt));
+					io.AddKeyEvent(ImGuiMod_Super, Input::GetKey(KeyCode::LeftSuper) || Input::GetKey(KeyCode::RightSuper));
+					
 					io.AddKeyEvent(Utils::KeyCodeToImGuiKey(key), action == FLUX_ACTION_PRESS);
 				});
 			});
@@ -232,6 +398,12 @@ namespace Flux {
 				Engine::Get().SubmitToMainThread([button, action, mods]()
 				{
 					ImGuiIO& io = ImGui::GetIO();
+
+					io.AddKeyEvent(ImGuiMod_Ctrl, Input::GetKey(KeyCode::LeftControl) || Input::GetKey(KeyCode::RightControl));
+					io.AddKeyEvent(ImGuiMod_Shift, Input::GetKey(KeyCode::LeftShift) || Input::GetKey(KeyCode::RightShift));
+					io.AddKeyEvent(ImGuiMod_Alt, Input::GetKey(KeyCode::LeftAlt) || Input::GetKey(KeyCode::RightAlt));
+					io.AddKeyEvent(ImGuiMod_Super, Input::GetKey(KeyCode::LeftSuper) || Input::GetKey(KeyCode::RightSuper));
+
 					io.AddMouseButtonEvent(button, action == FLUX_ACTION_PRESS);
 				});
 			});
@@ -251,14 +423,40 @@ namespace Flux {
 		mainViewport->PlatformHandle = window.get();
 		mainViewport->PlatformHandleRaw = windowHandle;
 
+		// mainViewport->PlatformUserData = this;
+
 		ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
-		// platformIO.Platform_CreateWindow = ImGui_CreateWindow;
+
+		// Platform
+		platformIO.Platform_CreateWindow = ImGui_Platform_CreateWindow;
+		platformIO.Platform_DestroyWindow = ImGui_Platform_DestroyWindow;
+		platformIO.Platform_ShowWindow = ImGui_Platform_ShowWindow;
+		platformIO.Platform_SetWindowPos = ImGui_Platform_SetWindowPos;
+		platformIO.Platform_GetWindowPos = ImGui_Platform_GetWindowPos;
+		platformIO.Platform_SetWindowSize = ImGui_Platform_SetWindowSize;
+		platformIO.Platform_GetWindowSize = ImGui_Platform_GetWindowSize;
+		platformIO.Platform_SetWindowFocus = ImGui_Platform_SetWindowFocus;
+		platformIO.Platform_GetWindowFocus = ImGui_Platform_GetWindowFocus;
+		platformIO.Platform_GetWindowMinimized = ImGui_Platform_GetWindowMinimized;
+		platformIO.Platform_SetWindowTitle = ImGui_Platform_SetWindowTitle;
+
+		ImGuiPlatformMonitor monitor;
+		// TODO: TEMP
+		monitor.MainSize.x = 1920.0f;
+		monitor.MainSize.y = 1080.0f;
+		platformIO.Monitors.push_back(monitor);
+
+		// Renderer
+		platformIO.Renderer_CreateWindow = ImGui_Renderer_CreateWindow;
+		platformIO.Renderer_DestroyWindow = ImGui_Renderer_DestroyWindow;
+		platformIO.Renderer_SetWindowSize = ImGui_Renderer_SetWindowSize;
 
 		// Font texture
 		{
 			uint8* pixels;
 			int32 width, height, bytesPerPixel;
 			io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytesPerPixel);
+			io.Fonts->SetTexID(nullptr);
 
 			TextureFormat format = TextureFormat::None;
 			if (bytesPerPixel == 4)
@@ -447,7 +645,16 @@ namespace Flux {
 							(int32)(clipMax.y - clipMin.y)
 						);
 
-						m_FontTexture->Bind();
+						if (!command->TextureId)
+						{
+							m_FontTexture->Bind();
+						}
+						else
+						{
+							auto it = m_TextureMap.find(command->TextureId);
+							if (it != m_TextureMap.end())
+								it->second->Bind();
+						}
 
 						m_Pipeline->DrawIndexed(
 							m_IndexBuffer->GetDataType(),
@@ -460,12 +667,23 @@ namespace Flux {
 			}
 		}
 
+		m_TextureMap.clear();
+
 		ImGuiIO& io = ImGui::GetIO();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
 		}
+	}
+
+	void ImGuiRenderer::Image(Ref<Texture2D> texture, const ImVec2& size)
+	{
+		FLUX_CHECK_IS_MAIN_THREAD();
+
+		ImTextureID textureID = (ImTextureID)(uintptr)(m_TextureMap.size() + 1);
+		m_TextureMap[textureID] = texture;
+		ImGui::Image(textureID, size);
 	}
 
 }

@@ -24,6 +24,7 @@ namespace Flux {
 		static void FlushReleaseQueue();
 
 		static uint32 GetCurrentQueueIndex();
+		static uint32 GetQueueCount();
 	private:
 		inline static constexpr uint32 s_RenderCommandQueueCount = 2;
 

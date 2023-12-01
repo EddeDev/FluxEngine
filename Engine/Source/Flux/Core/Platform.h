@@ -44,6 +44,21 @@ namespace Flux {
 		Yes
 	};
 
+	struct MonitorInfo
+	{
+		uint32 MainPositionX;
+		uint32 MainPositionY;
+		uint32 MainSizeX;
+		uint32 MainSizeY;
+
+		uint32 WorkPositionX;
+		uint32 WorkPositionY;
+		uint32 WorkSizeX;
+		uint32 WorkSizeY;
+	
+		float DpiScale;
+	};
+
 	using WindowClassHandle = uint32;
 
 	class Platform
@@ -61,6 +76,7 @@ namespace Flux {
 		static float GetTime();
 		static uint64 GetNanoTime();
 
+		static DialogResult OpenFolderDialog(Window* window, std::string* outPath, const std::string& title = "Select Folder");
 		static DialogResult MessageBox(MessageBoxButtons buttons, MessageBoxIcon icon, const std::string& text, const std::string& caption);
 
 		static bool IsDebuggerPresent();

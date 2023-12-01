@@ -318,6 +318,25 @@ namespace Flux {
 		Released
 	};
 
+	class Input
+	{
+	public:
+		static void Init();
+		static void Shutdown();
 
+		static void Update();
+
+		static bool GetKey(KeyCode key);
+		static bool GetKeyDown(KeyCode key);
+		static bool GetKeyUp(KeyCode key);
+
+		static bool GetMouseButton(MouseButtonCode button);
+		static bool GetMouseButtonDown(MouseButtonCode button);
+		static bool GetMouseButtonUp(MouseButtonCode button);
+	private:
+		static void OnKeyEvent(int32 key, int32 scancode, int32 action, int32 mods);
+		static void OnMouseButtonEvent(int32 button, int32 action, int32 mods);
+		static void OnMouseMoveEvent(float x, float y);
+	};
 
 }

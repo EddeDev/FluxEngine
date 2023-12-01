@@ -138,6 +138,56 @@ namespace Flux {
 		return ::IsWindowVisible(m_WindowHandle);
 	}
 
+	WindowMenu WindowsWindow::CreateMenu() const
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		return static_cast<WindowMenu>(::CreateMenu());
+	}
+
+	bool WindowsWindow::SetMenu(WindowMenu menu) const
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
+	}
+
+	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 menuID, const char* name, bool disabled) const
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING | (disabled ? MF_DISABLED : 0), (UINT_PTR)menuID, name))
+		{
+			FLUX_VERIFY(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
+			return false;
+		}
+		return true;
+	}
+
+	bool WindowsWindow::AddMenuSeparator(WindowMenu menu) const
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
+		{
+			FLUX_VERIFY(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
+			return false;
+		}
+		return true;
+	}
+
+	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name, bool disabled) const
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP | (disabled ? MF_DISABLED : 0), (UINT_PTR)childMenu, name))
+		{
+			FLUX_VERIFY(false, "AppendMenuA failed. ({0})", Platform::GetErrorMessage());
+			return false;
+		}
+		return true;
+	}
+
 	void WindowsWindow::SetCursorShape(CursorShape shape)
 	{
 		FLUX_CHECK_IS_THREAD(m_ThreadID);
@@ -168,6 +218,13 @@ namespace Flux {
 		FLUX_CHECK_IS_THREAD(m_ThreadID);
 
 		m_FocusCallbacks.push_back(callback);
+	}
+
+	void WindowsWindow::AddMenuCallback(const WindowMenuCallback& callback)
+	{
+		FLUX_CHECK_IS_THREAD(m_ThreadID);
+
+		m_MenuCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddKeyCallback(const KeyCallback& callback)
@@ -211,6 +268,12 @@ namespace Flux {
 
 		switch (uMsg)
 		{
+		case WM_COMMAND:
+		{
+			for (auto& callback : m_MenuCallbacks)
+				callback(m_Menu, (uint32)wParam);
+			break;
+		}
 		case WM_SETFOCUS:
 		{
 			for (auto& callback : m_FocusCallbacks)

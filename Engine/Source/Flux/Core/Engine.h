@@ -10,6 +10,7 @@
 #include "Flux/Renderer/IndexBuffer.h"
 #include "Flux/Renderer/Shader.h"
 #include "Flux/Renderer/GraphicsPipeline.h"
+#include "Flux/Renderer/Texture.h"
 
 namespace Flux {
 
@@ -39,6 +40,7 @@ namespace Flux {
 		void MainLoop();
 
 		void OnWindowClose();
+		void OnMenuCallback(WindowMenu menu, uint32 menuID);
 	private:
 		inline static Engine* s_Instance = nullptr;
 
@@ -52,6 +54,11 @@ namespace Flux {
 		Unique<Thread> m_MainThread;
 		Unique<Thread> m_RenderThread;
 
+		Ref<Texture2D> m_ViewportPlaceholderTexture;
+		uint8* m_ViewportPlaceholderTextureData = nullptr;
+		uint32 m_ViewportWidth = 0;
+		uint32 m_ViewportHeight = 0;
+
 		ThreadID m_EventThreadID = 0;
 		ThreadID m_MainThreadID = 0;
 		ThreadID m_RenderThreadID = 0;
@@ -63,6 +70,7 @@ namespace Flux {
 		std::mutex m_MainThreadMutex;
 
 		std::atomic<bool> m_Running = true;
+		bool m_RestartOnClose = false;
 
 		bool m_VSync = true;
 		float m_FrameTime = 0.0f;
@@ -72,6 +80,26 @@ namespace Flux {
 		float m_LastTime = 0.0f;
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
+
+		float m_RenderThreadWaitTime = 0.0f;
+
+		enum MenuItem : uint32
+		{
+			// File
+			Menu_File_NewProject,
+			Menu_File_OpenProject,
+			Menu_File_SaveProject,
+			Menu_File_Restart,
+			Menu_File_Exit,
+
+			// Edit
+			Menu_Edit_Preferences,
+
+			// About
+			Menu_About_AboutFluxEngine
+		};
+
+		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
 	};
 
 #ifndef FLUX_BUILD_SHIPPING

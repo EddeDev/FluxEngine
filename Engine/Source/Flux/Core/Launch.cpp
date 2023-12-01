@@ -13,14 +13,18 @@ namespace Flux {
 			Logger::Init();
 			Platform::Init();
 
+			FLUX_INFO("Initializing...");
+
 			Engine* engine = new Engine();
 			engine->Run();
 			delete engine;
 
+			FLUX_INFO("Shutting down...");
+
 			Platform::Shutdown();
 			Logger::Shutdown();
 		}
-	
+
 		return 0;
 	}
 
