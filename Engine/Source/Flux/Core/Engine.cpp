@@ -60,6 +60,34 @@ namespace Flux {
 		m_Window->AddPopupMenu(menu, editMenu, "Edit");
 		m_Window->AddPopupMenu(menu, aboutMenu, "About");
 
+		{
+			WindowCreateInfo windowCreateInfo;
+			windowCreateInfo.ParentWindow = m_Window;
+
+			windowCreateInfo.Title = "About Flux Engine";
+			windowCreateInfo.Width = 610;
+			windowCreateInfo.Height = 410;
+			windowCreateInfo.Resizable = false;
+			m_Windows[Menu_About_AboutFluxEngine] = Window::Create(windowCreateInfo);
+
+			windowCreateInfo.Title = "Preferences";
+			windowCreateInfo.Width = 960;
+			windowCreateInfo.Height = 540;
+			windowCreateInfo.Resizable = true;
+			m_Windows[Menu_Edit_Preferences] = Window::Create(windowCreateInfo);
+
+			for (auto& [type, window] : m_Windows)
+			{
+				if (!window)
+					continue;
+
+				window->AddCloseCallback([window]()
+				{
+					window->SetVisible(false);
+				});
+			}
+		}
+	
 		m_Window->SetMenu(menu);
 		m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
 	}
@@ -346,7 +374,7 @@ namespace Flux {
 		case Menu_File_OpenProject:
 		{
 			std::string outPath;
-			if (Platform::OpenFolderDialog(m_Window.get(), &outPath, "Load Project") == DialogResult::Ok)
+			if (Platform::OpenFolderDialog(m_Window.Get(), &outPath, "Load Project") == DialogResult::Ok)
 				FLUX_ERROR("Path: {0}", outPath);
 			break;
 		}

@@ -63,6 +63,8 @@ namespace Flux {
 		wchar_t* title = new wchar_t[createInfo.Title.size() + 1];
 		MultiByteToWideChar(CP_UTF8, 0, createInfo.Title.c_str(), -1, title, static_cast<int32>(createInfo.Title.size()) + 1);
 
+		HWND hWndParent = static_cast<HWND>(createInfo.ParentWindow ? createInfo.ParentWindow->GetNativeHandle() : NULL);
+
 		m_WindowHandle = CreateWindowExW(
 			exStyle,
 			MAKEINTATOM(windowClass),
@@ -72,7 +74,7 @@ namespace Flux {
 			windowY,
 			m_Width,
 			m_Height,
-			NULL,
+			hWndParent,
 			NULL,
 			g_Instance,
 			NULL

@@ -93,7 +93,7 @@ namespace Flux {
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, width = m_Width, height = m_Height, format = m_Format]() mutable
 		{
-			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
+			auto& buffer = data->Storage.GetBuffer(bufferIndex);
 			glTextureSubImage2D(data->TextureID, 0, 0, 0, width, height, Utils::OpenGLTextureFormat(format), GL_UNSIGNED_BYTE, buffer.Data);
 			data->Storage.SetBufferAvailable(bufferIndex);
 		});

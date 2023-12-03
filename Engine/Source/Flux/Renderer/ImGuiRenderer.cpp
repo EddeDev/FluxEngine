@@ -235,8 +235,8 @@ namespace Flux {
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		
-		auto& window = Engine::Get().GetWindow();
+
+		Ref<Window> window = Engine::Get().GetWindow();
 		io.DisplaySize = ImVec2((float)window->GetWidth(), (float)window->GetHeight());
 
 		io.BackendPlatformUserData = this;
@@ -342,7 +342,7 @@ namespace Flux {
 
 		Engine::Get().SubmitToEventThread([]()
 		{
-			auto& window = Engine::Get().GetWindow();
+			Ref<Window> window = Engine::Get().GetWindow();
 			window->AddSizeCallback([](auto width, auto height)
 			{
 				Engine::Get().SubmitToMainThread([width, height]()
@@ -420,7 +420,7 @@ namespace Flux {
 		WindowHandle windowHandle = window->GetNativeHandle();
 
 		ImGuiViewport* mainViewport = ImGui::GetMainViewport();
-		mainViewport->PlatformHandle = window.get();
+		mainViewport->PlatformHandle = window.Get();
 		mainViewport->PlatformHandleRaw = windowHandle;
 
 		// mainViewport->PlatformUserData = this;
@@ -525,7 +525,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		auto& window = Engine::Get().GetWindow();
+		Ref<Window> window = Engine::Get().GetWindow();
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = Engine::Get().GetFrameTime();

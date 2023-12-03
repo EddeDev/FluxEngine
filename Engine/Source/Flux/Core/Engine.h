@@ -27,7 +27,7 @@ namespace Flux {
 		
 		float GetFrameTime() const { return m_FrameTime; }
 
-		const Unique<Window>& GetWindow() const { return m_Window; }
+		Ref<Window> GetWindow() const { return m_Window; }
 
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
 
@@ -44,7 +44,7 @@ namespace Flux {
 	private:
 		inline static Engine* s_Instance = nullptr;
 
-		Unique<Window> m_Window;
+		Ref<Window> m_Window;
 
 		Ref<GraphicsContext> m_Context;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;
@@ -99,7 +99,7 @@ namespace Flux {
 			Menu_About_AboutFluxEngine
 		};
 
-		std::unordered_map<MenuItem, Unique<Window>> m_Windows;
+		std::unordered_map<MenuItem, Ref<Window>> m_Windows;
 	};
 
 #ifndef FLUX_BUILD_SHIPPING

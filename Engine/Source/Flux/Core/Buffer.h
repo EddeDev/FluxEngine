@@ -83,22 +83,20 @@ namespace Flux {
 
 		~RenderThreadStorage()
 		{
-			BufferPoolMutex.lock();
+			std::lock_guard<std::mutex> lock(BufferPoolMutex);
 			for (auto& buffer : BufferPool)
 				buffer.Buffer.Release();
-			BufferPoolMutex.unlock();
 		}
 
 		void SetSize(uint64 size)
 		{
-			BufferPoolMutex.lock();
+			std::lock_guard<std::mutex> lock(BufferPoolMutex);
 			Size = size;
-			BufferPoolMutex.unlock();
 		}
 
 		uint32 SetData(const void* data, uint64 size, uint64 offset = 0)
 		{
-			BufferPoolMutex.lock();
+			std::lock_guard<std::mutex> lock(BufferPoolMutex);
 
 			int32 bufferIndex = -1;
 			for (int32 i = 0; i < static_cast<int32>(BufferPool.size()); i++)
@@ -126,31 +124,25 @@ namespace Flux {
 			}
 
 			memcpy(buffer.Buffer.Data, (uint8*)data + offset, size);
-			BufferPoolMutex.unlock();
 			return bufferIndex;
 		}
 
 		void SetBufferAvailable(uint32 bufferIndex)
 		{
-			BufferPoolMutex.lock();
+			std::lock_guard<std::mutex> lock(BufferPoolMutex);
 			BufferPool[bufferIndex].IsAvailable = true;
-			BufferPoolMutex.unlock();
 		}
 
-		Buffer GetBuffer(uint32 bufferIndex) const
+		const Buffer& GetBuffer(uint32 bufferIndex) const
 		{
-			BufferPoolMutex.lock();
-			Buffer buffer = BufferPool.at(bufferIndex).Buffer;
-			BufferPoolMutex.unlock();
-			return buffer;
+			std::lock_guard<std::mutex> lock(BufferPoolMutex);
+			return BufferPool[bufferIndex].Buffer;
 		}
 
 		uint64 GetSize() const
 		{
-			BufferPoolMutex.lock();
-			uint64 size = Size;
-			BufferPoolMutex.unlock();
-			return size;
+			std::lock_guard<std::mutex> lock(BufferPoolMutex);
+			return Size;
 		}
 	};
 

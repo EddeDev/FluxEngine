@@ -7,10 +7,10 @@
 
 namespace Flux {
 
-	Unique<Window> Window::Create(const WindowCreateInfo& createInfo)
+	Ref<Window> Window::Create(const WindowCreateInfo& createInfo)
 	{
 #ifdef FLUX_PLATFORM_WINDOWS
-		return CreateUnique<WindowsWindow>(createInfo);
+		return Ref<WindowsWindow>::Create(createInfo);
 #else
 	#error Unknown platform!
 #endif

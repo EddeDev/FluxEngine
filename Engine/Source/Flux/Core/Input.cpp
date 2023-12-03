@@ -28,7 +28,7 @@ namespace Flux {
 
 		Engine::Get().SubmitToEventThread([]()
 		{
-			auto& window = Engine::Get().GetWindow();
+			Ref<Window> window = Engine::Get().GetWindow();
 			if (!window)
 				return;
 

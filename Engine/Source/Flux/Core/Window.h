@@ -9,6 +9,8 @@ namespace Flux {
 		Fullscreen
 	};
 
+	class Window;
+
 	struct WindowCreateInfo
 	{
 		uint32 Width = 1280;
@@ -17,6 +19,8 @@ namespace Flux {
 		bool Resizable = true;
 		bool Decorated = true;
 		WindowMode Mode = WindowMode::Windowed;
+
+		Ref<Window> ParentWindow;
 	};
 
 	enum class CursorShape : uint8
@@ -48,10 +52,10 @@ namespace Flux {
 	typedef std::function<void(float, float)> MouseMoveCallback;
 	typedef std::function<void(float, float)> MouseWheelCallback;
 
-	class Window
+	class Window : public ReferenceCounted
 	{
 	public:
-		virtual ~Window() = default;
+		virtual ~Window() {}
 
 		virtual void SetVisible(bool visible) const = 0;
 		virtual bool IsVisible() const = 0;
@@ -81,7 +85,7 @@ namespace Flux {
 
 		virtual WindowHandle GetNativeHandle() const = 0;
 
-		static Unique<Window> Create(const WindowCreateInfo& createInfo);
+		static Ref<Window> Create(const WindowCreateInfo& createInfo);
 	};
 
 }
