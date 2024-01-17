@@ -33,6 +33,7 @@ namespace Flux {
 		virtual void Wait() = 0;
 
 		virtual void Submit(Job job) = 0;
+		virtual void SubmitAndWait(Job job) = 0;
 		virtual uint32 GetRemainingJobs() = 0;
 
 		virtual ThreadHandle GetHandle() const = 0;

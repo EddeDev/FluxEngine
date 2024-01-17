@@ -262,7 +262,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		if (path.empty() || !std::filesystem::exists(path))
+		if (!std::filesystem::exists(path))
 			return;
 
 		if (m_Project && path == m_Project->GetProjectDirectory())

@@ -71,14 +71,9 @@ namespace Flux {
 		m_RenderThreadID = m_RenderThread ? m_RenderThread->GetID() : m_MainThreadID;
 
 		if (m_CreateInfo.Multithreaded)
-		{
-			m_RenderThread->Submit(FLUX_BIND_CALLBACK(CreateRendererContext, this));
-			m_RenderThread->Wait();
-		}
+			m_RenderThread->SubmitAndWait(FLUX_BIND_CALLBACK(CreateRendererContext, this));
 		else
-		{
 			m_MainThread->Submit(FLUX_BIND_CALLBACK(CreateRendererContext, this));
-		}
 
 		m_MainThread->Submit(FLUX_BIND_CALLBACK(MainLoop, this));
 
@@ -144,7 +139,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_MAIN_THREAD();
 
-		Renderer::Init(m_CreateInfo.Multithreaded && m_RenderThread ? 2 : 1);
+		Renderer::Init(m_RenderThread ? 2 : 1);
 		Input::Init();
 
 		if (m_CreateInfo.EnableImGui)
@@ -236,12 +231,11 @@ namespace Flux {
 		uint32 queueIndex = Renderer::GetCurrentQueueIndex();
 		if (m_RenderThread)
 		{
-			m_RenderThread->Submit([queueIndex]()
+			m_RenderThread->SubmitAndWait([queueIndex]()
 			{
 				Renderer::FlushRenderCommands(queueIndex);
 				Renderer::FlushReleaseQueue();
 			});
-			m_RenderThread->Wait();
 		}
 		else
 		{

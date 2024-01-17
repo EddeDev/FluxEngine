@@ -49,6 +49,12 @@ namespace Flux {
 		LeaveCriticalSection(&m_CriticalSection);
 	}
 
+	void WindowsThread::SubmitAndWait(Job job)
+	{
+		Submit(std::move(job));
+		Wait();
+	}
+
 	uint32 WindowsThread::GetRemainingJobs()
 	{
 		EnterCriticalSection(&m_CriticalSection);

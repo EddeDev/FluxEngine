@@ -16,6 +16,7 @@ namespace Flux {
 		virtual void Wait() override;
 
 		virtual void Submit(Job job) override;
+		virtual void SubmitAndWait(Job job) override;
 		virtual uint32 GetRemainingJobs() override;
 
 		virtual ThreadHandle GetHandle() const override { return m_ThreadHandle; }
