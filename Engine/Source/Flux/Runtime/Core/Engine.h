@@ -2,6 +2,7 @@
 
 #include "Window.h"
 #include "Thread.h"
+#include "BuildConfiguration.h"
 
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
@@ -33,7 +34,7 @@ namespace Flux {
 		void Close(bool restart = false);
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
-		
+
 		float GetFrameTime() const { return m_FrameTime; }
 
 		Ref<Window> GetWindow() const { return m_Window; }
@@ -43,6 +44,8 @@ namespace Flux {
 		ThreadID GetMainThreadID() const { return m_MainThreadID; }
 		ThreadID GetEventThreadID() const { return m_EventThreadID; }
 		ThreadID GetRenderThreadID() const { return m_RenderThreadID; }
+
+		static BuildConfiguration GetBuildConfiguration();
 
 		static Engine& Get() { return *(Engine*)s_Instance; }
 	protected:

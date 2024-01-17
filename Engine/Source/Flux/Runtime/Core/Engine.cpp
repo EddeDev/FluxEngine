@@ -257,4 +257,18 @@ namespace Flux {
 		});
 	}
 
+	BuildConfiguration Engine::GetBuildConfiguration()
+	{
+#if defined(FLUX_BUILD_DEBUG)
+		return BuildConfiguration::Debug;
+#elif defined(FLUX_BUILD_RELEASE)
+		return BuildConfiguration::Release;
+#elif defined(FLUX_BUILD_SHIPPING)
+		return BuildConfiguration::Shipping;
+#else
+		static_assert(false);
+		return BuildConfiguration::None;
+#endif
+	}
+
 }

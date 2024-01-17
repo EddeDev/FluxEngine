@@ -116,6 +116,12 @@ namespace Flux {
 			ImGui::End();
 
 			ImGui::Begin("Flux Engine");
+
+			BuildConfiguration buildConfig = Engine::GetBuildConfiguration();
+			const char* buildConfigString = Utils::BuildConfigurationToString(buildConfig);
+			ImGui::Text("%s build", buildConfigString);
+			ImGui::Separator();
+
 			ImGui::Checkbox("V-Sync", &m_VSync);
 			ImGui::Text("%d fps", m_FramesPerSecond);
 			ImGui::Text("Frame Time: %.2fms", m_FrameTime * 1000.0f);
