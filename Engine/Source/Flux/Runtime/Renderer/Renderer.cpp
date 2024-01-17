@@ -15,7 +15,7 @@ namespace Flux {
 
 	void Renderer::Init(uint32 commandQueueCount)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_VERIFY(commandQueueCount <= s_MaxRenderCommandQueueCount);
 
@@ -25,7 +25,7 @@ namespace Flux {
 
 	void Renderer::Shutdown()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		delete s_Data;
 		s_Data = nullptr;
@@ -33,7 +33,7 @@ namespace Flux {
 
 	void Renderer::BeginFrame()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		// Flush release queue
 		FLUX_SUBMIT_RENDER_COMMAND([]()
@@ -44,7 +44,7 @@ namespace Flux {
 
 	void Renderer::EndFrame()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		s_Data->CurrentQueueIndex = (s_Data->CurrentQueueIndex + 1) % s_Data->CurrentQueueCount;
 	}
@@ -52,7 +52,7 @@ namespace Flux {
 #ifndef FLUX_BUILD_SHIPPING
 	void Renderer::SubmitRenderCommand(const char* functionName, RenderCommand command)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (s_RenderCommandQueueLocked[s_Data->CurrentQueueIndex])
 		{
@@ -65,7 +65,7 @@ namespace Flux {
 
 	void Renderer::SubmitRenderCommandRelease(const char* functionName, RenderCommand command)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (s_RenderCommandQueueLocked[s_Data->CurrentQueueIndex])
 		{
@@ -87,14 +87,14 @@ namespace Flux {
 #else
 	void Renderer::SubmitRenderCommand(RenderCommand command)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		s_RenderCommandQueue.push(std::move(command));
 	}
 
 	void Renderer::SubmitRenderCommandRelease(RenderCommand command)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push([functionName, command = std::move(command)]() mutable
 		{
@@ -105,7 +105,7 @@ namespace Flux {
 
 	void Renderer::FlushRenderCommands(uint32 queueIndex)
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 #ifndef FLUX_BUILD_SHIPPING
 		if (s_RenderCommandQueueLocked[queueIndex])
@@ -132,7 +132,7 @@ namespace Flux {
 
 	void Renderer::FlushReleaseQueue()
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 #ifndef FLUX_BUILD_SHIPPING
 		if (s_ReleaseQueueLocked)
@@ -158,14 +158,14 @@ namespace Flux {
 
 	uint32 Renderer::GetCurrentQueueIndex()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		return s_Data->CurrentQueueIndex;
 	}
 
 	uint32 Renderer::GetQueueCount()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		return s_Data->CurrentQueueCount;
 	}

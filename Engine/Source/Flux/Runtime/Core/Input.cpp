@@ -18,7 +18,7 @@ namespace Flux {
 
 	void Input::Init()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		s_Data = new InputData;
 		memset(s_Data, 0, sizeof(InputData));
@@ -60,7 +60,7 @@ namespace Flux {
 
 	void Input::Shutdown()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		delete[] s_Data->KeyStates;
 		delete[] s_Data->MouseButtonStates;
@@ -77,7 +77,7 @@ namespace Flux {
 
 	bool Input::GetKey(KeyCode key)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (key < KeyCode::Space || key > KeyCode::Last)
 		{
@@ -90,7 +90,7 @@ namespace Flux {
 
 	bool Input::GetKeyDown(KeyCode key)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (key < KeyCode::Space || key > KeyCode::Last)
 		{
@@ -103,7 +103,7 @@ namespace Flux {
 
 	bool Input::GetKeyUp(KeyCode key)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (key < KeyCode::Space || key > KeyCode::Last)
 		{
@@ -116,7 +116,7 @@ namespace Flux {
 
 	bool Input::GetMouseButton(MouseButtonCode button)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (button < MouseButtonCode::Button1 || button > MouseButtonCode::ButtonLast)
 		{
@@ -129,7 +129,7 @@ namespace Flux {
 
 	bool Input::GetMouseButtonDown(MouseButtonCode button)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (button < MouseButtonCode::Button1 || button > MouseButtonCode::ButtonLast)
 		{
@@ -142,7 +142,7 @@ namespace Flux {
 
 	bool Input::GetMouseButtonUp(MouseButtonCode button)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (button < MouseButtonCode::Button1 || button > MouseButtonCode::ButtonLast)
 		{
@@ -155,7 +155,7 @@ namespace Flux {
 
 	void Input::OnKeyEvent(int32 key, int32 scancode, int32 action, int32 mods)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_ASSERT(key >= 0 || key == FLUX_KEY_UNKNOWN);
 		FLUX_ASSERT(key <= FLUX_KEY_LAST);
@@ -167,7 +167,7 @@ namespace Flux {
 			if (action == FLUX_ACTION_RELEASE && s_Data->Keys[key] == FLUX_ACTION_RELEASE)
 				return;
 
-			const bool repeated = action == FLUX_ACTION_PRESS && s_Data->Keys[key] == FLUX_ACTION_PRESS;
+			bool repeated = action == FLUX_ACTION_PRESS && s_Data->Keys[key] == FLUX_ACTION_PRESS;
 
 			s_Data->Keys[key] = static_cast<int8>(action);
 
@@ -197,7 +197,7 @@ namespace Flux {
 
 	void Input::OnMouseButtonEvent(int32 button, int32 action, int32 mods)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_ASSERT(button >= 0);
 		FLUX_ASSERT(button <= FLUX_MOUSE_BUTTON_LAST);
@@ -226,7 +226,7 @@ namespace Flux {
 
 	void Input::OnMouseMoveEvent(float x, float y)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 }

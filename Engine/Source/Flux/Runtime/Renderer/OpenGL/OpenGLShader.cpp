@@ -25,7 +25,7 @@ namespace Flux {
 
 	OpenGLShader::OpenGLShader(const std::string& vertexShaderSource, const std::string& fragmentShaderSource)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLShaderData();
 
@@ -80,7 +80,7 @@ namespace Flux {
 
 	OpenGLShader::~OpenGLShader()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]()
 		{
@@ -92,7 +92,7 @@ namespace Flux {
 
 	void OpenGLShader::Bind() const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
@@ -102,7 +102,7 @@ namespace Flux {
 
 	void OpenGLShader::Unbind() const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([]()
 		{

@@ -14,22 +14,22 @@ namespace Flux {
 
 	RuntimeEngine::~RuntimeEngine()
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 	}
 
 	void RuntimeEngine::OnInit()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	void RuntimeEngine::OnShutdown()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	void RuntimeEngine::OnUpdate(float deltaTime)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		// Clear color (TODO: remove)
 		FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_Window->GetWidth(), windowHeight = m_Window->GetHeight()]() mutable

@@ -97,13 +97,13 @@ namespace Flux {
 	};
 
 #ifndef FLUX_BUILD_SHIPPING
-	#define FLUX_CHECK_IS_MAIN_THREAD() FLUX_CHECK_IS_THREAD(Engine::Get().GetMainThreadID())
-	#define FLUX_CHECK_IS_EVENT_THREAD() FLUX_CHECK_IS_THREAD(Engine::Get().GetEventThreadID())
-	#define FLUX_CHECK_IS_RENDER_THREAD() FLUX_CHECK_IS_THREAD(Engine::Get().GetRenderThreadID())
+	#define FLUX_CHECK_IS_IN_MAIN_THREAD() FLUX_CHECK_IS_IN_THREAD(Engine::Get().GetMainThreadID())
+	#define FLUX_CHECK_IS_IN_EVENT_THREAD() FLUX_CHECK_IS_IN_THREAD(Engine::Get().GetEventThreadID())
+	#define FLUX_CHECK_IS_IN_RENDER_THREAD() FLUX_CHECK_IS_IN_THREAD(Engine::Get().GetRenderThreadID())
 #else
-	#define FLUX_CHECK_IS_MAIN_THREAD() (void)0
-	#define FLUX_CHECK_IS_EVENT_THREAD() (void)0
-	#define FLUX_CHECK_IS_RENDER_THREAD() (void)0
+	#define FLUX_CHECK_IS_IN_MAIN_THREAD() (void)0
+	#define FLUX_CHECK_IS_IN_EVENT_THREAD() (void)0
+	#define FLUX_CHECK_IS_IN_RENDER_THREAD() (void)0
 #endif
 
 }

@@ -70,7 +70,7 @@ namespace Flux {
 		}
 
 		template<typename TThreadID>
-		static void CheckIsThread(TThreadID threadID, std::string_view functionName = "")
+		static void CheckIsInThread(TThreadID threadID, std::string_view functionName = "")
 		{
 			static_assert(std::is_same<TThreadID, ThreadID>::value);
 

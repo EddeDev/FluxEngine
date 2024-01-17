@@ -10,7 +10,7 @@ namespace Flux {
 	OpenGLContext::OpenGLContext(WindowHandle windowHandle)
 		: m_WindowHandle(windowHandle)
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 		HWND hWnd = static_cast<HWND>(Platform::GetHelperWindowHandle());
 
@@ -56,7 +56,7 @@ namespace Flux {
 
 	OpenGLContext::~OpenGLContext()
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 		if (m_Context)
 			wglDeleteContext(m_Context);
@@ -66,7 +66,7 @@ namespace Flux {
 
 	bool OpenGLContext::Init()
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 		HWND hWnd = static_cast<HWND>(m_WindowHandle);
 
@@ -157,7 +157,7 @@ namespace Flux {
 
 	void OpenGLContext::SwapBuffers(int32 swapInterval)
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 		if (m_SwapInterval != swapInterval)
 		{

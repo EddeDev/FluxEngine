@@ -43,7 +43,7 @@ namespace Flux {
 
 	Engine::~Engine()
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
 		s_Instance = nullptr;
 
@@ -52,7 +52,7 @@ namespace Flux {
 
 	void Engine::Run()
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
 		ThreadCreateInfo mainThreadCreateInfo;
 		mainThreadCreateInfo.Name = "Main Thread";
@@ -100,7 +100,7 @@ namespace Flux {
 
 	void Engine::CreateRendererContext()
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 		m_Context = GraphicsContext::Create(m_Window->GetNativeHandle());
 		m_Context->Init();
@@ -108,7 +108,7 @@ namespace Flux {
 
 	void Engine::DestroyRendererContext()
 	{
-		FLUX_CHECK_IS_RENDER_THREAD();
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
 		FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
 		m_Context = nullptr;
@@ -116,7 +116,7 @@ namespace Flux {
 
 	void Engine::Close(bool restart)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Running = false;
 		m_RestartOnClose = restart;
@@ -137,7 +137,7 @@ namespace Flux {
 
 	void Engine::MainLoop()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		Renderer::Init(m_RenderThread ? 2 : 1);
 		Input::Init();
@@ -249,7 +249,7 @@ namespace Flux {
 
 	void Engine::OnWindowClose()
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
 		SubmitToMainThread([this]()
 		{

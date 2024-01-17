@@ -19,7 +19,7 @@
 #endif
 
 #ifndef FLUX_BUILD_SHIPPING
-	#define FLUX_CHECK_IS_THREAD(threadID) ::Flux::Logger::CheckIsThread(threadID, __FUNCTION__)
+	#define FLUX_CHECK_IS_IN_THREAD(threadID) ::Flux::Logger::CheckIsInThread(threadID, __FUNCTION__)
 #else
-	#define FLUX_CHECK_IS_THREAD(threadID) (void)0
+	#define FLUX_CHECK_IS_IN_THREAD(threadID) (void)0
 #endif

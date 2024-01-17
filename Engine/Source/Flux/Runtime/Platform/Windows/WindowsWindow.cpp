@@ -116,7 +116,7 @@ namespace Flux {
 
 	WindowsWindow::~WindowsWindow()
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		for (auto& [cursorShape, cursorHandle] : m_CursorImageMap)
 			DestroyCursor(cursorHandle);
@@ -128,35 +128,35 @@ namespace Flux {
 
 	void WindowsWindow::SetVisible(bool visible) const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		::ShowWindow(m_WindowHandle, visible ? SW_SHOWNA : SW_HIDE);
 	}
 
 	bool WindowsWindow::IsVisible() const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		return ::IsWindowVisible(m_WindowHandle);
 	}
 
 	WindowMenu WindowsWindow::CreateMenu() const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		return static_cast<WindowMenu>(::CreateMenu());
 	}
 
 	bool WindowsWindow::SetMenu(WindowMenu menu) const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		return ::SetMenu(m_WindowHandle, static_cast<HMENU>(menu));
 	}
 
 	bool WindowsWindow::AddMenu(WindowMenu menu, uint32 menuID, const char* name, bool disabled) const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_STRING | (disabled ? MF_DISABLED : 0), (UINT_PTR)menuID, name))
 		{
@@ -168,7 +168,7 @@ namespace Flux {
 
 	bool WindowsWindow::AddMenuSeparator(WindowMenu menu) const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_SEPARATOR | MF_BYPOSITION, NULL, NULL))
 		{
@@ -180,7 +180,7 @@ namespace Flux {
 
 	bool WindowsWindow::AddPopupMenu(WindowMenu menu, WindowMenu childMenu, const char* name, bool disabled) const
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		if (!::AppendMenuA(static_cast<HMENU>(menu), MF_POPUP | (disabled ? MF_DISABLED : 0), (UINT_PTR)childMenu, name))
 		{
@@ -192,7 +192,7 @@ namespace Flux {
 
 	void WindowsWindow::SetCursorShape(CursorShape shape)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		if (m_CursorShape != shape)
 		{
@@ -203,70 +203,70 @@ namespace Flux {
 
 	void WindowsWindow::AddCloseCallback(const WindowCloseCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_CloseCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddSizeCallback(const WindowSizeCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_SizeCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddFocusCallback(const WindowFocusCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_FocusCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddMenuCallback(const WindowMenuCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_MenuCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddKeyCallback(const KeyCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_KeyCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddCharCallback(const CharCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_CharCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddMouseButtonCallback(const MouseButtonCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_MouseButtonCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddMouseMoveCallback(const MouseMoveCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_MouseMoveCallbacks.push_back(callback);
 	}
 
 	void WindowsWindow::AddMouseWheelCallback(const MouseWheelCallback& callback)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		m_MouseWheelCallbacks.push_back(callback);
 	}
 
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
-		FLUX_CHECK_IS_THREAD(m_ThreadID);
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		switch (uMsg)
 		{

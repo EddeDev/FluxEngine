@@ -35,7 +35,7 @@ namespace Flux {
 	OpenGLTexture2D::OpenGLTexture2D(uint32 width, uint32 height, TextureFormat format)
 		: m_Width(width), m_Height(height), m_Format(format)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLTextureData();
 		m_Data->Storage.SetSize(width * height * Utils::GetTextureFormatBPP(format));
@@ -55,7 +55,7 @@ namespace Flux {
 
 	OpenGLTexture2D::~OpenGLTexture2D()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]()
 		{
@@ -67,7 +67,7 @@ namespace Flux {
 
 	void OpenGLTexture2D::Bind(uint32 slot) const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, slot]()
 		{
@@ -77,7 +77,7 @@ namespace Flux {
 
 	void OpenGLTexture2D::Unbind(uint32 slot) const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([slot]()
 		{
@@ -87,7 +87,7 @@ namespace Flux {
 
 	void OpenGLTexture2D::SetPixelData(const void* data, uint32 count)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		uint32 bufferIndex = m_Data->Storage.SetData(data, count * Utils::GetTextureFormatBPP(m_Format));
 

@@ -66,7 +66,7 @@ namespace Flux {
 	OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineCreateInfo& createInfo)
 		: m_Topology(createInfo.Topology)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLPipelineData();
 		m_Data->VertexDeclaration = createInfo.VertexDeclaration;
@@ -79,7 +79,7 @@ namespace Flux {
 
 	OpenGLPipeline::~OpenGLPipeline()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]()
 		{
@@ -91,7 +91,7 @@ namespace Flux {
 
 	void OpenGLPipeline::Bind() const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
@@ -144,7 +144,7 @@ namespace Flux {
 
 	void OpenGLPipeline::Unbind() const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
@@ -160,7 +160,7 @@ namespace Flux {
 
 	void OpenGLPipeline::Scissor(int32 x, int32 y, int32 width, int32 height) const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([x, y, width, height]()
 		{
@@ -170,7 +170,7 @@ namespace Flux {
 
 	void OpenGLPipeline::DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, topology = m_Topology, dataType, indexCount, startIndexLocation, baseVertexLocation]()
 		{

@@ -14,19 +14,19 @@ namespace Flux {
 
 	EditorEngine::~EditorEngine()
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 	}
 
 	void EditorEngine::OnInit()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		OpenProject();
 	}
 
 	void EditorEngine::OnShutdown()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		CloseProject();
 
@@ -38,7 +38,7 @@ namespace Flux {
 
 	void EditorEngine::OnUpdate(float deltaTime)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (m_ImGuiRenderer)
 		{
@@ -153,7 +153,7 @@ namespace Flux {
 
 	void EditorEngine::CreateWindowMenus()
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
 		WindowMenu fileMenu = m_Window->CreateMenu();
 		m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...");
@@ -208,7 +208,7 @@ namespace Flux {
 
 	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 menuID)
 	{
-		FLUX_CHECK_IS_EVENT_THREAD();
+		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
 		auto it = m_Windows.find(static_cast<MenuItem>(menuID));
 		if (it != m_Windows.end())
@@ -249,7 +249,7 @@ namespace Flux {
 
 	void EditorEngine::OpenProject()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		std::string path;
 		// while (path.empty())
@@ -260,7 +260,7 @@ namespace Flux {
 
 	void EditorEngine::OpenProject(const std::filesystem::path& path)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (!std::filesystem::exists(path))
 			return;
@@ -277,7 +277,7 @@ namespace Flux {
 
 	void EditorEngine::NewProject()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		std::string path;
 		Platform::OpenFolderDialog(nullptr, &path, "Choose location for new project");
@@ -292,7 +292,7 @@ namespace Flux {
 
 	void EditorEngine::SaveProject()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (m_Project)
 		{
@@ -304,7 +304,7 @@ namespace Flux {
 
 	void EditorEngine::CloseProject()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		if (m_Project)
 		{

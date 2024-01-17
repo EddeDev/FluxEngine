@@ -223,7 +223,7 @@ namespace Flux {
 
 	ImGuiRenderer::ImGuiRenderer()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		IMGUI_CHECKVERSION();
 
@@ -516,14 +516,14 @@ namespace Flux {
 
 	ImGuiRenderer::~ImGuiRenderer()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		ImGui::DestroyContext(m_Context);
 	}
 
 	void ImGuiRenderer::NewFrame()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		Ref<Window> window = Engine::Get().GetWindow();
 
@@ -556,7 +556,7 @@ namespace Flux {
 
 	void ImGuiRenderer::Render()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		ImGui::Render();
 
@@ -679,7 +679,7 @@ namespace Flux {
 
 	void ImGuiRenderer::Image(Ref<Texture2D> texture, const ImVec2& size)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		ImTextureID textureID = (ImTextureID)(uintptr)(m_TextureMap.size() + 1);
 		m_TextureMap[textureID] = texture;

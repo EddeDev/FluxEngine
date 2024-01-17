@@ -27,7 +27,7 @@ namespace Flux {
 	OpenGLVertexBuffer::OpenGLVertexBuffer(uint64 size, VertexBufferUsage usage)
 		: m_Usage(usage)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLVertexBufferData();
 		m_Data->Storage.SetSize(size);
@@ -42,7 +42,7 @@ namespace Flux {
 	OpenGLVertexBuffer::OpenGLVertexBuffer(const void* data, uint64 size, VertexBufferUsage usage)
 		: m_Usage(usage)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLVertexBufferData();
 		m_Data->Storage.SetSize(size);
@@ -60,7 +60,7 @@ namespace Flux {
 
 	OpenGLVertexBuffer::~OpenGLVertexBuffer()
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND_RELEASE([data = m_Data]() mutable
 		{
@@ -72,7 +72,7 @@ namespace Flux {
 
 	void OpenGLVertexBuffer::Bind() const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
@@ -82,7 +82,7 @@ namespace Flux {
 
 	void OpenGLVertexBuffer::Unbind() const
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		FLUX_SUBMIT_RENDER_COMMAND([]()
 		{
@@ -92,7 +92,7 @@ namespace Flux {
 
 	void OpenGLVertexBuffer::SetData(const void* data, uint64 size, uint64 offset)
 	{
-		FLUX_CHECK_IS_MAIN_THREAD();
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		uint32 bufferIndex = m_Data->Storage.SetData(data, size, offset);
 
