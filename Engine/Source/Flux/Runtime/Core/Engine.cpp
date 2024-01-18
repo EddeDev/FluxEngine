@@ -155,16 +155,16 @@ namespace Flux {
 
 		while (m_Running)
 		{
-			m_Time = Platform::GetTime();
-			m_FrameTime = m_Time - m_LastFrameTime;
-			m_LastFrameTime = m_Time;
+			m_CurrentTime = Platform::GetTime();
+			m_DeltaTime = Math::Min(m_CurrentTime - m_LastTime, m_MaxDeltaTime);
+			m_LastTime = m_CurrentTime;
 
 			m_FrameCounter++;
-			if (m_Time >= m_LastTime + 1.0f)
+			if (m_CurrentTime >= m_LastFrameTime + 1.0f)
 			{
 				m_FramesPerSecond = m_FrameCounter;
 				m_FrameCounter = 0;
-				m_LastTime = m_Time;
+				m_LastFrameTime = m_CurrentTime;
 			}
 
 			Utils::ExecuteQueue(m_MainThreadQueue, m_MainThreadMutex);
@@ -173,10 +173,14 @@ namespace Flux {
 
 			Input::Update();
 
-			OnUpdate(m_FrameTime);
+			OnUpdate(m_DeltaTime);
 
 			if (m_ImGuiRenderer)
+			{
+				m_ImGuiRenderer->NewFrame();
+				OnImGuiRender();
 				m_ImGuiRenderer->Render();
+			}
 
 			// Wait for the previous frame to finish
 			if (m_RenderThread && Renderer::GetQueueCount() > 1)

@@ -35,7 +35,7 @@ namespace Flux {
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
 
-		float GetFrameTime() const { return m_FrameTime; }
+		float GetDeltaTime() const { return m_DeltaTime; }
 
 		Ref<Window> GetWindow() const { return m_Window; }
 
@@ -52,6 +52,7 @@ namespace Flux {
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}
 		virtual void OnUpdate(float deltaTime) {}
+		virtual void OnImGuiRender() {}
 	private:
 		void CreateRendererContext();
 		void DestroyRendererContext();
@@ -88,11 +89,13 @@ namespace Flux {
 		bool m_RestartOnClose = false;
 
 		bool m_VSync = true;
-		float m_FrameTime = 0.0f;
-		float m_LastFrameTime = 0.0f;
-
-		float m_Time = 0.0f;
+		float m_DeltaTime = 0.0f;
+		float m_FixedDeltaTime = 1.0f / 50.0f;
+		float m_MaxDeltaTime = 1.0f / 30.0f;
+		float m_CurrentTime = 0.0f;
 		float m_LastTime = 0.0f;
+
+		float m_LastFrameTime = 0.0f;
 		uint32 m_FrameCounter = 0;
 		uint32 m_FramesPerSecond = 0;
 

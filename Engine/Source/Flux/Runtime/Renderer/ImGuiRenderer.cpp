@@ -528,7 +528,7 @@ namespace Flux {
 		Ref<Window> window = Engine::Get().GetWindow();
 
 		ImGuiIO& io = ImGui::GetIO();
-		io.DeltaTime = Engine::Get().GetFrameTime();
+		io.DeltaTime = Engine::Get().GetDeltaTime();
 
 		ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
 

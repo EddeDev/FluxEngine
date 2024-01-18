@@ -6,6 +6,7 @@ namespace Flux {
 	Project::Project(const std::filesystem::path& path)
 	{
 		FLUX_VERIFY(!s_ActiveProject);
+		FLUX_VERIFY(std::filesystem::is_directory(path));
 
 		s_ActiveProject = this;
 
@@ -39,7 +40,7 @@ namespace Flux {
 	{
 		if (!std::filesystem::exists(path))
 		{
-			FLUX_INFO("Creating directory: {0}", path.string());
+			FLUX_TRACE("Creating directory: {0}", path.string());
 			std::filesystem::create_directories(path);
 		}
 	}

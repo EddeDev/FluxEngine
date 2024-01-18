@@ -40,110 +40,6 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		if (m_ImGuiRenderer)
-		{
-			m_ImGuiRenderer->NewFrame();
-
-			ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::SetNextWindowPos(viewport->Pos);
-			ImGui::SetNextWindowSize(viewport->Size);
-			ImGui::SetNextWindowViewport(viewport->ID);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-			ImGuiWindowFlags dockspaceFlags = 0;
-			dockspaceFlags |= ImGuiWindowFlags_NoDocking;
-			dockspaceFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-			dockspaceFlags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-			dockspaceFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-			static bool open = true;
-			ImGui::Begin("MainDockspace", &open, dockspaceFlags);
-			ImGui::PopStyleVar(3);
-
-			ImGuiIO& io = ImGui::GetIO();
-			if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-			{
-				ImGuiID dockspaceID = ImGui::GetID("MainDockspace");
-				ImGui::DockSpace(dockspaceID);
-			}
-
-			ImGui::End();
-
-			ImGui::Begin("Properties");
-			ImGui::End();
-
-			ImGui::Begin("Viewport");
-
-			int32 viewportWidth = (int32)ImGui::GetContentRegionAvail().x;
-			int32 viewportHeight = (int32)ImGui::GetContentRegionAvail().y;
-
-			if (viewportWidth < 0)
-				viewportWidth = 0;
-			if (viewportHeight < 0)
-				viewportHeight = 0;
-
-			if (m_ViewportWidth != viewportWidth || m_ViewportHeight != m_ViewportHeight)
-			{
-				m_ViewportWidth = viewportWidth;
-				m_ViewportHeight = viewportHeight;
-
-				if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
-				{
-					delete[] m_ViewportPlaceholderTextureData;
-					m_ViewportPlaceholderTextureData = new uint8[m_ViewportWidth * m_ViewportHeight * 4];
-
-					m_ViewportPlaceholderTexture = Texture2D::Create(m_ViewportWidth, m_ViewportHeight, TextureFormat::RGBA32);
-
-					uint32 size = m_ViewportWidth * m_ViewportHeight * 4;
-
-					for (uint32 i = 0; i < m_ViewportWidth * m_ViewportHeight * 4; i += 4)
-					{
-						m_ViewportPlaceholderTextureData[i + 0] = (uint8)(((float)i / (float)size) * 86);
-						m_ViewportPlaceholderTextureData[i + 1] = (uint8)(((float)i / (float)size) * 157);
-						m_ViewportPlaceholderTextureData[i + 2] = (uint8)(((float)i / (float)size) * 233);
-						m_ViewportPlaceholderTextureData[i + 3] = 0xFF;
-					}
-
-					m_ViewportPlaceholderTexture->SetPixelData(m_ViewportPlaceholderTextureData, m_ViewportWidth * m_ViewportHeight);
-				}
-			}
-
-			if (m_ViewportPlaceholderTexture)
-				m_ImGuiRenderer->Image(m_ViewportPlaceholderTexture, { (float)m_ViewportWidth, (float)m_ViewportHeight });
-			
-			ImGui::End();
-
-			ImGui::Begin("Flux Engine");
-
-			BuildConfiguration buildConfig = Engine::GetBuildConfiguration();
-			const char* buildConfigString = Utils::BuildConfigurationToString(buildConfig);
-			ImGui::Text("%s build", buildConfigString);
-			ImGui::Separator();
-
-			ImGui::Checkbox("V-Sync", &m_VSync);
-			ImGui::Text("%d fps", m_FramesPerSecond);
-			ImGui::Text("Frame Time: %.2fms", m_FrameTime * 1000.0f);
-
-			ImGui::Separator();
-			ImGui::Text("Command queues: %d", Renderer::GetQueueCount());
-
-			ImGui::BeginDisabled();
-			bool multithreaded = m_RenderThread != nullptr;
-			ImGui::Checkbox("Multithreaded", &multithreaded);
-			ImGui::EndDisabled();
-
-			if (m_RenderThread)
-			{
-				ImGui::Separator();
-				ImGui::Text("Render Thread wait: %.2fms", m_RenderThreadWaitTime);
-				ImGui::Text("CPU: %.2fms", m_FrameTime * 1000.0f - m_RenderThreadWaitTime);
-			}
-
-			ImGui::End();
-		}
-
 		// Clear color (TODO: remove)
 		FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_Window->GetWidth(), windowHeight = m_Window->GetHeight()]() mutable
 		{
@@ -155,6 +51,109 @@ namespace Flux {
 
 			glViewport(0, 0, windowWidth, windowHeight);
 		});
+	}
+
+	void EditorEngine::OnImGuiRender()
+	{
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->Pos);
+		ImGui::SetNextWindowSize(viewport->Size);
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+		ImGuiWindowFlags dockspaceFlags = 0;
+		dockspaceFlags |= ImGuiWindowFlags_NoDocking;
+		dockspaceFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+		dockspaceFlags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+		dockspaceFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+		static bool open = true;
+		ImGui::Begin("MainDockspace", &open, dockspaceFlags);
+		ImGui::PopStyleVar(3);
+
+		ImGuiIO& io = ImGui::GetIO();
+		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+		{
+			ImGuiID dockspaceID = ImGui::GetID("MainDockspace");
+			ImGui::DockSpace(dockspaceID);
+		}
+
+		ImGui::End();
+
+		ImGui::Begin("Properties");
+		ImGui::End();
+
+		ImGui::Begin("Viewport");
+
+		int32 viewportWidth = (int32)ImGui::GetContentRegionAvail().x;
+		int32 viewportHeight = (int32)ImGui::GetContentRegionAvail().y;
+
+		if (viewportWidth < 0)
+			viewportWidth = 0;
+		if (viewportHeight < 0)
+			viewportHeight = 0;
+
+		if (m_ViewportWidth != viewportWidth || m_ViewportHeight != m_ViewportHeight)
+		{
+			m_ViewportWidth = viewportWidth;
+			m_ViewportHeight = viewportHeight;
+
+			if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
+			{
+				delete[] m_ViewportPlaceholderTextureData;
+				m_ViewportPlaceholderTextureData = new uint8[m_ViewportWidth * m_ViewportHeight * 4];
+
+				m_ViewportPlaceholderTexture = Texture2D::Create(m_ViewportWidth, m_ViewportHeight, TextureFormat::RGBA32);
+
+				uint32 size = m_ViewportWidth * m_ViewportHeight * 4;
+
+				for (uint32 i = 0; i < m_ViewportWidth * m_ViewportHeight * 4; i += 4)
+				{
+					m_ViewportPlaceholderTextureData[i + 0] = (uint8)(((float)i / (float)size) * 86);
+					m_ViewportPlaceholderTextureData[i + 1] = (uint8)(((float)i / (float)size) * 157);
+					m_ViewportPlaceholderTextureData[i + 2] = (uint8)(((float)i / (float)size) * 233);
+					m_ViewportPlaceholderTextureData[i + 3] = 0xFF;
+				}
+
+				m_ViewportPlaceholderTexture->SetPixelData(m_ViewportPlaceholderTextureData, m_ViewportWidth * m_ViewportHeight);
+			}
+		}
+
+		if (m_ViewportPlaceholderTexture)
+			m_ImGuiRenderer->Image(m_ViewportPlaceholderTexture, { (float)m_ViewportWidth, (float)m_ViewportHeight });
+
+		ImGui::End();
+
+		ImGui::Begin("Flux Engine");
+
+		BuildConfiguration buildConfig = Engine::GetBuildConfiguration();
+		const char* buildConfigString = Utils::BuildConfigurationToString(buildConfig);
+		ImGui::Text("%s build", buildConfigString);
+		ImGui::Separator();
+
+		ImGui::Checkbox("V-Sync", &m_VSync);
+		ImGui::Text("%d fps", m_FramesPerSecond);
+		ImGui::Text("Delta Time: %.2fms", m_DeltaTime * 1000.0f);
+		ImGui::Text("Fixed Delta Time: %.2f", m_FixedDeltaTime);
+
+		ImGui::Separator();
+		ImGui::Text("Command queues: %d", Renderer::GetQueueCount());
+
+		ImGui::BeginDisabled();
+		bool multithreaded = m_RenderThread != nullptr;
+		ImGui::Checkbox("Multithreaded", &multithreaded);
+		ImGui::EndDisabled();
+
+		if (m_RenderThread)
+		{
+			ImGui::Separator();
+			ImGui::Text("Render Thread wait: %.2fms", m_RenderThreadWaitTime);
+			ImGui::Text("CPU: %.2fms", m_DeltaTime * 1000.0f - m_RenderThreadWaitTime);
+		}
+
+		ImGui::End();
 	}
 
 	void EditorEngine::CreateWindowMenus()

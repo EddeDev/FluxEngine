@@ -7,6 +7,7 @@
 #include "Platform.h"
 #include "Input.h"
 #include "Buffer.h"
+#include "Math/Math.h"
 
 #define FLUX_BIND_CALLBACK(func, ...) \
 [__VA_ARGS__](auto&&... args) -> decltype(auto) \
