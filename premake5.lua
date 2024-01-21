@@ -7,6 +7,8 @@ workspace "FluxEngine"
     targetdir ("Build/Binaries/%{cfg.buildcfg}/%{prj.name}")
     objdir ("Build/Intermediate/%{cfg.buildcfg}/%{prj.name}")
 
+VulkanSDK = os.getenv("VULKAN_SDK")
+
 project "FluxEngine"
     language "C++"
     cppdialect "C++latest"
@@ -29,6 +31,10 @@ project "FluxEngine"
         "Engine/Libraries/Glad/include",
         "Engine/Libraries/ImGui"
     }
+
+    if VulkanSDK ~= nil then
+        includedirs "%{VulkanSDK}/Include"
+    end
 
     links
     {
@@ -61,11 +67,34 @@ project "FluxEngine"
         runtime "Debug"
         symbols "On"
 
+        if VulkanSDK ~= nil then
+            links
+            {
+                "%{VulkanSDK}/Lib/shaderc_sharedd.lib",
+
+                "%{VulkanSDK}/Lib/spirv-cross-cored.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-hlsld.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-glsld.lib",
+                "%{VulkanSDK}/Lib/SPIRV-Toolsd.lib"
+            }
+        end
+
     filter "configurations:Release"
         kind "ConsoleApp"
         defines { "FLUX_BUILD_RELEASE", "NDEBUG" }
         runtime "Release"
         optimize "On"
+
+        if VulkanSDK ~= nil then
+            links
+            {
+                "%{VulkanSDK}/Lib/shaderc_shared.lib",
+
+                "%{VulkanSDK}/Lib/spirv-cross-core.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-hlsl.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-glsl.lib"
+            }
+        end
 
     filter "configurations:Shipping"
         kind "WindowedApp"
@@ -73,6 +102,17 @@ project "FluxEngine"
         runtime "Release"
         optimize "On"
         symbols "Off"
+
+        if VulkanSDK ~= nil then
+            links
+            {
+                "%{VulkanSDK}/Lib/shaderc_shared.lib",
+
+                "%{VulkanSDK}/Lib/spirv-cross-core.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-hlsl.lib",
+                "%{VulkanSDK}/Lib/spirv-cross-glsl.lib"
+            }
+        end
 
 group "Libraries"
     include "Engine/Libraries/Glad"
