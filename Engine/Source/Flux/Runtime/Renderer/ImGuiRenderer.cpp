@@ -236,7 +236,7 @@ namespace Flux {
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-		Ref<Window> window = Engine::Get().GetWindow();
+		Ref<Window> window = Engine::Get().GetMainWindow();
 		io.DisplaySize = ImVec2((float)window->GetWidth(), (float)window->GetHeight());
 
 		io.BackendPlatformUserData = this;
@@ -340,6 +340,7 @@ namespace Flux {
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
 #endif
 
+#if 0
 		Engine::Get().SubmitToEventThread([]()
 		{
 			Ref<Window> window = Engine::Get().GetWindow();
@@ -416,6 +417,7 @@ namespace Flux {
 				});
 			});
 		});
+#endif
 
 		WindowHandle windowHandle = window->GetNativeHandle();
 
@@ -525,7 +527,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		Ref<Window> window = Engine::Get().GetWindow();
+		Ref<Window> window = Engine::Get().GetMainWindow();
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = Engine::Get().GetDeltaTime();
@@ -577,15 +579,28 @@ namespace Flux {
 				float top = drawData->DisplayPos.y;
 				float bottom = drawData->DisplayPos.y + drawData->DisplaySize.y;
 
-				const float projectionMatrix[4][4] =
-				{
-					{ 2.0f / (right - left),           0.0f,                            0.0f, 0.0f },
-					{ 0.0f,                            2.0f / (top - bottom),           0.0f, 0.0f },
-					{ 0.0f,                            0.0f,                           -1.0f, 0.0f },
-					{ (right + left) / (left - right), (top + bottom) / (bottom - top), 0.0f, 1.0f },
-				};
+				Matrix projectionMatrix;
+				projectionMatrix.A1 = 2.0f / (right - left);
+				projectionMatrix.B1 = 0.0f;
+				projectionMatrix.C1 = 0.0f;
+				projectionMatrix.D1 = 0.0f;
 
-				m_Shader->SetUniformMatrix4x4("u_ProjectionMatrix", &projectionMatrix[0][0]);
+				projectionMatrix.A2 = 0.0f;
+				projectionMatrix.B2 = 2.0f / (top - bottom);
+				projectionMatrix.C2 = 0.0f;
+				projectionMatrix.D2 = 0.0f;
+
+				projectionMatrix.A3 = 0.0f;
+				projectionMatrix.B3 = 0.0f;
+				projectionMatrix.C3 = -1.0f;
+				projectionMatrix.D3 = 0.0f;
+
+				projectionMatrix.A4 = (right + left) / (left - right);
+				projectionMatrix.B4 = (top + bottom) / (bottom - top);
+				projectionMatrix.C4 = 0.0f;
+				projectionMatrix.D4 = 1.0f;
+
+				m_Shader->SetUniform("u_ProjectionMatrix", projectionMatrix);
 			}
 
 			for (int32 commandListIndex = 0; commandListIndex < drawData->CmdListsCount; commandListIndex++)

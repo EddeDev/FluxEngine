@@ -27,5 +27,6 @@
 #include <functional>
 #include <fstream>
 #include <filesystem>
+#include <mutex>
 
 #include "Flux/Runtime/Core/Core.h"

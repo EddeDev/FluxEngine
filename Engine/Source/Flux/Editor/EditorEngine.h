@@ -18,7 +18,7 @@ namespace Flux {
 		virtual void OnImGuiRender() override;
 	private:
 		void CreateWindowMenus();
-		void OnMenuCallback(WindowMenu menu, uint32 menuID);
+		void OnWindowMenuEvent(WindowMenuEvent& e);
 
 		void OpenProject();
 		void OpenProject(const std::filesystem::path& path);

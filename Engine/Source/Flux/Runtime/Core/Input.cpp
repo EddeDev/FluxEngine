@@ -3,6 +3,9 @@
 
 #include "Engine.h"
 
+#include "Events/KeyEvent.h"
+#include "Events/MouseEvent.h"
+
 namespace Flux {
 
 	struct InputData
@@ -12,6 +15,9 @@ namespace Flux {
 
 		int8 Keys[FLUX_KEY_LAST + 1];
 		int8 MouseButtons[FLUX_MOUSE_BUTTON_LAST + 1];
+
+		EventCallbackID KeyPressedEventCallbackID;
+		EventCallbackID MouseMovedEventCallbackID;
 	};
 
 	static InputData* s_Data = nullptr;
@@ -26,6 +32,10 @@ namespace Flux {
 		s_Data->KeyStates = new KeyState[static_cast<size_t>(KeyCode::Last)];
 		s_Data->MouseButtonStates = new MouseButtonState[static_cast<size_t>(MouseButtonCode::ButtonLast)];
 
+		s_Data->KeyPressedEventCallbackID = Engine::Get().GetMainWindow()->GetEventManager().Subscribe<KeyPressedEvent>(OnKeyPressedEvent);
+		s_Data->MouseMovedEventCallbackID = Engine::Get().GetMainWindow()->GetEventManager().Subscribe<MouseMovedEvent>(OnMouseMovedEvent);
+
+#if 0
 		Engine::Get().SubmitToEventThread([]()
 		{
 			Ref<Window> window = Engine::Get().GetWindow();
@@ -56,11 +66,15 @@ namespace Flux {
 				});
 			});
 		});
+#endif
 	}
 
 	void Input::Shutdown()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().GetMainWindow()->GetEventManager().Unsubscribe(s_Data->KeyPressedEventCallbackID);
+		Engine::Get().GetMainWindow()->GetEventManager().Unsubscribe(s_Data->MouseMovedEventCallbackID);
 
 		delete[] s_Data->KeyStates;
 		delete[] s_Data->MouseButtonStates;
@@ -151,6 +165,19 @@ namespace Flux {
 		}
 
 		return s_Data->MouseButtonStates[static_cast<int32>(button)] == MouseButtonState::Released;
+	}
+
+	void Input::OnKeyPressedEvent(KeyPressedEvent& e)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+
+		// s_Data->KeyStates[static_cast<int32>(e.GetKey())] = KeyState::Pressed;
+	}
+
+	void Input::OnMouseMovedEvent(MouseMovedEvent& e)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	void Input::OnKeyEvent(int32 key, int32 scancode, int32 action, int32 mods)

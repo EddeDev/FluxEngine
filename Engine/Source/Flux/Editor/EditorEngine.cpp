@@ -1,6 +1,8 @@
 #include "FluxPCH.h"
 #include "EditorEngine.h"
 
+#include "Flux/Runtime/Core/Events/EventManager.h"
+
 #include "Flux/Runtime/Renderer/Renderer.h"
 
 #include <glad/glad.h>
@@ -10,6 +12,7 @@ namespace Flux {
 	EditorEngine::EditorEngine(const EngineCreateInfo& createInfo)
 		: Engine(createInfo)
 	{
+		CreateWindowMenus();
 	}
 
 	EditorEngine::~EditorEngine()
@@ -41,7 +44,7 @@ namespace Flux {
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		// Clear color (TODO: remove)
-		FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_Window->GetWidth(), windowHeight = m_Window->GetHeight()]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_MainWindow->GetWidth(), windowHeight = m_MainWindow->GetHeight()]() mutable
 		{
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -160,27 +163,27 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
-		WindowMenu fileMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(fileMenu, Menu_File_NewProject, "New Project...");
-		m_Window->AddMenu(fileMenu, Menu_File_OpenProject, "Open Project...");
-		m_Window->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project");
-		m_Window->AddMenuSeparator(fileMenu);
-		m_Window->AddMenu(fileMenu, Menu_File_Restart, "Restart");
-		m_Window->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
+		WindowMenu fileMenu = m_MainWindow->CreateMenu();
+		m_MainWindow->AddMenu(fileMenu, Menu_File_NewProject, "New Project...");
+		m_MainWindow->AddMenu(fileMenu, Menu_File_OpenProject, "Open Project...");
+		m_MainWindow->AddMenu(fileMenu, Menu_File_SaveProject, "Save Project");
+		m_MainWindow->AddMenuSeparator(fileMenu);
+		m_MainWindow->AddMenu(fileMenu, Menu_File_Restart, "Restart");
+		m_MainWindow->AddMenu(fileMenu, Menu_File_Exit, "Exit\tAlt+F4");
 
-		WindowMenu editMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(editMenu, Menu_Edit_Preferences, "Preferences");
+		WindowMenu editMenu = m_MainWindow->CreateMenu();
+		m_MainWindow->AddMenu(editMenu, Menu_Edit_Preferences, "Preferences");
 
-		WindowMenu aboutMenu = m_Window->CreateMenu();
-		m_Window->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine");
+		WindowMenu aboutMenu = m_MainWindow->CreateMenu();
+		m_MainWindow->AddMenu(aboutMenu, Menu_About_AboutFluxEngine, "About Flux Engine");
 
-		WindowMenu menu = m_Window->CreateMenu();
-		m_Window->AddPopupMenu(menu, fileMenu, "File");
-		m_Window->AddPopupMenu(menu, editMenu, "Edit");
-		m_Window->AddPopupMenu(menu, aboutMenu, "About");
+		WindowMenu menu = m_MainWindow->CreateMenu();
+		m_MainWindow->AddPopupMenu(menu, fileMenu, "File");
+		m_MainWindow->AddPopupMenu(menu, editMenu, "Edit");
+		m_MainWindow->AddPopupMenu(menu, aboutMenu, "About");
 
 		WindowCreateInfo windowCreateInfo;
-		windowCreateInfo.ParentWindow = m_Window;
+		windowCreateInfo.ParentWindow = m_MainWindow;
 
 		// About
 		windowCreateInfo.Title = "About Flux Engine";
@@ -201,27 +204,29 @@ namespace Flux {
 			if (!window)
 				continue;
 
-			window->AddCloseCallback([window]()
+			window->GetEventManager().Subscribe<WindowCloseEvent>([window](WindowCloseEvent& e)
 			{
 				window->SetVisible(false);
 			});
 		}
 
-		m_Window->SetMenu(menu);
-		m_Window->AddMenuCallback(FLUX_BIND_CALLBACK(OnMenuCallback, this));
+		m_MainWindow->SetMenu(menu);
+		m_MainWindow->GetEventManager().Subscribe<WindowMenuEvent>(FLUX_BIND_CALLBACK(OnWindowMenuEvent, this));
 	}
 
-	void EditorEngine::OnMenuCallback(WindowMenu menu, uint32 menuID)
+	void EditorEngine::OnWindowMenuEvent(WindowMenuEvent& e)
 	{
 		FLUX_CHECK_IS_IN_EVENT_THREAD();
 
-		auto it = m_Windows.find(static_cast<MenuItem>(menuID));
+		MenuItem item = static_cast<MenuItem>(e.GetItemID());
+
+		auto it = m_Windows.find(item);
 		if (it != m_Windows.end())
 			it->second->SetVisible(true);
 
-		Engine::Get().SubmitToMainThread([this, menuID]()
+		Engine::Get().SubmitToMainThread([this, item]()
 		{
-			switch (menuID)
+			switch (item)
 			{
 			case Menu_File_NewProject:
 			{

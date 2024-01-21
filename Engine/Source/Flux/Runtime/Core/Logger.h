@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platform.h"
+#include "Thread.h"
 
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>
@@ -69,17 +69,7 @@ namespace Flux {
 			AssertMessageBox(message);
 		}
 
-		template<typename TThreadID>
-		static void CheckIsInThread(TThreadID threadID, std::string_view functionName = "")
-		{
-			static_assert(std::is_same<TThreadID, ThreadID>::value);
-
-			if (Platform::GetCurrentThreadID() != threadID)
-			{
-				auto threadName = Platform::GetThreadName(Platform::GetThreadFromID(threadID));
-				VerifyFailed("'{0}' must only be called from '{1}'.", functionName, threadName);
-			}
-		}
+		static void CheckIsInThread(ThreadID threadID, std::string_view functionName = "");
 	private:
 		static void AssertMessageBox(std::string_view message, std::string_view expression = "");
 	private:

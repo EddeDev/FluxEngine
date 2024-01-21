@@ -4,14 +4,11 @@
 #include "Thread.h"
 #include "BuildConfiguration.h"
 
+#include "Events/WindowEvent.h"
+
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
 #include "Flux/Runtime/Renderer/ImGuiRenderer.h"
-#include "Flux/Runtime/Renderer/VertexBuffer.h"
-#include "Flux/Runtime/Renderer/IndexBuffer.h"
-#include "Flux/Runtime/Renderer/Shader.h"
-#include "Flux/Runtime/Renderer/GraphicsPipeline.h"
-#include "Flux/Runtime/Renderer/Texture.h"
 
 namespace Flux {
 
@@ -37,7 +34,7 @@ namespace Flux {
 
 		float GetDeltaTime() const { return m_DeltaTime; }
 
-		Ref<Window> GetWindow() const { return m_Window; }
+		Ref<Window> GetMainWindow() const { return m_MainWindow; }
 
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
 
@@ -59,13 +56,13 @@ namespace Flux {
 
 		void MainLoop();
 
-		void OnWindowClose();
+		void OnWindowCloseEvent(WindowCloseEvent& e);
 	protected:
 		inline static Engine* s_Instance = nullptr;
 
 		EngineCreateInfo m_CreateInfo;
 
-		Ref<Window> m_Window;
+		Ref<Window> m_MainWindow;
 
 		Ref<GraphicsContext> m_Context;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;

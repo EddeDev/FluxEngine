@@ -110,18 +110,14 @@ namespace Flux {
 		});
 	}
 
-	void OpenGLShader::SetUniformMatrix4x4(const std::string& name, const float* data) const
+	void OpenGLShader::SetUniform(const std::string& name, const Matrix& value) const
 	{
-		float* storage = new float[4 * 4];
-		memcpy(storage, data, sizeof(float) * 4 * 4);
-
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, storage]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
 		{
 			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
 			if (location == -1)
 				__debugbreak();
-			glUniformMatrix4fv(location, 1, GL_FALSE, storage);
-			delete[] storage;
+			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
 		});
 	}
 

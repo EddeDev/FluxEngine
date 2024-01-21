@@ -3,6 +3,8 @@
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
+#include "Events/EventManager.h"
+
 namespace Flux {
 
 	namespace Utils {
@@ -34,11 +36,10 @@ namespace Flux {
 		Platform::SetThreadPriority(Platform::GetCurrentThread(), ThreadPriority::Lowest);
 
 		WindowCreateInfo windowCreateInfo;
-		windowCreateInfo.Width = 1280;
+		windowCreateInfo.Width = 720;
 		windowCreateInfo.Height = 720;
-
-		m_Window = Window::Create(windowCreateInfo);
-		m_Window->AddCloseCallback(FLUX_BIND_CALLBACK(OnWindowClose, this));
+		m_MainWindow = Window::Create(windowCreateInfo);
+		m_MainWindow->GetEventManager().Subscribe<WindowCloseEvent>(FLUX_BIND_CALLBACK(OnWindowCloseEvent, this));
 	}
 
 	Engine::~Engine()
@@ -102,7 +103,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
-		m_Context = GraphicsContext::Create(m_Window->GetNativeHandle());
+		m_Context = GraphicsContext::Create(m_MainWindow->GetNativeHandle());
 		m_Context->Init();
 	}
 
@@ -151,7 +152,7 @@ namespace Flux {
 		OnInit();
 
 		// Show window
-		SubmitToEventThread([this]() { m_Window->SetVisible(true); });
+		SubmitToEventThread([this]() { m_MainWindow->SetVisible(true); });
 
 		while (m_Running)
 		{
@@ -251,7 +252,7 @@ namespace Flux {
 		Renderer::Shutdown();
 	}
 
-	void Engine::OnWindowClose()
+	void Engine::OnWindowCloseEvent(WindowCloseEvent& e)
 	{
 		FLUX_CHECK_IS_IN_EVENT_THREAD();
 

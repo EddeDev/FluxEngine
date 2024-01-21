@@ -49,18 +49,6 @@ namespace Flux {
 			return 0;
 		}
 
-		static uint32 IndexBufferDataTypeSize(IndexBufferDataType dataType)
-		{
-			switch (dataType)
-			{
-			case IndexBufferDataType::UInt32: return sizeof(uint32);
-			case IndexBufferDataType::UInt16: return sizeof(uint16);
-			case IndexBufferDataType::UInt8:  return sizeof(uint8);
-			}
-			FLUX_VERIFY(false, "Unknown index buffer data type!");
-			return 0;
-		}
-
 	}
 
 	OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineCreateInfo& createInfo)

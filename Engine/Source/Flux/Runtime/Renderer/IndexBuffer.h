@@ -35,4 +35,20 @@ namespace Flux {
 		static Ref<IndexBuffer> Create(const void* data, uint64 size, IndexBufferDataType dataType, IndexBufferUsage usage = IndexBufferUsage::Static);
 	};
 
+	namespace Utils {
+
+		inline static uint32 IndexBufferDataTypeSize(IndexBufferDataType dataType)
+		{
+			switch (dataType)
+			{
+			case IndexBufferDataType::UInt32: return sizeof(uint32);
+			case IndexBufferDataType::UInt16: return sizeof(uint16);
+			case IndexBufferDataType::UInt8:  return sizeof(uint8);
+			}
+			FLUX_VERIFY(false, "Unknown index buffer data type!");
+			return 0;
+		}
+
+	}
+
 }

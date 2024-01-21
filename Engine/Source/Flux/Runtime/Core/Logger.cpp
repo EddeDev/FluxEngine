@@ -35,6 +35,15 @@ namespace Flux {
 		spdlog::shutdown();
 	}
 
+	void Logger::CheckIsInThread(ThreadID threadID, std::string_view functionName)
+	{
+		if (Platform::GetCurrentThreadID() != threadID)
+		{
+			auto threadName = Platform::GetThreadName(Platform::GetThreadFromID(threadID));
+			VerifyFailed("'{0}' must only be called from '{1}'.", functionName, threadName);
+		}
+	}
+
 	void Logger::AssertMessageBox(std::string_view message, std::string_view expression)
 	{
 		std::string text;
