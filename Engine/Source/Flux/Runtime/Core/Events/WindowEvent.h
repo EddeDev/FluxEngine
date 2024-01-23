@@ -9,7 +9,14 @@ namespace Flux {
 	class WindowCloseEvent : public Event
 	{
 	public:
+		WindowCloseEvent(Ref<Window> window)
+			: m_Window(window) {}
+
+		Ref<Window> GetWindow() const { return m_Window; }
+
 		EVENT_CLASS_TYPE(WindowClose)
+	private:
+		Ref<Window> m_Window;
 	};
 
 	class WindowResizeEvent : public Event

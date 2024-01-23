@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Events/EventManager.h"
+#include "Events/Event.h"
 
 namespace Flux {
 
@@ -61,7 +61,7 @@ namespace Flux {
 		virtual void SetCursorShape(CursorShape shape) = 0;
 		virtual CursorShape GetCursorShape() const = 0;
 
-		virtual EventManager& GetEventManager() = 0;
+		virtual void SetEventQueue(Ref<EventQueue> eventQueue) = 0;
 
 		virtual uint32 GetWidth() const = 0;
 		virtual uint32 GetHeight() const = 0;

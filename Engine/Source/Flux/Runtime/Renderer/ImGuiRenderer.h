@@ -6,6 +6,10 @@
 #include "IndexBuffer.h"
 #include "Texture.h"
 
+#include "Flux/Runtime/Core/Events/WindowEvent.h"
+#include "Flux/Runtime/Core/Events/KeyEvent.h"
+#include "Flux/Runtime/Core/Events/MouseEvent.h"
+
 #include <imgui_internal.h>
 
 namespace Flux {
@@ -20,6 +24,18 @@ namespace Flux {
 		void Render();
 
 		void Image(Ref<Texture2D> texture, const ImVec2& size);
+
+		void OnEvent(Event& event) const;
+	private:
+		void OnWindowResizeEvent(WindowResizeEvent& event) const;
+		void OnWindowFocusEvent(WindowFocusEvent& event) const;
+		void OnKeyPressedEvent(KeyPressedEvent& event) const;
+		void OnKeyReleasedEvent(KeyReleasedEvent& event) const;
+		void OnKeyTypedEvent(KeyTypedEvent& event) const;
+		void OnMouseMovedEvent(MouseMovedEvent& event) const;
+		void OnMouseButtonPressedEvent(MouseButtonPressedEvent& event) const;
+		void OnMouseButtonReleasedEvent(MouseButtonReleasedEvent& event) const;
+		void OnMouseScrolledEvent(MouseScrolledEvent& event) const;
 	private:
 		ImGuiContext* m_Context = nullptr;
 

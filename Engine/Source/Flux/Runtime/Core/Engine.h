@@ -15,6 +15,8 @@ namespace Flux {
 	struct EngineCreateInfo
 	{
 		std::string Title = "Flux Engine";
+		uint32 WindowWidth = 1280;
+		uint32 WindowHeight = 720;
 		bool EnableImGui = true;
 		bool ShowSplashScreen = true;
 		bool MaximizeOnStart = false;
@@ -50,19 +52,20 @@ namespace Flux {
 		virtual void OnShutdown() {}
 		virtual void OnUpdate(float deltaTime) {}
 		virtual void OnImGuiRender() {}
+		virtual void OnEvent(Event& event) {}
 	private:
 		void CreateRendererContext();
 		void DestroyRendererContext();
 
 		void MainLoop();
-
-		void OnWindowCloseEvent(WindowCloseEvent& e);
 	protected:
 		inline static Engine* s_Instance = nullptr;
 
 		EngineCreateInfo m_CreateInfo;
 
 		Ref<Window> m_MainWindow;
+
+		Ref<EventQueue> m_EventQueue;
 
 		Ref<GraphicsContext> m_Context;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;

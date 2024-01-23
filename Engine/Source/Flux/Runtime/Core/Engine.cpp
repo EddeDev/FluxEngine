@@ -3,8 +3,6 @@
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
-#include "Events/EventManager.h"
-
 namespace Flux {
 
 	namespace Utils {
@@ -35,11 +33,22 @@ namespace Flux {
 		Platform::SetThreadName(Platform::GetCurrentThread(), "Event Thread");
 		Platform::SetThreadPriority(Platform::GetCurrentThread(), ThreadPriority::Lowest);
 
+		m_EventQueue = Ref<EventQueue>::Create();
+		m_EventQueue->SetEventCallback([this](Event& event)
+		{
+			Input::OnEvent(event);
+
+			OnEvent(event);
+
+			if (m_ImGuiRenderer)
+				m_ImGuiRenderer->OnEvent(event);
+		});
+
 		WindowCreateInfo windowCreateInfo;
-		windowCreateInfo.Width = 720;
-		windowCreateInfo.Height = 720;
+		windowCreateInfo.Width = createInfo.WindowWidth;
+		windowCreateInfo.Height = createInfo.WindowHeight;
 		m_MainWindow = Window::Create(windowCreateInfo);
-		m_MainWindow->GetEventManager().Subscribe<WindowCloseEvent>(FLUX_BIND_CALLBACK(OnWindowCloseEvent, this));
+		m_MainWindow->SetEventQueue(m_EventQueue);
 	}
 
 	Engine::~Engine()
@@ -174,6 +183,8 @@ namespace Flux {
 
 			Input::Update();
 
+			m_EventQueue->DispatchEvents();
+
 			OnUpdate(m_DeltaTime);
 
 			if (m_ImGuiRenderer)
@@ -250,16 +261,6 @@ namespace Flux {
 
 		Input::Shutdown();
 		Renderer::Shutdown();
-	}
-
-	void Engine::OnWindowCloseEvent(WindowCloseEvent& e)
-	{
-		FLUX_CHECK_IS_IN_EVENT_THREAD();
-
-		SubmitToMainThread([this]()
-		{
-			Close();
-		});
 	}
 
 	BuildConfiguration Engine::GetBuildConfiguration()

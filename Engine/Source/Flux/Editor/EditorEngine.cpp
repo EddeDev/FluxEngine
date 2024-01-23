@@ -1,8 +1,6 @@
 #include "FluxPCH.h"
 #include "EditorEngine.h"
 
-#include "Flux/Runtime/Core/Events/EventManager.h"
-
 #include "Flux/Runtime/Renderer/Renderer.h"
 
 #include <glad/glad.h>
@@ -200,61 +198,76 @@ namespace Flux {
 		m_Windows[Menu_Edit_Preferences] = Window::Create(windowCreateInfo);
 
 		for (auto& [type, window] : m_Windows)
-		{
-			if (!window)
-				continue;
-
-			window->GetEventManager().Subscribe<WindowCloseEvent>([window](WindowCloseEvent& e)
-			{
-				window->SetVisible(false);
-			});
-		}
+			window->SetEventQueue(m_EventQueue);
 
 		m_MainWindow->SetMenu(menu);
-		m_MainWindow->GetEventManager().Subscribe<WindowMenuEvent>(FLUX_BIND_CALLBACK(OnWindowMenuEvent, this));
 	}
 
-	void EditorEngine::OnWindowMenuEvent(WindowMenuEvent& e)
+	void EditorEngine::OnEvent(Event& event)
 	{
-		FLUX_CHECK_IS_IN_EVENT_THREAD();
+		EventHandler handler(event);
+		handler.Bind<WindowMenuEvent>(FLUX_BIND_CALLBACK(OnWindowMenuEvent, this));
+		handler.Bind<WindowCloseEvent>(FLUX_BIND_CALLBACK(OnWindowCloseEvent, this));
+	}
 
-		MenuItem item = static_cast<MenuItem>(e.GetItemID());
+	void EditorEngine::OnWindowMenuEvent(WindowMenuEvent& event)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		auto it = m_Windows.find(item);
-		if (it != m_Windows.end())
-			it->second->SetVisible(true);
+		MenuItem item = static_cast<MenuItem>(event.GetItemID());
 
-		Engine::Get().SubmitToMainThread([this, item]()
+		SubmitToEventThread([this, item]()
 		{
-			switch (item)
+			auto it = m_Windows.find(item);
+			if (it != m_Windows.end())
+				it->second->SetVisible(true);
+		});
+
+		switch (item)
+		{
+		case Menu_File_NewProject:
+		{
+			NewProject();
+			break;
+		}
+		case Menu_File_OpenProject:
+		{
+			OpenProject();
+			break;
+		}
+		case Menu_File_SaveProject:
+		{
+			SaveProject();
+			break;
+		}
+		case Menu_File_Restart:
+		{
+			Engine::Get().Close(true);
+			break;
+		}
+		case Menu_File_Exit:
+		{
+			Engine::Get().Close();
+			break;
+		}
+		}
+	}
+
+	void EditorEngine::OnWindowCloseEvent(WindowCloseEvent& event)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		SubmitToEventThread([this, closedWindow = event.GetWindow()]()
+		{
+			for (auto& [type, window] : m_Windows)
 			{
-			case Menu_File_NewProject:
-			{
-				NewProject();
-				break;
-			}
-			case Menu_File_OpenProject:
-			{
-				OpenProject();
-				break;
-			}
-			case Menu_File_SaveProject:
-			{
-				SaveProject();
-				break;
-			}
-			case Menu_File_Restart:
-			{
-				Engine::Get().Close(true);
-				break;
-			}
-			case Menu_File_Exit:
-			{
-				Engine::Get().Close();
-				break;
-			}
+				if (window == closedWindow)
+					window->SetVisible(false);
 			}
 		});
+
+		if (event.GetWindow() == m_MainWindow)
+			Close();
 	}
 
 	void EditorEngine::OpenProject()

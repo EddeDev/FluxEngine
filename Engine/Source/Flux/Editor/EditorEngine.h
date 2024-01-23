@@ -16,9 +16,12 @@ namespace Flux {
 		virtual void OnShutdown() override;
 		virtual void OnUpdate(float deltaTime) override;
 		virtual void OnImGuiRender() override;
+		virtual void OnEvent(Event& event) override;
 	private:
 		void CreateWindowMenus();
-		void OnWindowMenuEvent(WindowMenuEvent& e);
+
+		void OnWindowMenuEvent(WindowMenuEvent& event);
+		void OnWindowCloseEvent(WindowCloseEvent& event);
 
 		void OpenProject();
 		void OpenProject(const std::filesystem::path& path);

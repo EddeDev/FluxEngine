@@ -4,7 +4,6 @@
 
 #include "WindowsWindow.h"
 
-#include "Flux/Runtime/Core/Events/EventManager.h"
 #include "Flux/Runtime/Core/Events/KeyEvent.h"
 #include "Flux/Runtime/Core/Events/MouseEvent.h"
 #include "Flux/Runtime/Core/Events/WindowEvent.h"
@@ -26,6 +25,12 @@ namespace Flux {
 		m_Width = createInfo.Width;
 		m_Height = createInfo.Height;
 		m_Title = createInfo.Title;
+
+#if 0
+		Ref<WindowsWindow> parentWindow = createInfo.ParentWindow.As<WindowsWindow>();
+		if (parentWindow)
+			m_EventQueue = parentWindow->m_EventQueue;
+#endif
 
 		m_ThreadID = Platform::GetCurrentThreadID();
 
@@ -206,6 +211,13 @@ namespace Flux {
 		}
 	}
 
+	void WindowsWindow::SetEventQueue(Ref<EventQueue> eventQueue)
+	{
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
+
+		m_EventQueue = eventQueue;
+	}
+
 	int32 WindowsWindow::ProcessMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
@@ -214,17 +226,17 @@ namespace Flux {
 		{
 		case WM_COMMAND:
 		{
-			m_EventManager.SubmitEvent<WindowMenuEvent>(m_Menu, (uint32)wParam);
+			m_EventQueue->AddEvent<WindowMenuEvent>(m_Menu, (uint32)wParam);
 			break;
 		}
 		case WM_SETFOCUS:
 		{
-			m_EventManager.SubmitEvent<WindowFocusEvent>(true);
+			m_EventQueue->AddEvent<WindowFocusEvent>(true);
 			break;
 		}
 		case WM_KILLFOCUS:
 		{
-			m_EventManager.SubmitEvent<WindowFocusEvent>(false);
+			m_EventQueue->AddEvent<WindowFocusEvent>(false);
 			break;
 		}
 		case WM_SIZE:
@@ -237,13 +249,13 @@ namespace Flux {
 				m_Width = width;
 				m_Height = height;
 
-				m_EventManager.SubmitEvent<WindowResizeEvent>(width, height);
+				m_EventQueue->AddEvent<WindowResizeEvent>(width, height);
 			}
 			break;
 		}
 		case WM_CLOSE:
 		{
-			m_EventManager.SubmitEvent<WindowCloseEvent>();
+			m_EventQueue->AddEvent<WindowCloseEvent>(this);
 			return 0;
 		}
 		case WM_KEYDOWN:
@@ -292,12 +304,6 @@ namespace Flux {
 				break;
 			}
 
-			int32 action;
-			if (HIWORD(lParam) & KF_UP)
-				action = FLUX_ACTION_RELEASE;
-			else
-				action = FLUX_ACTION_PRESS;
-
 			int32 mods = 0;
 			if (GetKeyState(VK_SHIFT) & 0x8000)
 				mods |= FLUX_MOD_SHIFT;
@@ -312,29 +318,10 @@ namespace Flux {
 			if (GetKeyState(VK_NUMLOCK) & 1)
 				mods |= FLUX_MOD_NUM_LOCK;
 
-#if 0
-			if (action == FLUX_ACTION_RELEASE && wParam == VK_SHIFT)
-			{
-				for (auto& [callbackID, callback] : m_KeyCallbacks)
-					callback(FLUX_KEY_LEFT_SHIFT, scancode, action, mods);
-
-				for (auto& [callbackID, callback] : m_KeyCallbacks)
-					callback(FLUX_KEY_RIGHT_SHIFT, scancode, action, mods);
-			}
-			else if (wParam == VK_SNAPSHOT)
-			{
-				for (auto& [callbackID, callback] : m_KeyCallbacks)
-					callback(key, scancode, FLUX_ACTION_PRESS, mods);
-
-				for (auto& [callbackID, callback] : m_KeyCallbacks)
-					callback(key, scancode, FLUX_ACTION_RELEASE, mods);
-			}
+			if (HIWORD(lParam) & KF_UP)
+				m_EventQueue->AddEvent<KeyReleasedEvent>((KeyCode)key);
 			else
-			{
-				for (auto& [callbackID, callback] : m_KeyCallbacks)
-					callback(key, scancode, action, mods);
-			}
-#endif
+				m_EventQueue->AddEvent<KeyPressedEvent>((KeyCode)key);
 			break;
 		}
 		case WM_CHAR:
@@ -366,12 +353,7 @@ namespace Flux {
 				m_HighSurrogate = 0;
 
 				if (uMsg != WM_SYSCHAR)
-				{
-#if 0
-					for (auto& [callbackID, callback] : m_CharCallbacks)
-						callback(codepoint);
-#endif
-				}
+					m_EventQueue->AddEvent<KeyTypedEvent>(codepoint);
 			}
 			return 0;
 		}
@@ -380,10 +362,7 @@ namespace Flux {
 			if (wParam == UNICODE_NOCHAR)
 				return TRUE;
 
-#if 0
-			for (auto& [callbackID, callback] : m_CharCallbacks)
-				callback((char32)wParam);
-#endif
+			m_EventQueue->AddEvent<KeyTypedEvent>((char32)wParam);
 			break;
 		}
 		case WM_LBUTTONDOWN:
@@ -407,12 +386,6 @@ namespace Flux {
 			else
 				button = FLUX_MOUSE_BUTTON_5;
 
-			int32 action;
-			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
-				action = FLUX_ACTION_PRESS;
-			else
-				action = FLUX_ACTION_RELEASE;
-
 			int32 mods = 0;
 			if (GetKeyState(VK_SHIFT) & 0x8000)
 				mods |= FLUX_MOD_SHIFT;
@@ -427,10 +400,11 @@ namespace Flux {
 			if (GetKeyState(VK_NUMLOCK) & 1)
 				mods |= FLUX_MOD_NUM_LOCK;
 
-#if 0
-			for (auto& [callbackID, callback] :m_MouseButtonCallbacks)
-				callback(button, action, mods);
-#endif
+			int32 action;
+			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
+				m_EventQueue->AddEvent<MouseButtonPressedEvent>((MouseButtonCode)button);
+			else
+				m_EventQueue->AddEvent<MouseButtonReleasedEvent>((MouseButtonCode)button);
 			break;
 		}
 		case WM_MOUSEMOVE:
@@ -438,10 +412,7 @@ namespace Flux {
 			const int32 x = GET_X_LPARAM(lParam);
 			const int32 y = GET_Y_LPARAM(lParam);
 
-#if 0
-			for (auto& [callbackID, callback] : m_MouseMoveCallbacks)
-				callback((float)x, (float)y);
-#endif
+			m_EventQueue->AddEvent<MouseMovedEvent>((float)x, (float)y);
 			break;
 		}
 		case WM_MOUSEWHEEL:
@@ -449,10 +420,7 @@ namespace Flux {
 			const float x = 0.0f;
 			const float y = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
 
-#if 0
-			for (auto& [callbackID, callback] : m_MouseWheelCallbacks)
-				callback(x, y);
-#endif
+			m_EventQueue->AddEvent<MouseScrolledEvent>((float)x, (float)y);
 			break;
 		}
 		case WM_MOUSEHWHEEL:
@@ -460,10 +428,7 @@ namespace Flux {
 			const float x = -GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
 			const float y = 0.0f;
 
-#if 0
-			for (auto& [callbackID, callback] : m_MouseWheelCallbacks)
-				callback((float)x, (float)y);
-#endif
+			m_EventQueue->AddEvent<MouseScrolledEvent>((float)x, (float)y);
 			break;
 		}
 		case WM_SETCURSOR:

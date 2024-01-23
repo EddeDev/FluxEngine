@@ -6,10 +6,6 @@
 #include "Events/KeyEvent.h"
 #include "Events/MouseEvent.h"
 
-#define FLUX_ACTION_RELEASE 0
-#define FLUX_ACTION_PRESS 1
-#define FLUX_ACTION_REPEAT 2
-
 namespace Flux {
 
 	enum class KeyState : uint8
@@ -27,12 +23,20 @@ namespace Flux {
 		Released
 	};
 
+	enum class InputAction : uint8
+	{
+		None = 0,
+		Press,
+		Release
+	};
+
 	class Input
 	{
 	public:
 		static void Init();
 		static void Shutdown();
 
+		static void OnEvent(Event& event);
 		static void Update();
 
 		static bool GetKey(KeyCode key);
@@ -43,12 +47,12 @@ namespace Flux {
 		static bool GetMouseButtonDown(MouseButtonCode button);
 		static bool GetMouseButtonUp(MouseButtonCode button);
 	private:
-		static void OnKeyPressedEvent(KeyPressedEvent& e);
-		static void OnMouseMovedEvent(MouseMovedEvent& e);
-
-		static void OnKeyEvent(int32 key, int32 scancode, int32 action, int32 mods);
-		static void OnMouseButtonEvent(int32 button, int32 action, int32 mods);
-		static void OnMouseMoveEvent(float x, float y);
+		static void OnKeyPressedEvent(KeyPressedEvent& event);
+		static void OnKeyReleasedEvent(KeyReleasedEvent& event);
+		static void OnMouseMovedEvent(MouseMovedEvent& event);
+		static void OnMouseButtonPressedEvent(MouseButtonPressedEvent& event);
+		static void OnMouseButtonReleasedEvent(MouseButtonReleasedEvent& event);
+		static void OnMouseScrolledEvent(MouseScrolledEvent& event);
 	};
 
 }

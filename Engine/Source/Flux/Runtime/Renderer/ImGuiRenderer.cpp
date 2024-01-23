@@ -340,85 +340,6 @@ namespace Flux {
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
 #endif
 
-#if 0
-		Engine::Get().SubmitToEventThread([]()
-		{
-			Ref<Window> window = Engine::Get().GetWindow();
-			window->AddSizeCallback([](auto width, auto height)
-			{
-				Engine::Get().SubmitToMainThread([width, height]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-					io.DisplaySize = ImVec2((float)width, (float)height);
-					io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-				});
-			});
-			window->AddFocusCallback([](auto focused)
-			{
-				Engine::Get().SubmitToMainThread([focused]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-					io.AddFocusEvent(focused);
-				});
-			});
-			window->AddKeyCallback([](auto key, auto scancode, auto action, auto mods)
-			{
-				Engine::Get().SubmitToMainThread([key, scancode, action, mods]()
-				{
-					if (action != FLUX_ACTION_PRESS && action != FLUX_ACTION_RELEASE)
-						return;
-
-					ImGuiIO& io = ImGui::GetIO();
-					
-					io.AddKeyEvent(ImGuiMod_Ctrl, Input::GetKey(KeyCode::LeftControl) || Input::GetKey(KeyCode::RightControl));
-					io.AddKeyEvent(ImGuiMod_Shift, Input::GetKey(KeyCode::LeftShift) || Input::GetKey(KeyCode::RightShift));
-					io.AddKeyEvent(ImGuiMod_Alt, Input::GetKey(KeyCode::LeftAlt) || Input::GetKey(KeyCode::RightAlt));
-					io.AddKeyEvent(ImGuiMod_Super, Input::GetKey(KeyCode::LeftSuper) || Input::GetKey(KeyCode::RightSuper));
-					
-					io.AddKeyEvent(Utils::KeyCodeToImGuiKey(key), action == FLUX_ACTION_PRESS);
-				});
-			});
-			window->AddCharCallback([](auto codepoint)
-			{
-				Engine::Get().SubmitToMainThread([codepoint]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-					io.AddInputCharacter(codepoint);
-				});
-			});
-			window->AddMouseMoveCallback([](auto x, auto y)
-			{
-				Engine::Get().SubmitToMainThread([x, y]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-					io.AddMousePosEvent(x, y);
-				});
-			});
-			window->AddMouseButtonCallback([](auto button, auto action, auto mods)
-			{
-				Engine::Get().SubmitToMainThread([button, action, mods]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-
-					io.AddKeyEvent(ImGuiMod_Ctrl, Input::GetKey(KeyCode::LeftControl) || Input::GetKey(KeyCode::RightControl));
-					io.AddKeyEvent(ImGuiMod_Shift, Input::GetKey(KeyCode::LeftShift) || Input::GetKey(KeyCode::RightShift));
-					io.AddKeyEvent(ImGuiMod_Alt, Input::GetKey(KeyCode::LeftAlt) || Input::GetKey(KeyCode::RightAlt));
-					io.AddKeyEvent(ImGuiMod_Super, Input::GetKey(KeyCode::LeftSuper) || Input::GetKey(KeyCode::RightSuper));
-
-					io.AddMouseButtonEvent(button, action == FLUX_ACTION_PRESS);
-				});
-			});
-			window->AddMouseWheelCallback([](auto x, auto y)
-			{
-				Engine::Get().SubmitToMainThread([x, y]()
-				{
-					ImGuiIO& io = ImGui::GetIO();
-					io.AddMouseWheelEvent(x, y);
-				});
-			});
-		});
-#endif
-
 		WindowHandle windowHandle = window->GetNativeHandle();
 
 		ImGuiViewport* mainViewport = ImGui::GetMainViewport();
@@ -699,6 +620,77 @@ namespace Flux {
 		ImTextureID textureID = (ImTextureID)(uintptr)(m_TextureMap.size() + 1);
 		m_TextureMap[textureID] = texture;
 		ImGui::Image(textureID, size);
+	}
+
+	void ImGuiRenderer::OnEvent(Event& event) const
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		EventHandler handler(event);
+		handler.Bind<WindowResizeEvent>(FLUX_BIND_CALLBACK(OnWindowResizeEvent, this));
+		handler.Bind<WindowFocusEvent>(FLUX_BIND_CALLBACK(OnWindowFocusEvent, this));
+		handler.Bind<KeyPressedEvent>(FLUX_BIND_CALLBACK(OnKeyPressedEvent, this));
+		handler.Bind<KeyReleasedEvent>(FLUX_BIND_CALLBACK(OnKeyReleasedEvent, this));
+		handler.Bind<KeyTypedEvent>(FLUX_BIND_CALLBACK(OnKeyTypedEvent, this));
+		handler.Bind<MouseMovedEvent>(FLUX_BIND_CALLBACK(OnMouseMovedEvent, this));
+		handler.Bind<MouseButtonPressedEvent>(FLUX_BIND_CALLBACK(OnMouseButtonPressedEvent, this));
+		handler.Bind<MouseButtonReleasedEvent>(FLUX_BIND_CALLBACK(OnMouseButtonReleasedEvent, this));
+		handler.Bind<MouseScrolledEvent>(FLUX_BIND_CALLBACK(OnMouseScrolledEvent, this));
+	}
+
+	void ImGuiRenderer::OnWindowResizeEvent(WindowResizeEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2((float)event.GetWidth(), (float)event.GetHeight());
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	}
+
+	void ImGuiRenderer::OnWindowFocusEvent(WindowFocusEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddFocusEvent(event.IsFocused());
+	}
+
+	void ImGuiRenderer::OnKeyPressedEvent(KeyPressedEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddKeyEvent(Utils::KeyCodeToImGuiKey((int32)event.GetKey()), true);
+	}
+
+	void ImGuiRenderer::OnKeyReleasedEvent(KeyReleasedEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddKeyEvent(Utils::KeyCodeToImGuiKey((int32)event.GetKey()), false);
+	}
+
+	void ImGuiRenderer::OnKeyTypedEvent(KeyTypedEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddInputCharacter(event.GetCodePoint());
+	}
+
+	void ImGuiRenderer::OnMouseMovedEvent(MouseMovedEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddMousePosEvent(event.GetX(), event.GetY());
+	}
+
+	void ImGuiRenderer::OnMouseButtonPressedEvent(MouseButtonPressedEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddMouseButtonEvent((int32)event.GetButton(), true);
+	}
+
+	void ImGuiRenderer::OnMouseButtonReleasedEvent(MouseButtonReleasedEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddMouseButtonEvent((int32)event.GetButton(), false);
+	}
+
+	void ImGuiRenderer::OnMouseScrolledEvent(MouseScrolledEvent& event) const
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddMouseWheelEvent(event.GetX(), event.GetY());
 	}
 
 }

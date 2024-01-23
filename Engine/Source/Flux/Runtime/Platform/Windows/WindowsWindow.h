@@ -24,7 +24,7 @@ namespace Flux {
 		virtual void SetCursorShape(CursorShape shape);
 		virtual CursorShape GetCursorShape() const override { return m_CursorShape; }
 
-		virtual EventManager& GetEventManager() override { return m_EventManager; }
+		virtual void SetEventQueue(Ref<EventQueue> eventQueue) override;
 
 		virtual uint32 GetWidth() const override { return m_Width; }
 		virtual uint32 GetHeight() const override { return m_Height; }
@@ -44,7 +44,7 @@ namespace Flux {
 		std::unordered_map<CursorShape, HCURSOR> m_CursorImageMap;
 		std::atomic<CursorShape> m_CursorShape = CursorShape::Arrow;
 
-		EventManager m_EventManager;
+		Ref<EventQueue> m_EventQueue;
 
 		WCHAR m_HighSurrogate = 0;
 
