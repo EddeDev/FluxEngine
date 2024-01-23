@@ -97,7 +97,9 @@ namespace Flux {
 
 		float m_LastFrameTime = 0.0f;
 		uint32 m_FrameCounter = 0;
+		uint32 m_EventCounter = 0;
 		uint32 m_FramesPerSecond = 0;
+		uint32 m_EventsPerSecond = 0;
 
 		float m_RenderThreadWaitTime = 0.0f;
 	};

@@ -72,6 +72,12 @@ namespace Flux {
 
 			m_EventCallback = callback;
 		}
+
+		uint32 GetEventCount()
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			return (uint32)m_EventQueue.size();
+		}
 	private:
 		std::queue<Shared<Event>> m_EventQueue;
 		EventCallback m_EventCallback;

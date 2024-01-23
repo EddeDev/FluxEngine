@@ -134,6 +134,9 @@ namespace Flux {
 		ImGui::Text("%s build", buildConfigString);
 		ImGui::Separator();
 
+		ImGui::Text("Events per second: %d", m_EventsPerSecond);
+		ImGui::Separator();
+
 		ImGui::Checkbox("V-Sync", &m_VSync);
 		ImGui::Text("%d fps", m_FramesPerSecond);
 		ImGui::Text("Delta Time: %.2fms", m_DeltaTime * 1000.0f);

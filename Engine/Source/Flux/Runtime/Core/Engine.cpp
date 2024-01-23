@@ -170,10 +170,13 @@ namespace Flux {
 			m_LastTime = m_CurrentTime;
 
 			m_FrameCounter++;
+			m_EventCounter += m_EventQueue->GetEventCount();
 			if (m_CurrentTime >= m_LastFrameTime + 1.0f)
 			{
 				m_FramesPerSecond = m_FrameCounter;
+				m_EventsPerSecond = m_EventCounter;
 				m_FrameCounter = 0;
+				m_EventCounter = 0;
 				m_LastFrameTime = m_CurrentTime;
 			}
 
