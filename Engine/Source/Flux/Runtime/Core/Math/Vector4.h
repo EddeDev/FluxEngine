@@ -15,6 +15,68 @@ namespace Flux {
 			: X(x), Y(y), Z(z), W(w)
 		{
 		}
+
+		Vector4 operator+(const Vector4& v)
+		{
+			Vector4 result;
+			result.X = X + v.X;
+			result.Y = Y + v.Y;
+			result.Z = Z + v.Z;
+			result.W = W + v.W;
+			return result;
+		}
+
+		Vector4 operator-(const Vector4& v)
+		{
+			Vector4 result;
+			result.X = X - v.X;
+			result.Y = Y - v.Y;
+			result.Z = Z - v.Z;
+			result.W = W - v.W;
+			return result;
+		}
+
+		Vector4 operator*(const Vector4& v)
+		{
+			Vector4 result;
+			result.X = X * v.X;
+			result.Y = Y * v.Y;
+			result.Z = Z * v.Z;
+			result.W = W * v.W;
+			return result;
+		}
+
+		Vector4 operator*(float scalar)
+		{
+			Vector4 result;
+			result.X = X * scalar;
+			result.Y = Y * scalar;
+			result.Z = Z * scalar;
+			result.W = W * scalar;
+			return result;
+		}
+
+		Vector4 operator/(const Vector4& v)
+		{
+			Vector4 result;
+			result.X = X / v.X;
+			result.Y = Y / v.Y;
+			result.Z = Z / v.Z;
+			result.W = W / v.W;
+			return result;
+		}
+
+		Vector4 operator/(float scalar)
+		{
+			Vector4 result;
+			result.X = X / scalar;
+			result.Y = Y / scalar;
+			result.Z = Z / scalar;
+			result.W = W / scalar;
+			return result;
+		}
+
+		const float* GetFloatPointer() const { return &X; }
 	};
 
 }

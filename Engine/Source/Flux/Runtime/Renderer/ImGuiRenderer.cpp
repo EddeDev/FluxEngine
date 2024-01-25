@@ -394,42 +394,7 @@ namespace Flux {
 			m_FontTexture->SetPixelData(pixels, width * height);
 		}
 
-		static const char* s_VertexShaderSource =
-			"#version 450 core\n"
-			"\n"
-			"layout(location = 0) in vec2 a_Position;\n"
-			"layout(location = 1) in vec2 a_TexCoord;\n"
-			"layout(location = 2) in vec4 a_Color;\n"
-			"\n"
-			"uniform mat4 u_ProjectionMatrix;\n"
-			"\n"
-			"layout(location = 0) out vec2 v_TexCoord;\n"
-			"layout(location = 1) out vec4 v_Color;\n"
-			"\n"
-			"void main()\n"
-			"{\n"
-			"    v_TexCoord = a_TexCoord;\n"
-			"    v_Color = a_Color;\n"
-			"\n"
-			"    gl_Position = u_ProjectionMatrix * vec4(a_Position.xy,0,1);\n"
-			"}\n";
-
-		static const char* s_FragmentShaderSource =
-			"#version 450 core\n"
-			"\n"
-			"layout (location = 0) out vec4 o_Color;\n"
-			"\n"
-			"layout(location = 0) in vec2 v_TexCoord;\n"
-			"layout(location = 1) in vec4 v_Color;\n"
-			"\n"
-			"uniform sampler2D u_Texture;\n"
-			"\n"
-			"void main()\n"
-			"{\n"
-			"    o_Color = v_Color * texture(u_Texture, v_TexCoord);\n"
-			"}\n";
-
-		m_Shader = Shader::Create(s_VertexShaderSource, s_FragmentShaderSource);
+		m_Shader = Shader::Create("Resources/Shaders/ImGui.glsl");
 
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		pipelineCreateInfo.VertexDeclaration = {

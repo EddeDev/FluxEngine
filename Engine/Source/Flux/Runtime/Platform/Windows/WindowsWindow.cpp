@@ -226,17 +226,17 @@ namespace Flux {
 		{
 		case WM_COMMAND:
 		{
-			m_EventQueue->AddEvent<WindowMenuEvent>(m_Menu, (uint32)wParam);
+			m_EventQueue->AddEvent<WindowMenuEvent>(this, m_Menu, (uint32)wParam);
 			break;
 		}
 		case WM_SETFOCUS:
 		{
-			m_EventQueue->AddEvent<WindowFocusEvent>(true);
+			m_EventQueue->AddEvent<WindowFocusEvent>(this, true);
 			break;
 		}
 		case WM_KILLFOCUS:
 		{
-			m_EventQueue->AddEvent<WindowFocusEvent>(false);
+			m_EventQueue->AddEvent<WindowFocusEvent>(this, false);
 			break;
 		}
 		case WM_SIZE:
@@ -249,7 +249,7 @@ namespace Flux {
 				m_Width = width;
 				m_Height = height;
 
-				m_EventQueue->AddEvent<WindowResizeEvent>(width, height);
+				m_EventQueue->AddEvent<WindowResizeEvent>(this, width, height);
 			}
 			break;
 		}

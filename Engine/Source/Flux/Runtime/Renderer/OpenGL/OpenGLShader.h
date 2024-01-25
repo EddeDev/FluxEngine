@@ -14,6 +14,8 @@ namespace Flux {
 		virtual void Bind() const override;
 		virtual void Unbind() const override;
 
+		virtual void SetUniform(const std::string& name, const Vector3& value) const override;
+		virtual void SetUniform(const std::string& name, const Vector4& value) const override;
 		virtual void SetUniform(const std::string& name, const Matrix4x4& value) const override;
 	private:
 		struct OpenGLShaderData

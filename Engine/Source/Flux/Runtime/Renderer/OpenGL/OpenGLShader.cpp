@@ -208,13 +208,32 @@ namespace Flux {
 		});
 	}
 
+	void OpenGLShader::SetUniform(const std::string& name, const Vector3& value) const
+	{
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
+		{
+			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
+			FLUX_VERIFY(location != -1);
+			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
+		});
+	}
+
+	void OpenGLShader::SetUniform(const std::string& name, const Vector4& value) const
+	{
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
+		{
+			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
+			FLUX_VERIFY(location != -1);
+			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
+		});
+	}
+
 	void OpenGLShader::SetUniform(const std::string& name, const Matrix4x4& value) const
 	{
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
 		{
 			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
-			if (location == -1)
-				__debugbreak();
+			FLUX_VERIFY(location != -1);
 			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
 		});
 	}

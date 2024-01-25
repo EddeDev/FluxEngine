@@ -21,6 +21,8 @@ namespace Flux {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
+		virtual void SetUniform(const std::string& name, const Vector3& value) const = 0;
+		virtual void SetUniform(const std::string& name, const Vector4& value) const = 0;
 		virtual void SetUniform(const std::string& name, const Matrix4x4& value) const = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path& path);

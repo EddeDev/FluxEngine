@@ -74,6 +74,8 @@ namespace Flux {
 			result.Z = Z / scalar;
 			return result;
 		}
+
+		const float* GetFloatPointer() const { return &X; }
 	};
 
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Thread.h"
+#include "Flux/Runtime/Core/Thread.h"
 
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>

@@ -11,7 +11,12 @@ namespace Flux {
 		float X, Y, Z, W;
 
 		Quaternion()
-			: X(0.0f), Y(0.0f), Z(0.0f), W(1.0f)
+			: X(0.0f), Y(0.0f), Z(0.0f), W(0.0f)
+		{
+		}
+
+		Quaternion(float x, float y, float z, float w)
+			: X(x), Y(y), Z(z), W(w)
 		{
 		}
 

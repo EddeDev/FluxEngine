@@ -58,6 +58,8 @@ namespace Flux {
 		m_IndexBuffer = nullptr;
 	}
 
+	static float zRotation = 0.0f;
+
 	void RuntimeEngine::OnUpdate(float deltaTime)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
@@ -76,9 +78,9 @@ namespace Flux {
 
 		m_VertexBuffer->Bind();
 		m_Pipeline->Bind();
+		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
 		m_IndexBuffer->Bind();
 
-		static float zRotation = 0.0f;
 		zRotation += 10.0f * deltaTime;
 
 		Matrix4x4 transform = Math::BuildTransformationMatrix(
@@ -106,6 +108,16 @@ namespace Flux {
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
 		);
+	}
+
+	void RuntimeEngine::OnImGuiRender()
+	{
+		ImGui::Begin("Debug");
+
+		float z = zRotation;
+		ImGui::Text("Z rotation: %f deg, %f rad", z, z * Math::DegToRad);
+
+		ImGui::End();
 	}
 
 	void RuntimeEngine::OnEvent(Event& event)

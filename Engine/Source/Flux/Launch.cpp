@@ -35,7 +35,7 @@ namespace Flux {
 		createInfo.WindowWidth = 512;
 		createInfo.WindowHeight = 512;
 		createInfo.Title = "Flux Runtime";
-		createInfo.EnableImGui = false;
+		createInfo.EnableImGui = true;
 		createInfo.ShowSplashScreen = false;
 		createInfo.MaximizeOnStart = false;
 		createInfo.Multithreaded = true;

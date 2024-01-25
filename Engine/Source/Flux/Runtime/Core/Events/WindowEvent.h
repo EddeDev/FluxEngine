@@ -6,24 +6,31 @@
 
 namespace Flux {
 
-	class WindowCloseEvent : public Event
+	class WindowEvent : public Event
 	{
 	public:
-		WindowCloseEvent(Ref<Window> window)
+		WindowEvent(Ref<Window> window)
 			: m_Window(window) {}
 
 		Ref<Window> GetWindow() const { return m_Window; }
-
-		EVENT_CLASS_TYPE(WindowClose)
 	private:
 		Ref<Window> m_Window;
 	};
 
-	class WindowResizeEvent : public Event
+	class WindowCloseEvent : public WindowEvent
 	{
 	public:
-		WindowResizeEvent(uint32 width, uint32 height)
-			: m_Width(width), m_Height(height) {}
+		WindowCloseEvent(Ref<Window> window)
+			: WindowEvent(window) {}
+
+		EVENT_CLASS_TYPE(WindowClose)
+	};
+
+	class WindowResizeEvent : public WindowEvent
+	{
+	public:
+		WindowResizeEvent(Ref<Window> window, uint32 width, uint32 height)
+			: WindowEvent(window), m_Width(width), m_Height(height) {}
 
 		uint32 GetWidth() const { return m_Width; }
 		uint32 GetHeight() const { return m_Height; }
@@ -34,11 +41,11 @@ namespace Flux {
 		uint32 m_Height;
 	};
 
-	class WindowFocusEvent : public Event
+	class WindowFocusEvent : public WindowEvent
 	{
 	public:
-		WindowFocusEvent(bool focused)
-			: m_Focused(focused) {}
+		WindowFocusEvent(Ref<Window> window, bool focused)
+			: WindowEvent(window), m_Focused(focused) {}
 
 		bool IsFocused() const { return m_Focused; }
 
@@ -47,11 +54,11 @@ namespace Flux {
 		bool m_Focused;
 	};
 
-	class WindowMenuEvent : public Event
+	class WindowMenuEvent : public WindowEvent
 	{
 	public:
-		WindowMenuEvent(WindowMenu menu, uint32 itemID)
-			: m_Menu(menu), m_ItemID(itemID) {}
+		WindowMenuEvent(Ref<Window> window, WindowMenu menu, uint32 itemID)
+			: WindowEvent(window), m_Menu(menu), m_ItemID(itemID) {}
 
 		WindowMenu GetMenu() const { return m_Menu; }
 		uint32 GetItemID() const { return m_ItemID; }

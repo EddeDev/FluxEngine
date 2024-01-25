@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Logger.h"
+#include "Logging/Logger.h"
 
 #ifdef FLUX_BUILD_DEBUG
 	#define FLUX_ENABLE_ASSERTS

@@ -2,7 +2,8 @@
 
 #include "BaseTypes.h"
 #include "RefCounting.h"
-#include "LogMacros.h"
+#include "Logging/LogMacros.h"
+#include "Logging/LogFormatters.h"
 #include "AssertionMacros.h"
 #include "Platform.h"
 #include "Input.h"
