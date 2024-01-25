@@ -37,28 +37,7 @@ namespace Flux {
 		m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
 		m_IndexBuffer = IndexBuffer::Create(indices, sizeof(indices), IndexBufferDataType::UInt32);
 
-		static const char* s_VertexShaderSource =
-			"#version 450 core\n"
-			"layout(location = 0) in vec3 a_Position;\n"
-			"layout(location = 1) in vec3 a_Color;\n"
-			"layout(location = 0) out vec3 v_Color;\n"
-			"uniform mat4 u_Transform;\n"
-			"void main()\n"
-			"{\n"
-			"    v_Color = a_Color;\n"
-			"    gl_Position = u_Transform * vec4(a_Position, 1.0);\n"
-			"}\n";
-
-		static const char* s_FragmentShaderSource =
-			"#version 450 core\n"
-			"layout(location = 0) out vec4 o_Color;\n"
-			"layout(location = 0) in vec3 v_Color;\n"
-			"void main()\n"
-			"{\n"
-			"    o_Color = vec4(v_Color, 1.0);\n"
-			"}\n";
-
-		m_Shader = Shader::Create(s_VertexShaderSource, s_FragmentShaderSource);
+		m_Shader = Shader::Create("Resources/Shaders/Shader.glsl");
 
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		pipelineCreateInfo.VertexDeclaration = {
@@ -99,20 +78,46 @@ namespace Flux {
 		m_Pipeline->Bind();
 		m_IndexBuffer->Bind();
 
-		Matrix transform(1.0f);
-
 		static float zRotation = 0.0f;
 		zRotation += 10.0f * deltaTime;
 
-		transform.SetEulerAngles(Vector3(0.0f, 0.0f, zRotation) * Math::DegToRad);
+		Matrix4x4 transform = Math::BuildTransformationMatrix(
+			{ 0.5f, 0.0f, 0.0f },
+			Vector3(0.0f, 0.0f, zRotation) * Math::DegToRad,
+			{ 0.3f, 0.3f, 0.3f }
+		);
 
 		m_Shader->Bind();
-		m_Shader->SetUniform("u_Transform", transform);
 
+		m_Shader->SetUniform("u_Transform", transform);
 		m_Pipeline->DrawIndexed(
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
 		);
+
+		transform = Math::BuildTransformationMatrix(
+			{ -0.5f, 0.0f, 0.0f },
+			Vector3(0.0f, 0.0f, zRotation) * Math::DegToRad,
+			{ 0.3f, 0.3f, 0.3f }
+		);
+
+		m_Shader->SetUniform("u_Transform", transform);
+		m_Pipeline->DrawIndexed(
+			m_IndexBuffer->GetDataType(),
+			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
+		);
+	}
+
+	void RuntimeEngine::OnEvent(Event& event)
+	{
+		EventHandler handler(event);
+		handler.Bind<WindowCloseEvent>(FLUX_BIND_CALLBACK(OnWindowCloseEvent, this));
+	}
+
+	void RuntimeEngine::OnWindowCloseEvent(WindowCloseEvent& event)
+	{
+		if (event.GetWindow() == m_MainWindow)
+			Close();
 	}
 
 }

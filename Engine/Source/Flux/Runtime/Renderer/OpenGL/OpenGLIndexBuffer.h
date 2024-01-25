@@ -27,7 +27,7 @@ namespace Flux {
 		struct OpenGLIndexBufferData
 		{
 			RenderThreadStorage Storage;
-			uint32 BufferID = 0;
+			uint32 BufferID;
 		};
 
 		OpenGLIndexBufferData* m_Data = nullptr;

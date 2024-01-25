@@ -72,6 +72,8 @@ project "FluxEngine"
             {
                 "%{VulkanSDK}/Lib/shaderc_sharedd.lib",
 
+                "%{VulkanSDK}/Lib/glslangd.lib",
+
                 "%{VulkanSDK}/Lib/spirv-cross-cored.lib",
                 "%{VulkanSDK}/Lib/spirv-cross-hlsld.lib",
                 "%{VulkanSDK}/Lib/spirv-cross-glsld.lib",
@@ -90,6 +92,8 @@ project "FluxEngine"
             {
                 "%{VulkanSDK}/Lib/shaderc_shared.lib",
 
+                "%{VulkanSDK}/Lib/glslang.lib",
+
                 "%{VulkanSDK}/Lib/spirv-cross-core.lib",
                 "%{VulkanSDK}/Lib/spirv-cross-hlsl.lib",
                 "%{VulkanSDK}/Lib/spirv-cross-glsl.lib"
@@ -107,6 +111,8 @@ project "FluxEngine"
             links
             {
                 "%{VulkanSDK}/Lib/shaderc_shared.lib",
+
+                "%{VulkanSDK}/Lib/glslang.lib",
 
                 "%{VulkanSDK}/Lib/spirv-cross-core.lib",
                 "%{VulkanSDK}/Lib/spirv-cross-hlsl.lib",

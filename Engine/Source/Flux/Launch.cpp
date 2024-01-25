@@ -2,8 +2,8 @@
 
 #include "Runtime/Core/Engine.h"
 
-#define FLUX_EDITOR
-// #define FLUX_RUNTIME
+// #define FLUX_EDITOR
+#define FLUX_RUNTIME
 
 #ifdef FLUX_EDITOR
 	#include "Editor/EditorEngine.h"
@@ -32,6 +32,8 @@ namespace Flux {
 #endif
 
 #ifdef FLUX_RUNTIME
+		createInfo.WindowWidth = 512;
+		createInfo.WindowHeight = 512;
 		createInfo.Title = "Flux Runtime";
 		createInfo.EnableImGui = false;
 		createInfo.ShowSplashScreen = false;

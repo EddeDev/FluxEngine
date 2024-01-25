@@ -25,7 +25,7 @@ namespace Flux {
 		struct OpenGLVertexBufferData
 		{
 			RenderThreadStorage Storage;
-			uint32 BufferID = 0;
+			uint32 BufferID;
 		};
 
 		OpenGLVertexBufferData* m_Data = nullptr;

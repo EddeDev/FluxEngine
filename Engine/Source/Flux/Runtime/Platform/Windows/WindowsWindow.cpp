@@ -400,7 +400,6 @@ namespace Flux {
 			if (GetKeyState(VK_NUMLOCK) & 1)
 				mods |= FLUX_MOD_NUM_LOCK;
 
-			int32 action;
 			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
 				m_EventQueue->AddEvent<MouseButtonPressedEvent>((MouseButtonCode)button);
 			else

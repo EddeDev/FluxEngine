@@ -9,7 +9,7 @@ namespace Flux {
 
 		static void ExecuteQueue(std::queue<std::function<void()>>& queue, std::mutex& mutex)
 		{
-			std::unique_lock<std::mutex> lock(mutex);
+			std::lock_guard<std::mutex> lock(mutex);
 			while (!queue.empty())
 			{
 				auto& callback = queue.front();

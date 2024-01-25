@@ -22,7 +22,7 @@ namespace Flux {
 		struct OpenGLPipelineData
 		{
 			Flux::VertexDeclaration VertexDeclaration;
-			uint32 VertexArrayID = 0;
+			uint32 VertexArrayID;
 		};
 
 		OpenGLPipelineData* m_Data = nullptr;

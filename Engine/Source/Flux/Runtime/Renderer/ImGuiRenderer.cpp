@@ -250,10 +250,10 @@ namespace Flux {
 		
 		io.ConfigWindowsMoveFromTitleBarOnly = true;
 
-#if 0
+#if 1
 		ImFontConfig fontConfig;
 		fontConfig.PixelSnapH = true;
-		io.Fonts->AddFontFromFileTTF("Resources/Fonts/Segoe UI/segoeui.ttf", 16.0f, &fontConfig, io.Fonts->GetGlyphRangesCyrillic());
+		// io.Fonts->AddFontFromFileTTF("Resources/Fonts/Segoe UI/SegoeUI-Regular.ttf", 16.0f, &fontConfig, io.Fonts->GetGlyphRangesCyrillic());
 
 		auto& style = ImGui::GetStyle();
 		style.Alpha = 1.0f;
@@ -283,7 +283,7 @@ namespace Flux {
 		style.SelectableTextAlign = { 0.0f, 0.0f };
 
 		auto& colors = style.Colors;
-		colors[ImGuiCol_Text] = ImVec4(0.779221f, 0.779221f, 0.779221f, 1.0f);
+		colors[ImGuiCol_Text] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
 		colors[ImGuiCol_TextDisabled] = ImVec4(0.513726f, 0.509804f, 0.513726f, 1.0f);
 		colors[ImGuiCol_WindowBg] = ImVec4(0.0823529f, 0.0823529f, 0.0823529f, 1.0f);
 		colors[ImGuiCol_ChildBg] = ImVec4(0.141176f, 0.141176f, 0.141176f, 1.0f);
@@ -364,9 +364,12 @@ namespace Flux {
 		platformIO.Platform_SetWindowTitle = ImGui_Platform_SetWindowTitle;
 
 		ImGuiPlatformMonitor monitor;
-		// TODO: TEMP
-		monitor.MainSize.x = 1920.0f;
-		monitor.MainSize.y = 1080.0f;
+#ifdef FLUX_PLATFORM_WINDOWS
+		monitor.MainSize.x = GetSystemMetrics(SM_CXSCREEN);
+		monitor.MainSize.y = GetSystemMetrics(SM_CYSCREEN);
+#else
+		static_assert(false)
+#endif
 		platformIO.Monitors.push_back(monitor);
 
 		// Renderer
@@ -500,7 +503,7 @@ namespace Flux {
 				float top = drawData->DisplayPos.y;
 				float bottom = drawData->DisplayPos.y + drawData->DisplaySize.y;
 
-				Matrix projectionMatrix;
+				Matrix4x4 projectionMatrix;
 				projectionMatrix.A1 = 2.0f / (right - left);
 				projectionMatrix.B1 = 0.0f;
 				projectionMatrix.C1 = 0.0f;

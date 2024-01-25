@@ -4,7 +4,7 @@
 #include "Thread.h"
 #include "BuildConfiguration.h"
 
-#include "Events/WindowEvent.h"
+#include "Events/EventQueue.h"
 
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"

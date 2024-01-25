@@ -19,8 +19,6 @@ namespace Flux {
 		bool m_Handled = false;
 	};
 
-	using EventCallback = std::function<void(Event&)>;
-
 	class EventHandler
 	{
 	public:
@@ -35,53 +33,6 @@ namespace Flux {
 		}
 	private:
 		Event& m_Event;
-	};
-
-	class EventQueue : public ReferenceCounted
-	{
-	public:
-		EventQueue() {}
-		virtual ~EventQueue() {}
-
-		void DispatchEvents()
-		{
-			std::lock_guard<std::mutex> lock(m_Mutex);
-			while (!m_EventQueue.empty())
-			{
-				auto& event = m_EventQueue.front();
-				// std::cout << "Event: " << Utils::EventTypeToString(event->GetType()) << std::endl;
-				m_EventCallback(*event.get());
-				m_EventQueue.pop();
-			}
-		}
-
-		template<typename T,  typename... TArgs>
-		void AddEvent(TArgs&&... args)
-		{
-			static_assert(std::is_base_of<Event, T>::value);
-
-			Shared<Event> event = CreateShared<T>(std::forward<TArgs>(args)...);
-
-			std::lock_guard<std::mutex> lock(m_Mutex);
-			m_EventQueue.push(event);
-		}
-
-		void SetEventCallback(const EventCallback& callback)
-		{
-			std::lock_guard<std::mutex> lock(m_Mutex);
-
-			m_EventCallback = callback;
-		}
-
-		uint32 GetEventCount()
-		{
-			std::lock_guard<std::mutex> lock(m_Mutex);
-			return (uint32)m_EventQueue.size();
-		}
-	private:
-		std::queue<Shared<Event>> m_EventQueue;
-		EventCallback m_EventCallback;
-		std::mutex m_Mutex;
 	};
 
 }

@@ -22,7 +22,7 @@ namespace Flux {
 		struct OpenGLTextureData
 		{
 			RenderThreadStorage Storage;
-			uint32 TextureID = 0;
+			uint32 TextureID;
 		};
 
 		OpenGLTextureData* m_Data = nullptr;
