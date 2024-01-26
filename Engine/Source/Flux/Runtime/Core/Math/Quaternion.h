@@ -22,6 +22,8 @@ namespace Flux {
 
 		Quaternion(const Vector3& eulerAngles)
 		{
+			// Based on https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+		
 			float cosX = Math::Cos(eulerAngles.X * 0.5f);
 			float cosY = Math::Cos(eulerAngles.Y * 0.5f);
 			float cosZ = Math::Cos(eulerAngles.Z * 0.5f);

@@ -260,11 +260,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		SubmitToEventThread([this, closedWindow = event.GetWindow()]()
+		SubmitToEventThread([this, window = event.GetWindow()]()
 		{
-			for (auto& [type, window] : m_Windows)
+			for (auto& entry : m_Windows)
 			{
-				if (window == closedWindow)
+				if (entry.second == window)
 					window->SetVisible(false);
 			}
 		});

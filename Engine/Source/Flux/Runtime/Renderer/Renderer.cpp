@@ -89,14 +89,14 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		s_RenderCommandQueue.push(std::move(command));
+		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push(std::move(command));
 	}
 
 	void Renderer::SubmitRenderCommandRelease(RenderCommand command)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push([functionName, command = std::move(command)]() mutable
+		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push([command = std::move(command)]() mutable
 		{
 			s_ReleaseQueue.push(std::move(command));
 		});

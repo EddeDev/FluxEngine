@@ -73,7 +73,8 @@ namespace Flux {
 		m_Data = new OpenGLShaderData();
 
 		std::string source;
-		FLUX_VERIFY(FileHelper::LoadFileToString(source, path), "Failed to load shader: {0}", path.string());
+		if (!FileHelper::LoadFileToString(source, path))
+			FLUX_VERIFY(false, "Failed to load shader: {0}", path.string());
 
 		ShaderSourceMap sources = PreProcess(source);
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, sources]() mutable

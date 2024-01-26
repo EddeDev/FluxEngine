@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MathUtils.h"
+
 namespace Flux {
 
 	struct Vector2
@@ -19,6 +21,24 @@ namespace Flux {
 		Vector2(float x, float y)
 			: X(x), Y(y)
 		{
+		}
+
+		float LengthSquared() const
+		{
+			return X * X + Y * Y;
+		}
+
+		float Length() const
+		{
+			return Math::Sqrt(LengthSquared());
+		}
+
+		Vector2& Normalize()
+		{
+			float invLength = 1.0f / Length();
+			X *= invLength;
+			Y *= invLength;
+			return *this;
 		}
 
 		Vector2 operator+(const Vector2& v)
