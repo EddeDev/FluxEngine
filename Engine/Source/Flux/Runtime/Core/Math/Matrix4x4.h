@@ -91,7 +91,7 @@ namespace Flux {
 			return *this;
 		}
 
-		Matrix4x4& operator*(const Matrix4x4& m) const
+		Matrix4x4 operator*(const Matrix4x4& m) const
 		{
 			Matrix4x4 result;
 
