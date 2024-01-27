@@ -50,7 +50,13 @@ project "FluxEngine"
         {
             "opengl32.lib",
             "Gdi32.lib",
-            "glu32.lib"
+            "glu32.lib",
+
+            "d3d11.lib",
+            "d3d12.lib",
+            "dxgi.lib",
+            "dxguid.lib",
+            "d3dcompiler.lib"
         }
 
     filter "system:macosx"

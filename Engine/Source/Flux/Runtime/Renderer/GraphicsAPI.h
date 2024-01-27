@@ -8,7 +8,8 @@ namespace Flux {
 	enum class GraphicsAPI : uint8
 	{
 		None = 0,
-		OpenGL
+		OpenGL,
+		DX11
 	};
 
 	namespace Utils {
@@ -18,6 +19,7 @@ namespace Flux {
 			switch (api)
 			{
 			case GraphicsAPI::OpenGL: return "OpenGL";
+			case GraphicsAPI::DX11: return "DX11";
 			}
 			FLUX_ASSERT(false, "Unknown Graphics API.");
 			return "";
