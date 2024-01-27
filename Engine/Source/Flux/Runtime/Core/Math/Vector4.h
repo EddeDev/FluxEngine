@@ -16,6 +16,31 @@ namespace Flux {
 		{
 		}
 
+		float LengthSquared() const
+		{
+			return X * X + Y * Y + Z * Z + W * W;
+		}
+
+		float Length() const
+		{
+			return Math::Sqrt(LengthSquared());
+		}
+
+		Vector4& Normalize()
+		{
+			float invLength = 1.0f / Length();
+			X *= invLength;
+			Y *= invLength;
+			Z *= invLength;
+			W *= invLength;
+			return *this;
+		}
+
+		Vector4 operator-() const
+		{
+			return { -X, -Y, -Z, -W };
+		}
+
 		Vector4 operator+(const Vector4& v)
 		{
 			Vector4 result;

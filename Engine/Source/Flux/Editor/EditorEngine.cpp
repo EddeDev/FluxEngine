@@ -104,13 +104,12 @@ namespace Flux {
 			if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
 			{
 				delete[] m_ViewportPlaceholderTextureData;
-				m_ViewportPlaceholderTextureData = new uint8[m_ViewportWidth * m_ViewportHeight * 4];
+				uint32 size = m_ViewportWidth * m_ViewportHeight * 4;
+				m_ViewportPlaceholderTextureData = new uint8[size];
 
 				m_ViewportPlaceholderTexture = Texture2D::Create(m_ViewportWidth, m_ViewportHeight, TextureFormat::RGBA32);
 
-				uint32 size = m_ViewportWidth * m_ViewportHeight * 4;
-
-				for (uint32 i = 0; i < m_ViewportWidth * m_ViewportHeight * 4; i += 4)
+				for (uint32 i = 0; i < size; i += 4)
 				{
 					m_ViewportPlaceholderTextureData[i + 0] = (uint8)(((float)i / (float)size) * 86);
 					m_ViewportPlaceholderTextureData[i + 1] = (uint8)(((float)i / (float)size) * 157);

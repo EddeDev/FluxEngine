@@ -21,6 +21,30 @@ namespace Flux {
 		{
 		}
 
+		float LengthSquared() const
+		{
+			return X * X + Y * Y + Z * Z;
+		}
+
+		float Length() const
+		{
+			return Math::Sqrt(LengthSquared());
+		}
+
+		Vector3& Normalize()
+		{
+			float invLength = 1.0f / Length();
+			X *= invLength;
+			Y *= invLength;
+			Z *= invLength;
+			return *this;
+		}
+
+		Vector3 operator-() const
+		{
+			return { -X, -Y, -Z };
+		}
+
 		Vector3 operator+(const Vector3& v)
 		{
 			Vector3 result;

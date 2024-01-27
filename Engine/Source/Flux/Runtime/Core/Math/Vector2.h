@@ -41,6 +41,11 @@ namespace Flux {
 			return *this;
 		}
 
+		Vector2 operator-() const
+		{
+			return { -X, -Y };
+		}
+
 		Vector2 operator+(const Vector2& v)
 		{
 			Vector2 result;

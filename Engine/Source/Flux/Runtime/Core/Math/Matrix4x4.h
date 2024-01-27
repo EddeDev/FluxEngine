@@ -50,6 +50,35 @@ namespace Flux {
 		{
 		}
 
+		static Matrix4x4 Ortho(float left, float right, float bottom, float top)
+		{
+			Matrix4x4 result(1.0f);
+
+			result.A1 = 2.0f / (right - left);
+			result.B2 = 2.0f / (top - bottom);
+			result.C3 = -1.0f;
+
+			result.A4 = -(right + left) / (right - left);
+			result.B4 = -(top + bottom) / (top - bottom);
+
+			return result;
+		}
+
+		static Matrix4x4 Ortho(float left, float right, float bottom, float top, float nearClip, float farClip)
+		{
+			Matrix4x4 result(1.0f);
+
+			result.A1 = 2.0f / (right - left);
+			result.B2 = 2.0f / (top - bottom);
+			result.C3 = -2.0f / (farClip - nearClip);
+
+			result.A4 = -(right + left) / (right - left);
+			result.B4 = -(top + bottom) / (top - bottom);
+			result.C4 = -(farClip + nearClip) / (farClip - nearClip);
+
+			return result;
+		}
+
 		Matrix4x4& SetIdentity()
 		{
 			A1 = 1.0f;

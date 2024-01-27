@@ -81,6 +81,25 @@ namespace Flux {
 		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
 		m_IndexBuffer->Bind();
 
+
+		static float zoomLevel = 1.0f;
+		zoomLevel = Math::Clamp(zoomLevel, 0.0f, 20.0f);
+
+		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
+		Matrix4x4 projectionMatrix = Matrix4x4::Ortho(-aspectRatio * zoomLevel, aspectRatio * zoomLevel, -zoomLevel, zoomLevel);
+
+		static Vector3 cameraPosition(0.0f);
+		if (Input::GetKey(KeyCode::Up))
+			cameraPosition.Y += deltaTime;
+		if (Input::GetKey(KeyCode::Down))
+			cameraPosition.Y -= deltaTime;
+		if (Input::GetKey(KeyCode::Left))
+			cameraPosition.X -= deltaTime;
+		if (Input::GetKey(KeyCode::Right))
+			cameraPosition.X += deltaTime;
+
+		Matrix4x4 viewMatrix = Matrix4x4(1.0f).Translate(-cameraPosition);
+
 		zRotation += 10.0f * deltaTime;
 
 		Matrix4x4 transform = Math::BuildTransformationMatrix(
@@ -91,7 +110,7 @@ namespace Flux {
 
 		m_Shader->Bind();
 
-		m_Shader->SetUniform("u_Transform", transform);
+		m_Shader->SetUniform("u_Transform", projectionMatrix * viewMatrix * transform);
 		m_Pipeline->DrawIndexed(
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
@@ -103,7 +122,7 @@ namespace Flux {
 			{ 0.3f, 0.3f, 0.3f }
 		);
 
-		m_Shader->SetUniform("u_Transform", transform);
+		m_Shader->SetUniform("u_Transform", projectionMatrix * viewMatrix * transform);
 		m_Pipeline->DrawIndexed(
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)

@@ -468,28 +468,7 @@ namespace Flux {
 				float top = drawData->DisplayPos.y;
 				float bottom = drawData->DisplayPos.y + drawData->DisplaySize.y;
 
-				Matrix4x4 projectionMatrix;
-				projectionMatrix.A1 = 2.0f / (right - left);
-				projectionMatrix.B1 = 0.0f;
-				projectionMatrix.C1 = 0.0f;
-				projectionMatrix.D1 = 0.0f;
-
-				projectionMatrix.A2 = 0.0f;
-				projectionMatrix.B2 = 2.0f / (top - bottom);
-				projectionMatrix.C2 = 0.0f;
-				projectionMatrix.D2 = 0.0f;
-
-				projectionMatrix.A3 = 0.0f;
-				projectionMatrix.B3 = 0.0f;
-				projectionMatrix.C3 = -1.0f;
-				projectionMatrix.D3 = 0.0f;
-
-				projectionMatrix.A4 = (right + left) / (left - right);
-				projectionMatrix.B4 = (top + bottom) / (bottom - top);
-				projectionMatrix.C4 = 0.0f;
-				projectionMatrix.D4 = 1.0f;
-
-				m_Shader->SetUniform("u_ProjectionMatrix", projectionMatrix);
+				m_Shader->SetUniform("u_ProjectionMatrix", Matrix4x4::Ortho(left, right, bottom, top));
 			}
 
 			for (int32 commandListIndex = 0; commandListIndex < drawData->CmdListsCount; commandListIndex++)
