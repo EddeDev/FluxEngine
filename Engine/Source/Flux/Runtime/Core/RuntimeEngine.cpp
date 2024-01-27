@@ -23,10 +23,10 @@ namespace Flux {
 
 		float vertices[] =
 		{
-			-0.5f,  0.5f, 0.0f, 0.8, 0.2, 0.2,
-			-0.5f, -0.5f, 0.0f, 0.8, 0.8, 0.2,
-			 0.5f, -0.5f, 0.0f, 0.2, 0.8, 0.8,
-			 0.5f,  0.5f, 0.0f, 0.8, 0.2, 0.8
+			-0.5f,  0.5f, 0.0f,
+			-0.5f, -0.5f, 0.0f,
+			 0.5f, -0.5f, 0.0f,
+			 0.5f,  0.5f, 0.0f
 		};
 
 		uint32 indices[] = {
@@ -41,8 +41,7 @@ namespace Flux {
 
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		pipelineCreateInfo.VertexDeclaration = {
-			{ "a_Position", VertexElementFormat::Float3 },
-			{ "a_Color", VertexElementFormat::Float3 }
+			{ "a_Position", VertexElementFormat::Float3 }
 		};
 
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
@@ -58,7 +57,9 @@ namespace Flux {
 		m_IndexBuffer = nullptr;
 	}
 
-	static float zRotation = 0.0f;
+	static float s_QuadRotation = 0.0f;
+	static Vector3 cameraPosition(0.0f, 0.0f, -2.5f);
+	static float cameraFov = 60.0f;
 
 	void RuntimeEngine::OnUpdate(float deltaTime)
 	{
@@ -81,14 +82,10 @@ namespace Flux {
 		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
 		m_IndexBuffer->Bind();
 
-
-		static float zoomLevel = 1.0f;
-		zoomLevel = Math::Clamp(zoomLevel, 0.0f, 20.0f);
-
 		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
-		Matrix4x4 projectionMatrix = Matrix4x4::Ortho(-aspectRatio * zoomLevel, aspectRatio * zoomLevel, -zoomLevel, zoomLevel);
-
-		static Vector3 cameraPosition(0.0f);
+		// Matrix4x4 projectionMatrix = Matrix4x4::Ortho(-aspectRatio * s_CameraZoomLevel, aspectRatio * s_CameraZoomLevel, -s_CameraZoomLevel, s_CameraZoomLevel);
+		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(cameraFov, aspectRatio, 0.1f, 1000.0f);
+		
 		if (Input::GetKey(KeyCode::Up))
 			cameraPosition.Y += deltaTime;
 		if (Input::GetKey(KeyCode::Down))
@@ -100,29 +97,15 @@ namespace Flux {
 
 		Matrix4x4 viewMatrix = Matrix4x4(1.0f).Translate(-cameraPosition);
 
-		zRotation += 10.0f * deltaTime;
+		Matrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
-		Matrix4x4 transform = Math::BuildTransformationMatrix(
-			{ 0.5f, 0.0f, 0.0f },
-			Vector3(0.0f, 0.0f, zRotation) * Math::DegToRad,
-			{ 0.3f, 0.3f, 0.3f }
-		);
+		s_QuadRotation += 10.0f * deltaTime;
+
+		Matrix4x4 transform = Math::BuildTransformationMatrix({}, { 0.0f, 0.0f, s_QuadRotation * Math::DegToRad });
 
 		m_Shader->Bind();
 
-		m_Shader->SetUniform("u_Transform", projectionMatrix * viewMatrix * transform);
-		m_Pipeline->DrawIndexed(
-			m_IndexBuffer->GetDataType(),
-			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
-		);
-
-		transform = Math::BuildTransformationMatrix(
-			{ -0.5f, 0.0f, 0.0f },
-			Vector3(0.0f, 0.0f, zRotation) * Math::DegToRad,
-			{ 0.3f, 0.3f, 0.3f }
-		);
-
-		m_Shader->SetUniform("u_Transform", projectionMatrix * viewMatrix * transform);
+		m_Shader->SetUniform("u_Transform", viewProjectionMatrix * transform);
 		m_Pipeline->DrawIndexed(
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
@@ -133,8 +116,12 @@ namespace Flux {
 	{
 		ImGui::Begin("Debug");
 
-		float z = zRotation;
-		ImGui::Text("Z rotation: %f deg, %f rad", z, z * Math::DegToRad);
+		ImGui::Text("Z rotation: %f deg, %f rad", fmod(s_QuadRotation, 360.0f), s_QuadRotation * Math::DegToRad);
+
+		ImGui::DragFloat("##CameraPositionX", &cameraPosition.X, 0.01f);
+		ImGui::DragFloat("##CameraPositionY", &cameraPosition.Y, 0.01f);
+		ImGui::DragFloat("##CameraPositionZ", &cameraPosition.Z, 0.01f);
+		ImGui::DragFloat("Field of view", &cameraFov, 0.1f);
 
 		ImGui::End();
 	}

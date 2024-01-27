@@ -79,6 +79,28 @@ namespace Flux {
 			return result;
 		}
 
+		static Matrix4x4 Perspective(float fov, float aspectRatio, float nearClip, float farClip)
+		{
+			Matrix4x4 result(0.0f);
+
+#define LEFT_HANDED 1
+
+			float tanHalfFov = Math::Tan(fov * Math::DegToRad * 0.5f);
+
+			result.A1 = 1.0f / (aspectRatio * tanHalfFov);
+			result.B2 = 1.0f / tanHalfFov;
+#if LEFT_HANDED
+			result.C3 = (farClip + nearClip) / (farClip - nearClip);
+			result.D3 = 1.0f;
+#else
+			result.C3 = -(farClip + nearClip) / (farClip - nearClip);
+			result.D3 = -1.0f;
+#endif
+			result.C4 = -(2.0f * farClip * nearClip) / (farClip - nearClip);
+
+			return result;
+		}
+
 		Matrix4x4& SetIdentity()
 		{
 			A1 = 1.0f;
