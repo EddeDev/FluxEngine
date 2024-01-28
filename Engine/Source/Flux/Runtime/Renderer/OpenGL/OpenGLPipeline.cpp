@@ -52,7 +52,7 @@ namespace Flux {
 	}
 
 	OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineCreateInfo& createInfo)
-		: m_Topology(createInfo.Topology)
+		: m_Topology(createInfo.Topology), m_DepthTest(createInfo.DepthTest), m_ScissorTest(createInfo.ScissorTest), m_DepthWrite(createInfo.DepthWrite)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
@@ -81,7 +81,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, depthTest = m_DepthTest, scissorTest = m_ScissorTest, depthWrite = m_DepthWrite]()
 		{
 			glBindVertexArray(data->VertexArrayID);
 
@@ -123,9 +123,23 @@ namespace Flux {
 			glBlendEquation(GL_FUNC_ADD);
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 			glDisable(GL_CULL_FACE);
-			glDisable(GL_DEPTH_TEST);
+
+			if (depthTest)
+				glEnable(GL_DEPTH_TEST);
+			else
+				glDisable(GL_DEPTH_TEST);
+
+			if (scissorTest)
+				glEnable(GL_SCISSOR_TEST);
+			else
+				glDisable(GL_SCISSOR_TEST);
+
+			glDepthMask(depthWrite);
+
+			// glFrontFace(GL_CW);
+			// glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
 			glDisable(GL_STENCIL_TEST);
-			glEnable(GL_SCISSOR_TEST);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		});
 	}

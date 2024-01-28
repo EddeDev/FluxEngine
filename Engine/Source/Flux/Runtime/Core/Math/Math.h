@@ -17,9 +17,9 @@ namespace Flux {
 
 		static Matrix4x4 BuildTransformationMatrix(const Vector3& position, const Quaternion& rotation, const Vector3& scale = Vector3(1.0f))
 		{
-			Matrix4x4 positionMatrix = Matrix4x4(1.0f).Translate(position);
+			Matrix4x4 positionMatrix = Matrix4x4::Translate(position);
 			Matrix4x4 rotationMatrix = rotation.ToMatrix4x4();
-			Matrix4x4 scaleMatrix = Matrix4x4(1.0f).Scale(scale);
+			Matrix4x4 scaleMatrix = Matrix4x4::Scale(scale);
 
 			return positionMatrix * rotationMatrix * scaleMatrix;
 		}

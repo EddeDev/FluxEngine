@@ -70,7 +70,7 @@ namespace Flux {
 		Ref<GraphicsContext> m_Context;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;
 
-		GraphicsAPI m_GraphicsAPI = GraphicsAPI::DX11;
+		GraphicsAPI m_GraphicsAPI = GraphicsAPI::OpenGL;
 
 		Unique<Thread> m_MainThread;
 		Unique<Thread> m_RenderThread;

@@ -18,6 +18,9 @@ namespace Flux {
 		Flux::VertexDeclaration VertexDeclaration;
 
 		PrimitiveTopology Topology = PrimitiveTopology::Triangles;
+		bool DepthTest = true;
+		bool ScissorTest = false;
+		bool DepthWrite = true;
 	};
 
 	class GraphicsPipeline : public ReferenceCounted

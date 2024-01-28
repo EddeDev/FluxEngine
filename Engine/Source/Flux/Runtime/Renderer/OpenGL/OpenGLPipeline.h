@@ -18,6 +18,9 @@ namespace Flux {
 		virtual void DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const override;
 	private:
 		PrimitiveTopology m_Topology = PrimitiveTopology::None;
+		bool m_DepthTest = false;
+		bool m_ScissorTest = false;
+		bool m_DepthWrite = false;
 	
 		struct OpenGLPipelineData
 		{

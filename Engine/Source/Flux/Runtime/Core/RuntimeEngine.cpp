@@ -23,27 +23,67 @@ namespace Flux {
 
 		float vertices[] =
 		{
-			-0.5f,  0.5f, 0.0f,
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.5f,  0.5f, 0.0f
+			-0.5f,  0.5f,  0.5f, -1.0f, 0.0f,  0.0f,
+			-0.5f,  0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
+			-0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
+			-0.5f, -0.5f,  0.5f, -1.0f, 0.0f,  0.0f,
+
+			 0.5f, -0.5f,  0.5f, 1.0f,  0.0f,  0.0f,
+			 0.5f, -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
+			 0.5f,  0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
+			 0.5f,  0.5f,  0.5f, 1.0f,  0.0f,  0.0f,
+
+			-0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f,
+			-0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f,
+			 0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f,
+			 0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f,
+
+			 0.5f, 0.5f,   0.5f, 0.0f,  1.0f,  0.0f,
+			 0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,
+			-0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,
+			-0.5f, 0.5f,   0.5f, 0.0f,  1.0f,  0.0f,
+									   
+			-0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
+			 0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
+			 0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
+			-0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
+
+			-0.5f,  0.5f,  0.5f, 0.0f,  0.0f,  1.0f,
+			-0.5f, -0.5f,  0.5f, 0.0f,  0.0f,  1.0f,
+			 0.5f, -0.5f,  0.5f, 0.0f,  0.0f,  1.0f,
+			 0.5f,  0.5f,  0.5f, 0.0f,  0.0f,  1.0f
 		};
 
-		uint32 indices[] = {
-			0, 1, 3,
-			3, 1, 2
-		};
+		uint32* indices = new uint32[6 * 6];
+
+		uint32 offset = 0;
+		for (uint32 i = 0; i < 6 * 6; i += 6)
+		{
+			indices[i + 0] = offset + 0;
+			indices[i + 1] = offset + 1;
+			indices[i + 2] = offset + 2;
+
+			indices[i + 3] = offset + 2;
+			indices[i + 4] = offset + 3;
+			indices[i + 5] = offset + 0;
+
+			offset += 4;
+		}
 
 		m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
-		m_IndexBuffer = IndexBuffer::Create(indices, sizeof(indices), IndexBufferDataType::UInt32);
+		m_IndexBuffer = IndexBuffer::Create(indices, 6 * 6 * sizeof(uint32), IndexBufferDataType::UInt32);
+
+		delete[] indices;
 
 		m_Shader = Shader::Create("Resources/Shaders/Shader.glsl");
 
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		pipelineCreateInfo.VertexDeclaration = {
-			{ "a_Position", VertexElementFormat::Float3 }
+			{ "a_Position", VertexElementFormat::Float3 },
+			{ "a_Normal", VertexElementFormat::Float3 }
 		};
-
+		pipelineCreateInfo.DepthTest = true;
+		pipelineCreateInfo.DepthWrite = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 	}
 
@@ -58,7 +98,7 @@ namespace Flux {
 	}
 
 	static float s_QuadRotation = 0.0f;
-	static Vector3 cameraPosition(0.0f, 0.0f, -2.5f);
+	static Vector3 cameraPosition(0.0f, 0.0f, 2.5f);
 	static float cameraFov = 60.0f;
 
 	void RuntimeEngine::OnUpdate(float deltaTime)
@@ -85,7 +125,7 @@ namespace Flux {
 		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
 		// Matrix4x4 projectionMatrix = Matrix4x4::Ortho(-aspectRatio * s_CameraZoomLevel, aspectRatio * s_CameraZoomLevel, -s_CameraZoomLevel, s_CameraZoomLevel);
 		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(cameraFov, aspectRatio, 0.1f, 1000.0f);
-		
+
 		if (Input::GetKey(KeyCode::Up))
 			cameraPosition.Y += deltaTime;
 		if (Input::GetKey(KeyCode::Down))
@@ -95,17 +135,16 @@ namespace Flux {
 		if (Input::GetKey(KeyCode::Right))
 			cameraPosition.X += deltaTime;
 
-		Matrix4x4 viewMatrix = Matrix4x4(1.0f).Translate(-cameraPosition);
-
+		Matrix4x4 viewMatrix = Matrix4x4::Translate(-cameraPosition);
 		Matrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
 		s_QuadRotation += 10.0f * deltaTime;
 
-		Matrix4x4 transform = Math::BuildTransformationMatrix({}, { 0.0f, 0.0f, s_QuadRotation * Math::DegToRad });
+		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(s_QuadRotation * Math::DegToRad, 0.0f, s_QuadRotation * Math::DegToRad));
 
 		m_Shader->Bind();
-
 		m_Shader->SetUniform("u_Transform", viewProjectionMatrix * transform);
+		
 		m_Pipeline->DrawIndexed(
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)

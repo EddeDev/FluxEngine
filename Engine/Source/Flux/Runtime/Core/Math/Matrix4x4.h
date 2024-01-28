@@ -50,6 +50,24 @@ namespace Flux {
 		{
 		}
 
+		static Matrix4x4 Translate(const Vector3& translation)
+		{
+			Matrix4x4 result(1.0f);
+			result.A4 = translation.X;
+			result.B4 = translation.Y;
+			result.C4 = translation.Z;
+			return result;
+		}
+
+		static Matrix4x4 Scale(const Vector3& scale)
+		{
+			Matrix4x4 result(1.0f);
+			result.A1 = scale.X;
+			result.B2 = scale.Y;
+			result.C3 = scale.Z;
+			return result;
+		}
+
 		static Matrix4x4 Ortho(float left, float right, float bottom, float top)
 		{
 			Matrix4x4 result(1.0f);
@@ -83,7 +101,7 @@ namespace Flux {
 		{
 			Matrix4x4 result(0.0f);
 
-#define LEFT_HANDED 1
+#define LEFT_HANDED 0
 
 			float tanHalfFov = Math::Tan(fov * Math::DegToRad * 0.5f);
 
@@ -123,22 +141,6 @@ namespace Flux {
 			D3 = 0.0f;
 			D4 = 1.0f;
 
-			return *this;
-		}
-
-		Matrix4x4& Translate(const Vector3& translation)
-		{
-			A4 += translation.X;
-			B4 += translation.Y;
-			C4 += translation.Z;
-			return *this;
-		}
-
-		Matrix4x4& Scale(const Vector3& scale)
-		{
-			A1 *= scale.X;
-			B2 *= scale.Y;
-			C3 *= scale.Z;
 			return *this;
 		}
 

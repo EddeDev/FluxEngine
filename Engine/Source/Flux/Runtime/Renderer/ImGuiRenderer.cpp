@@ -402,6 +402,8 @@ namespace Flux {
 			{ "a_TexCoord", VertexElementFormat::Float2 },
 			{ "a_Color", VertexElementFormat::UByte4, true }
 		};
+		pipelineCreateInfo.DepthTest = false;
+		pipelineCreateInfo.ScissorTest = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 	}
 
@@ -494,14 +496,7 @@ namespace Flux {
 					const ImDrawCmd* command = &commandList->CmdBuffer[commandIndex];
 					if (command->UserCallback)
 					{
-						if (command->UserCallback == ImDrawCallback_ResetRenderState)
-						{
-							
-						}
-						else
-						{
-							command->UserCallback(commandList, command);
-						}
+						command->UserCallback(commandList, command);
 					}
 					else
 					{

@@ -58,7 +58,7 @@ namespace Flux {
 			return *this;
 		}
 
-		Matrix3x3 Mul(const Matrix3x3& m) const
+		Matrix3x3 operator*(const Matrix3x3& m) const
 		{
 			Matrix3x3 result;
 
@@ -77,7 +77,7 @@ namespace Flux {
 			return result;
 		}
 
-		Vector3 Mul(const Vector3& v) const
+		Vector3 operator*(const Vector3& v) const
 		{
 			Vector3 result;
 			result.X = A1 * v.X + A2 * v.Y + A3 * v.Z;
