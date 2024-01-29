@@ -8,7 +8,7 @@ namespace Flux {
 	{
 		None = 0,
 
-		WindowClose, WindowResize, WindowFocus, WindowMenu,
+		WindowClose, WindowResize, WindowMaximize, WindowMinimize, WindowFocus, WindowMenu,
 		KeyPressed, KeyReleased, KeyTyped,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
@@ -21,6 +21,8 @@ namespace Flux {
 			{
 			case EventType::WindowClose:         return "WindowClose";
 			case EventType::WindowResize:        return "WindowResize";
+			case EventType::WindowMaximize:      return "WindowMaximize";
+			case EventType::WindowMinimize:      return "WindowMinimize";
 			case EventType::WindowFocus:         return "WindowFocus";
 			case EventType::WindowMenu:          return "WindowMenu";
 			case EventType::KeyPressed:          return "KeyPressed";

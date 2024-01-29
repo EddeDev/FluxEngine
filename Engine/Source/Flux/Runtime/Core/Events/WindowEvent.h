@@ -41,6 +41,32 @@ namespace Flux {
 		uint32 m_Height;
 	};
 
+	class WindowMaximizeEvent : public WindowEvent
+	{
+	public:
+		WindowMaximizeEvent(Ref<Window> window, bool maximized)
+			: WindowEvent(window), m_Maximized(maximized) {}
+
+		bool IsMaximized() const { return m_Maximized; }
+
+		EVENT_CLASS_TYPE(WindowMaximize)
+	private:
+		bool m_Maximized;
+	};
+
+	class WindowMinimizeEvent : public WindowEvent
+	{
+	public:
+		WindowMinimizeEvent(Ref<Window> window, bool minimized)
+			: WindowEvent(window), m_Minimized(minimized) {}
+
+		bool IsMinimized() const { return m_Minimized; }
+
+		EVENT_CLASS_TYPE(WindowMinimize)
+	private:
+		bool m_Minimized;
+	};
+
 	class WindowFocusEvent : public WindowEvent
 	{
 	public:

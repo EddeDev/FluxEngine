@@ -36,7 +36,30 @@ namespace Flux {
 		m_EventQueue = Ref<EventQueue>::Create();
 		m_EventQueue->SetEventCallback([this](Event& event)
 		{
+			FLUX_CHECK_IS_IN_MAIN_THREAD();
+
 			Input::OnEvent(event);
+
+			EventHandler handler(event);
+			handler.Bind<WindowCloseEvent>([this](WindowCloseEvent& event)
+			{
+				if (event.GetWindow() == m_MainWindow)
+					Close();
+			});
+			handler.Bind<WindowMinimizeEvent>([this](WindowMinimizeEvent& event)
+			{
+				m_Minimized = event.IsMinimized();
+			});
+			handler.Bind<WindowResizeEvent>([this](WindowResizeEvent& event)
+			{
+				if (event.GetWidth() == 0 || event.GetHeight() == 0)
+				{
+					m_Minimized = true;
+					return;
+				}
+
+				m_Minimized = false;
+			});
 
 			OnEvent(event);
 
@@ -188,13 +211,16 @@ namespace Flux {
 
 			m_EventQueue->DispatchEvents();
 
-			OnUpdate(m_DeltaTime);
-
-			if (m_ImGuiRenderer)
+			if (!m_Minimized)
 			{
-				m_ImGuiRenderer->NewFrame();
-				OnImGuiRender();
-				m_ImGuiRenderer->Render();
+				OnUpdate(m_DeltaTime);
+
+				if (m_ImGuiRenderer)
+				{
+					m_ImGuiRenderer->NewFrame();
+					OnImGuiRender();
+					m_ImGuiRenderer->Render();
+				}
 			}
 
 			// Wait for the previous frame to finish

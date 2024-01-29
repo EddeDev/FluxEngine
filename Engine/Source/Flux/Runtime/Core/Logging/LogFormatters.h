@@ -21,3 +21,4 @@ REGISTER_FORMATTER(Flux::Vector2, "[{0:.2f}, {1:.2f}]", v.X, v.X);
 REGISTER_FORMATTER(Flux::Vector3, "[{0:.2f}, {1:.2f}, {2:.2f}]", v.X, v.X, v.X);
 REGISTER_FORMATTER(Flux::Vector4, "[{0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}]", v.X, v.Y, v.Z, v.W);
 REGISTER_FORMATTER(Flux::Quaternion, "[{0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}]", v.X, v.Y, v.Z, v.W);
+REGISTER_FORMATTER(Flux::Matrix4x4, "\n{0}\n{1}\n{2}\n{3}", v[0], v[1], v[2], v[3]);

@@ -22,8 +22,6 @@ namespace Flux {
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
 	private:
-		void OnWindowCloseEvent(WindowCloseEvent& event);
-	private:
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
 		Ref<Shader> m_Shader;

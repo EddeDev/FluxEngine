@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Flux/Runtime/Core/AssertionMacros.h"
+
 namespace Flux {
 
 	struct Vector3
@@ -97,6 +99,30 @@ namespace Flux {
 			result.Y = Y / scalar;
 			result.Z = Z / scalar;
 			return result;
+		}
+
+		float& operator[](uint32 index)
+		{
+			switch (index)
+			{
+			case 0: return X;
+			case 1: return Y;
+			case 2: return Z;
+			}
+			FLUX_VERIFY(false, "Invalid Vector3 index!");
+			return X;
+		}
+
+		float operator[](uint32 index) const
+		{
+			switch (index)
+			{
+			case 0: return X;
+			case 1: return Y;
+			case 2: return Z;
+			}
+			FLUX_VERIFY(false, "Invalid Vector3 index!");
+			return X;
 		}
 
 		const float* GetFloatPointer() const { return &X; }

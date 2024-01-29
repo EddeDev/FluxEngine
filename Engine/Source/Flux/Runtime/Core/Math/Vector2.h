@@ -2,6 +2,8 @@
 
 #include "MathUtils.h"
 
+#include "Flux/Runtime/Core/AssertionMacros.h"
+
 namespace Flux {
 
 	struct Vector2
@@ -92,6 +94,28 @@ namespace Flux {
 			result.X = X / scalar;
 			result.Y = Y / scalar;
 			return result;
+		}
+
+		float& operator[](uint32 index)
+		{
+			switch (index)
+			{
+			case 0: return X;
+			case 1: return Y;
+			}
+			FLUX_VERIFY(false, "Invalid Vector2 index!");
+			return X;
+		}
+
+		const float& operator[](uint32 index) const
+		{
+			switch (index)
+			{
+			case 0: return X;
+			case 1: return Y;
+			}
+			FLUX_VERIFY(false, "Invalid Vector2 index!");
+			return X;
 		}
 
 		const float* GetFloatPointer() const { return &X; }

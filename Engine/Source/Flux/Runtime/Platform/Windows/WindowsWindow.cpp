@@ -249,7 +249,19 @@ namespace Flux {
 				m_Width = width;
 				m_Height = height;
 
+				bool minimized = wParam == SIZE_MINIMIZED;
+				bool maximized = wParam == SIZE_MAXIMIZED || (m_Maximized && wParam != SIZE_RESTORED);
+
+				if (m_Minimized != minimized)
+					m_EventQueue->AddEvent<WindowMinimizeEvent>(this, minimized);
+
+				if (m_Maximized != maximized)
+					m_EventQueue->AddEvent<WindowMaximizeEvent>(this, maximized);
+
 				m_EventQueue->AddEvent<WindowResizeEvent>(this, width, height);
+
+				m_Minimized = minimized;
+				m_Maximized = maximized;
 			}
 			break;
 		}

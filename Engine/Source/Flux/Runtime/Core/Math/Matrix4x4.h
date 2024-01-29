@@ -2,69 +2,56 @@
 
 #include "Matrix3x3.h"
 
+#include "Flux/Runtime/Core/AssertionMacros.h"
+
 namespace Flux {
 
 	struct Matrix4x4
 	{
-		float A1, B1, C1, D1;
-		float A2, B2, C2, D2;
-		float A3, B3, C3, D3;
-		float A4, B4, C4, D4;
+		Vector4 V0;
+		Vector4 V1;
+		Vector4 V2;
+		Vector4 V3;
 
 		Matrix4x4()
-			: A1(0.0f), A2(0.0f), A3(0.0f), A4(0.0f),
-			B1(0.0f), B2(0.0f), B3(0.0f), B4(0.0f),
-			C1(0.0f), C2(0.0f), C3(0.0f), C4(0.0f),
-			D1(0.0f), D2(0.0f), D3(0.0f), D4(0.0f)
+			: V0(Vector4(0.0f)), 
+			  V1(Vector4(0.0f)), 
+			  V2(Vector4(0.0f)), 
+			  V3(Vector4(0.0f))
 		{
 		}
 
 		explicit Matrix4x4(float scalar)
 		{
-			A1 = scalar;
-			A2 = 0.0f;
-			A3 = 0.0f;
-			A4 = 0.0f;
-
-			B1 = 0.0f;
-			B2 = scalar;
-			B3 = 0.0f;
-			B4 = 0.0f;
-
-			C1 = 0.0f;
-			C2 = 0.0f;
-			C3 = scalar;
-			C4 = 0.0f;
-
-			D1 = 0.0f;
-			D2 = 0.0f;
-			D3 = 0.0f;
-			D4 = scalar;
+			V0 = { scalar, 0.0f, 0.0f, 0.0f };
+			V1 = { 0.0f, scalar, 0.0f, 0.0f };
+			V2 = { 0.0f, 0.0f, scalar, 0.0f };
+			V3 = { 0.0f, 0.0f, 0.0f, scalar };
 		}
 
 		explicit Matrix4x4(const Matrix3x3& other)
-			: A1(other.A1), A2(other.A2), A3(other.A3), A4(0.0f),
-			B1(other.B1), B2(other.B2), B3(other.B3), B4(0.0f),
-			C1(other.C1), C2(other.C2), C3(other.C3), C4(0.0f),
-			D1(0.0f), D2(0.0f), D3(0.0f), D4(1.0f)
+			: V0(other.V0, 0.0f),
+			  V1(other.V1, 0.0f),
+			  V2(other.V2, 0.0f),
+			  V3(Vector3(0.0f), 1.0f)
 		{
 		}
 
 		static Matrix4x4 Translate(const Vector3& translation)
 		{
 			Matrix4x4 result(1.0f);
-			result.A4 = translation.X;
-			result.B4 = translation.Y;
-			result.C4 = translation.Z;
+			result.V3.X = translation.X;
+			result.V3.Y = translation.Y;
+			result.V3.Z = translation.Z;
 			return result;
 		}
 
 		static Matrix4x4 Scale(const Vector3& scale)
 		{
 			Matrix4x4 result(1.0f);
-			result.A1 = scale.X;
-			result.B2 = scale.Y;
-			result.C3 = scale.Z;
+			result.V0.X = scale.X;
+			result.V1.Y = scale.Y;
+			result.V2.Z = scale.Z;
 			return result;
 		}
 
@@ -72,12 +59,12 @@ namespace Flux {
 		{
 			Matrix4x4 result(1.0f);
 
-			result.A1 = 2.0f / (right - left);
-			result.B2 = 2.0f / (top - bottom);
-			result.C3 = -1.0f;
+			result.V0.X = 2.0f / (right - left);
+			result.V1.Y = 2.0f / (top - bottom);
+			result.V2.Z = -1.0f;
 
-			result.A4 = -(right + left) / (right - left);
-			result.B4 = -(top + bottom) / (top - bottom);
+			result.V3.X = -(right + left) / (right - left);
+			result.V3.Y = -(top + bottom) / (top - bottom);
 
 			return result;
 		}
@@ -86,13 +73,13 @@ namespace Flux {
 		{
 			Matrix4x4 result(1.0f);
 
-			result.A1 = 2.0f / (right - left);
-			result.B2 = 2.0f / (top - bottom);
-			result.C3 = -2.0f / (farClip - nearClip);
+			result.V0.X = 2.0f / (right - left);
+			result.V1.Y = 2.0f / (top - bottom);
+			result.V2.Z = -2.0f / (farClip - nearClip);
 
-			result.A4 = -(right + left) / (right - left);
-			result.B4 = -(top + bottom) / (top - bottom);
-			result.C4 = -(farClip + nearClip) / (farClip - nearClip);
+			result.V3.X = -(right + left) / (right - left);
+			result.V3.Y = -(top + bottom) / (top - bottom);
+			result.V3.Z = -(farClip + nearClip) / (farClip - nearClip);
 
 			return result;
 		}
@@ -106,25 +93,25 @@ namespace Flux {
 
 			float tanHalfFov = Math::Tan(fov * Math::DegToRad * 0.5f);
 
-			result.A1 = 1.0f / (aspectRatio * tanHalfFov);
-			result.B2 = 1.0f / tanHalfFov;
+			result.V0.X = 1.0f / (aspectRatio * tanHalfFov);
+			result.V1.Y = 1.0f / tanHalfFov;
 
 #if LEFT_HANDED
 	#if DEPTH_ZERO_TO_ONE
-			result.C3 = farClip / (farClip - nearClip);
+			result.V2.Z = farClip / (farClip - nearClip);
 	#else
-			result.C3 = (farClip + nearClip) / (farClip - nearClip);
+			result.V2.Z = (farClip + nearClip) / (farClip - nearClip);
 	#endif
-			result.D3 = 1.0f;
+			result.V2.W = 1.0f;
 #else
-			result.C3 = -(farClip + nearClip) / (farClip - nearClip);
-			result.D3 = -1.0f;
+			result.V2.Z = -(farClip + nearClip) / (farClip - nearClip);
+			result.V2.W = -1.0f;
 #endif
 
 #if DEPTH_ZERO_TO_ONE
-			result.C4 = -(farClip * nearClip) / (farClip - nearClip);
+			result.V3.Z = -(farClip * nearClip) / (farClip - nearClip);
 #else
-			result.C4 = -(2.0f * farClip * nearClip) / (farClip - nearClip);
+			result.V3.Z = -(2.0f * farClip * nearClip) / (farClip - nearClip);
 #endif
 
 			return result;
@@ -132,25 +119,25 @@ namespace Flux {
 
 		Matrix4x4& SetIdentity()
 		{
-			A1 = 1.0f;
-			A2 = 0.0f;
-			A3 = 0.0f;
-			A4 = 0.0f;
+			V0.X = 1.0f;
+			V1.X = 0.0f;
+			V2.X = 0.0f;
+			V3.X = 0.0f;
 
-			B1 = 0.0f;
-			B2 = 1.0f;
-			B3 = 0.0f;
-			B4 = 0.0f;
+			V0.Y = 0.0f;
+			V1.Y = 1.0f;
+			V2.Y = 0.0f;
+			V3.Y = 0.0f;
 
-			C1 = 0.0f;
-			C2 = 0.0f;
-			C3 = 1.0f;
-			C4 = 0.0f;
+			V0.Z = 0.0f;
+			V1.Z = 0.0f;
+			V2.Z = 1.0f;
+			V3.Z = 0.0f;
 
-			D1 = 0.0f;
-			D2 = 0.0f;
-			D3 = 0.0f;
-			D4 = 1.0f;
+			V0.W = 0.0f;
+			V1.W = 0.0f;
+			V2.W = 0.0f;
+			V3.W = 1.0f;
 
 			return *this;
 		}
@@ -159,25 +146,25 @@ namespace Flux {
 		{
 			Matrix4x4 result;
 
-			result.A1 = A1 * m.A1 + A2 * m.B1 + A3 * m.C1 + A4 * m.D1;
-			result.A2 = A1 * m.A2 + A2 * m.B2 + A3 * m.C2 + A4 * m.D2;
-			result.A3 = A1 * m.A3 + A2 * m.B3 + A3 * m.C3 + A4 * m.D3;
-			result.A4 = A1 * m.A4 + A2 * m.B4 + A3 * m.C4 + A4 * m.D4;
+			result.V0.X = V0.X * m.V0.X + V1.X * m.V0.Y + V2.X * m.V0.Z + V3.X * m.V0.W;
+			result.V1.X = V0.X * m.V1.X + V1.X * m.V1.Y + V2.X * m.V1.Z + V3.X * m.V1.W;
+			result.V2.X = V0.X * m.V2.X + V1.X * m.V2.Y + V2.X * m.V2.Z + V3.X * m.V2.W;
+			result.V3.X = V0.X * m.V3.X + V1.X * m.V3.Y + V2.X * m.V3.Z + V3.X * m.V3.W;
 
-			result.B1 = B1 * m.A1 + B2 * m.B1 + B3 * m.C1 + B4 * m.D1;
-			result.B2 = B1 * m.A2 + B2 * m.B2 + B3 * m.C2 + B4 * m.D2;
-			result.B3 = B1 * m.A3 + B2 * m.B3 + B3 * m.C3 + B4 * m.D3;
-			result.B4 = B1 * m.A4 + B2 * m.B4 + B3 * m.C4 + B4 * m.D4;
+			result.V0.Y = V0.Y * m.V0.X + V1.Y * m.V0.Y + V2.Y * m.V0.Z + V3.Y * m.V0.W;
+			result.V1.Y = V0.Y * m.V1.X + V1.Y * m.V1.Y + V2.Y * m.V1.Z + V3.Y * m.V1.W;
+			result.V2.Y = V0.Y * m.V2.X + V1.Y * m.V2.Y + V2.Y * m.V2.Z + V3.Y * m.V2.W;
+			result.V3.Y = V0.Y * m.V3.X + V1.Y * m.V3.Y + V2.Y * m.V3.Z + V3.Y * m.V3.W;
 
-			result.C1 = C1 * m.A1 + C2 * m.B1 + C3 * m.C1 + C4 * m.D1;
-			result.C2 = C1 * m.A2 + C2 * m.B2 + C3 * m.C2 + C4 * m.D2;
-			result.C3 = C1 * m.A3 + C2 * m.B3 + C3 * m.C3 + C4 * m.D3;
-			result.C4 = C1 * m.A4 + C2 * m.B4 + C3 * m.C4 + C4 * m.D4;
+			result.V0.Z = V0.Z * m.V0.X + V1.Z * m.V0.Y + V2.Z * m.V0.Z + V3.Z * m.V0.W;
+			result.V1.Z = V0.Z * m.V1.X + V1.Z * m.V1.Y + V2.Z * m.V1.Z + V3.Z * m.V1.W;
+			result.V2.Z = V0.Z * m.V2.X + V1.Z * m.V2.Y + V2.Z * m.V2.Z + V3.Z * m.V2.W;
+			result.V3.Z = V0.Z * m.V3.X + V1.Z * m.V3.Y + V2.Z * m.V3.Z + V3.Z * m.V3.W;
 
-			result.D1 = D1 * m.A1 + D2 * m.B1 + D3 * m.C1 + D4 * m.D1;
-			result.D2 = D1 * m.A2 + D2 * m.B2 + D3 * m.C2 + D4 * m.D2;
-			result.D3 = D1 * m.A3 + D2 * m.B3 + D3 * m.C3 + D4 * m.D3;
-			result.D4 = D1 * m.A4 + D2 * m.B4 + D3 * m.C4 + D4 * m.D4;
+			result.V0.W = V0.W * m.V0.X + V1.W * m.V0.Y + V2.W * m.V0.Z + V3.W * m.V0.W;
+			result.V1.W = V0.W * m.V1.X + V1.W * m.V1.Y + V2.W * m.V1.Z + V3.W * m.V1.W;
+			result.V2.W = V0.W * m.V2.X + V1.W * m.V2.Y + V2.W * m.V2.Z + V3.W * m.V2.W;
+			result.V3.W = V0.W * m.V3.X + V1.W * m.V3.Y + V2.W * m.V3.Z + V3.W * m.V3.W;
 
 			return result;
 		}
@@ -185,14 +172,40 @@ namespace Flux {
 		Vector4 operator*(const Vector4& v) const
 		{
 			Vector4 result;
-			result.X = A1 * v.X + A2 * v.Y + A3 * v.Z + A4 * v.W;
-			result.Y = B1 * v.X + B2 * v.Y + B3 * v.Z + B4 * v.W;
-			result.Z = C1 * v.X + C2 * v.Y + C3 * v.Z + C4 * v.W;
-			result.W = D1 * v.X + D2 * v.Y + D3 * v.Z + D4 * v.W;
+			result.X = V0.X * v.X + V1.X * v.Y + V2.X * v.Z + V3.X * v.W;
+			result.Y = V0.Y * v.X + V1.Y * v.Y + V2.Y * v.Z + V3.Y * v.W;
+			result.Z = V0.Z * v.X + V1.Z * v.Y + V2.Z * v.Z + V3.Z * v.W;
+			result.W = V0.W * v.X + V1.W * v.Y + V2.W * v.Z + V3.W * v.W;
 			return result;
 		}
 
-		const float* GetFloatPointer() const { return &A1; }
+		Vector4& operator[](uint32 index)
+		{
+			switch (index)
+			{
+			case 0: return V0;
+			case 1: return V1;
+			case 2: return V2;
+			case 3: return V3;
+			}
+			FLUX_VERIFY(false, "Invalid Matrix4x4 index!");
+			return V0;
+		}
+
+		const Vector4& operator[](uint32 index) const
+		{
+			switch (index)
+			{
+			case 0: return V0;
+			case 1: return V1;
+			case 2: return V2;
+			case 3: return V3;
+			}
+			FLUX_VERIFY(false, "Invalid Matrix4x4 index!");
+			return V0;
+		}
+
+		const float* GetFloatPointer() const { return &V0.X; }
 	};
 
 }

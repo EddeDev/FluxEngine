@@ -2,59 +2,35 @@
 
 #include "Vector3.h"
 
+#include "Flux/Runtime/Core/AssertionMacros.h"
+
 namespace Flux {
 
 	struct Matrix3x3
 	{
-		float A1, B1, C1;
-		float A2, B2, C2;
-		float A3, B3, C3;
+		Vector3 V0;
+		Vector3 V1;
+		Vector3 V2;
 
 		Matrix3x3()
-			: A1(0.0f), A2(0.0f), A3(0.0f),
-			B1(0.0f), B2(0.0f), B3(0.0f),
-			C1(0.0f), C2(0.0f), C3(0.0f)
+			: V0(Vector3(0.0f)),
+			  V1(Vector3(0.0f)),
+			  V2(Vector3(0.0f))
 		{
 		}
 
 		explicit Matrix3x3(float scalar)
 		{
-			A1 = scalar;
-			A2 = 0.0f;
-			A3 = 0.0f;
-
-			B1 = 0.0f;
-			B2 = scalar;
-			B3 = 0.0f;
-
-			C1 = 0.0f;
-			C2 = 0.0f;
-			C3 = scalar;
+			V0 = { scalar, 0.0f, 0.0f };
+			V1 = { 0.0f, scalar, 0.0f };
+			V2 = { 0.0f, 0.0f, scalar };
 		}
 
 		Matrix3x3& SetIdentity()
 		{
-			A1 = 1.0f;
-			A2 = 0.0f;
-			A3 = 0.0f;
-
-			B1 = 0.0f;
-			B2 = 1.0f;
-			B3 = 0.0f;
-
-			C1 = 0.0f;
-			C2 = 0.0f;
-			C3 = 1.0f;
-
-			return *this;
-		}
-
-		Matrix3x3& Scale(const Vector3& scale)
-		{
-			A1 *= scale.X;
-			B2 *= scale.Y;
-			C3 *= scale.Z;
-
+			V0 = { 1.0f, 0.0f, 0.0f };
+			V1 = { 0.0f, 1.0f, 0.0f };
+			V2 = { 0.0f, 0.0f, 1.0f };
 			return *this;
 		}
 
@@ -62,17 +38,17 @@ namespace Flux {
 		{
 			Matrix3x3 result;
 
-			result.A1 = A1 * m.A1 + A2 * m.B1 + A3 * m.C1;
-			result.A2 = A1 * m.A2 + A2 * m.B2 + A3 * m.C2;
-			result.A3 = A1 * m.A3 + A2 * m.B3 + A3 * m.C3;
+			result.V0.X = V0.X * m.V0.X + V1.X * m.V0.Y + V2.X * m.V0.Z;
+			result.V1.X = V0.X * m.V1.X + V1.X * m.V1.Y + V2.X * m.V1.Z;
+			result.V2.X = V0.X * m.V2.X + V1.X * m.V2.Y + V2.X * m.V2.Z;
 
-			result.B1 = B1 * m.A1 + B2 * m.B1 + B3 * m.C1;
-			result.B2 = B1 * m.A2 + B2 * m.B2 + B3 * m.C2;
-			result.B3 = B1 * m.A3 + B2 * m.B3 + B3 * m.C3;
+			result.V0.Y = V0.Y * m.V0.X + V1.Y * m.V0.Y + V2.Y * m.V0.Z;
+			result.V1.Y = V0.Y * m.V1.X + V1.Y * m.V1.Y + V2.Y * m.V1.Z;
+			result.V2.Y = V0.Y * m.V2.X + V1.Y * m.V2.Y + V2.Y * m.V2.Z;
 
-			result.C1 = C1 * m.A1 + C2 * m.B1 + C3 * m.C1;
-			result.C2 = C1 * m.A2 + C2 * m.B2 + C3 * m.C2;
-			result.C3 = C1 * m.A3 + C2 * m.B3 + C3 * m.C3;
+			result.V0.Z = V0.Z * m.V0.X + V1.Z * m.V0.Y + V2.Z * m.V0.Z;
+			result.V1.Z = V0.Z * m.V1.X + V1.Z * m.V1.Y + V2.Z * m.V1.Z;
+			result.V2.Z = V0.Z * m.V2.X + V1.Z * m.V2.Y + V2.Z * m.V2.Z;
 
 			return result;
 		}
@@ -80,13 +56,37 @@ namespace Flux {
 		Vector3 operator*(const Vector3& v) const
 		{
 			Vector3 result;
-			result.X = A1 * v.X + A2 * v.Y + A3 * v.Z;
-			result.Y = B1 * v.X + B2 * v.Y + B3 * v.Z;
-			result.Z = C1 * v.X + C2 * v.Y + C3 * v.Z;
+			result.X = V0.X * v.X + V1.X * v.Y + V2.X * v.Z;
+			result.Y = V0.Y * v.X + V1.Y * v.Y + V2.Y * v.Z;
+			result.Z = V0.Z * v.X + V1.Z * v.Y + V2.Z * v.Z;
 			return result;
 		}
 
-		const float* GetFloatPointer() const { return &A1; }
+		Vector3& operator[](uint32 index)
+		{
+			switch (index)
+			{
+			case 0: return V0;
+			case 1: return V1;
+			case 2: return V2;
+			}
+			FLUX_VERIFY(false, "Invalid Matrix3x3 index!");
+			return V0;
+		}
+
+		const Vector3& operator[](uint32 index) const
+		{
+			switch (index)
+			{
+			case 0: return V0;
+			case 1: return V1;
+			case 2: return V2;
+			}
+			FLUX_VERIFY(false, "Invalid Matrix3x3 index!");
+			return V0;
+		}
+
+		const float* GetFloatPointer() const { return &V0.X; }
 	};
 
 }

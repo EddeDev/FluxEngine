@@ -267,9 +267,6 @@ namespace Flux {
 					window->SetVisible(false);
 			}
 		});
-
-		if (event.GetWindow() == m_MainWindow)
-			Close();
 	}
 
 	void EditorEngine::OpenProject()

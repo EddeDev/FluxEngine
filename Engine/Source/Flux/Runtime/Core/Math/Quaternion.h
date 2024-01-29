@@ -4,6 +4,8 @@
 #include "Matrix3x3.h"
 #include "Matrix4x4.h"
 
+#include "Flux/Runtime/Core/AssertionMacros.h"
+
 namespace Flux {
 
 	struct Quaternion
@@ -86,17 +88,17 @@ namespace Flux {
 			float wy = W * Y;
 			float wz = W * Z;
 
-			result.A1 = 1.0f - 2.0f * (yy + zz);
-			result.B1 = 2.0f * (xy + wz);
-			result.C1 = 2.0f * (xz - wy);
+			result[0][0] = 1.0f - 2.0f * (yy + zz);
+			result[0][1] = 2.0f * (xy + wz);
+			result[0][2] = 2.0f * (xz - wy);
 
-			result.A2 = 2.0f * (xy - wz);
-			result.B2 = 1.0f - 2.0f * (xx + zz);
-			result.C2 = 2.0f * (yz + wx);
+			result[1][0] = 2.0f * (xy - wz);
+			result[1][1] = 1.0f - 2.0f * (xx + zz);
+			result[1][2] = 2.0f * (yz + wx);
 
-			result.A3 = 2.0f * (xz + wy);
-			result.B3 = 2.0f * (yz - wx);
-			result.C3 = 1.0f - 2.0f * (xx + yy);
+			result[2][0] = 2.0f * (xz + wy);
+			result[2][1] = 2.0f * (yz - wx);
+			result[2][2] = 1.0f - 2.0f * (xx + yy);
 
 			return result;
 		}
@@ -105,6 +107,34 @@ namespace Flux {
 		{
 			return Matrix4x4(ToMatrix3x3());
 		}
+
+		float& operator[](uint32 index)
+		{
+			switch (index)
+			{
+			case 0: return X;
+			case 1: return Y;
+			case 2: return Z;
+			case 3: return W;
+			}
+			FLUX_VERIFY(false, "Invalid Quaternion index!");
+			return X;
+		}
+
+		float operator[](uint32 index) const
+		{
+			switch (index)
+			{
+			case 0: return X;
+			case 1: return Y;
+			case 2: return Z;
+			case 3: return W;
+			}
+			FLUX_VERIFY(false, "Invalid Quaternion index!");
+			return X;
+		}
+
+		const float* GetFloatPointer() const { return &X; }
 	};
 
 }

@@ -125,8 +125,7 @@ namespace Flux {
 		m_IndexBuffer->Bind();
 
 		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
-		// Matrix4x4 projectionMatrix = Matrix4x4::Ortho(-aspectRatio * s_CameraZoomLevel, aspectRatio * s_CameraZoomLevel, -s_CameraZoomLevel, s_CameraZoomLevel);
-		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(s_CameraFov, aspectRatio, 0.1f, 1000.0f);
+		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(s_CameraFov, aspectRatio, 0.1f, 10.0f);
 
 		if (Input::GetKey(KeyCode::Up))
 			s_CameraPosition.Y += deltaTime;
@@ -175,14 +174,7 @@ namespace Flux {
 
 	void RuntimeEngine::OnEvent(Event& event)
 	{
-		EventHandler handler(event);
-		handler.Bind<WindowCloseEvent>(FLUX_BIND_CALLBACK(OnWindowCloseEvent, this));
 	}
 
-	void RuntimeEngine::OnWindowCloseEvent(WindowCloseEvent& event)
-	{
-		if (event.GetWindow() == m_MainWindow)
-			Close();
-	}
 
 }

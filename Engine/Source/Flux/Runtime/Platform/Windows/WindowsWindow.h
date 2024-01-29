@@ -48,6 +48,9 @@ namespace Flux {
 
 		WCHAR m_HighSurrogate = 0;
 
+		bool m_Minimized = false;
+		bool m_Maximized = false;
+
 		WindowMenu m_Menu = nullptr;
 	};
 }
