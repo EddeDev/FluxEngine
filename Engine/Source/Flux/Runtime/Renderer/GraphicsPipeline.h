@@ -21,6 +21,7 @@ namespace Flux {
 		bool DepthTest = true;
 		bool ScissorTest = false;
 		bool DepthWrite = true;
+		bool BackfaceCulling = false;
 	};
 
 	class GraphicsPipeline : public ReferenceCounted

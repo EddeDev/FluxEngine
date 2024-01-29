@@ -101,20 +101,31 @@ namespace Flux {
 		{
 			Matrix4x4 result(0.0f);
 
-#define LEFT_HANDED 0
+#define LEFT_HANDED 1
+#define DEPTH_ZERO_TO_ONE 1
 
 			float tanHalfFov = Math::Tan(fov * Math::DegToRad * 0.5f);
 
 			result.A1 = 1.0f / (aspectRatio * tanHalfFov);
 			result.B2 = 1.0f / tanHalfFov;
+
 #if LEFT_HANDED
+	#if DEPTH_ZERO_TO_ONE
+			result.C3 = farClip / (farClip - nearClip);
+	#else
 			result.C3 = (farClip + nearClip) / (farClip - nearClip);
+	#endif
 			result.D3 = 1.0f;
 #else
 			result.C3 = -(farClip + nearClip) / (farClip - nearClip);
 			result.D3 = -1.0f;
 #endif
+
+#if DEPTH_ZERO_TO_ONE
+			result.C4 = -(farClip * nearClip) / (farClip - nearClip);
+#else
 			result.C4 = -(2.0f * farClip * nearClip) / (farClip - nearClip);
+#endif
 
 			return result;
 		}

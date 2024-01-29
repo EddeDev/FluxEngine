@@ -52,12 +52,12 @@ namespace Flux {
 	}
 
 	OpenGLPipeline::OpenGLPipeline(const GraphicsPipelineCreateInfo& createInfo)
-		: m_Topology(createInfo.Topology), m_DepthTest(createInfo.DepthTest), m_ScissorTest(createInfo.ScissorTest), m_DepthWrite(createInfo.DepthWrite)
+		: m_Topology(createInfo.Topology)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLPipelineData();
-		m_Data->VertexDeclaration = createInfo.VertexDeclaration;
+		m_Data->CreateInfo = createInfo;
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]() mutable
 		{
@@ -81,17 +81,18 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, depthTest = m_DepthTest, scissorTest = m_ScissorTest, depthWrite = m_DepthWrite]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
 			glBindVertexArray(data->VertexArrayID);
 
-			auto& elements = data->VertexDeclaration.GetElements();
+			const auto& createInfo = data->CreateInfo;
+			const auto& elements = createInfo.VertexDeclaration.GetElements();
 
-			uint32 stride = data->VertexDeclaration.GetStride();
+			uint32 stride = createInfo.VertexDeclaration.GetStride();
 
 			for (uint32 i = 0; i < static_cast<uint32>(elements.size()); i++)
 			{
-				auto& element = elements[i];
+				const auto& element = elements[i];
 
 				glEnableVertexAttribArray(i);
 
@@ -122,22 +123,31 @@ namespace Flux {
 			glEnable(GL_BLEND);
 			glBlendEquation(GL_FUNC_ADD);
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-			glDisable(GL_CULL_FACE);
 
-			if (depthTest)
+			if (createInfo.BackfaceCulling)
+			{
+				glEnable(GL_CULL_FACE);
+				glCullFace(GL_BACK);
+			}
+			else
+			{
+				glDisable(GL_CULL_FACE);
+			}
+
+			if (createInfo.DepthTest)
 				glEnable(GL_DEPTH_TEST);
 			else
 				glDisable(GL_DEPTH_TEST);
 
-			if (scissorTest)
+			if (createInfo.ScissorTest)
 				glEnable(GL_SCISSOR_TEST);
 			else
 				glDisable(GL_SCISSOR_TEST);
 
-			glDepthMask(depthWrite);
+			glDepthMask(createInfo.DepthWrite);
 
-			// glFrontFace(GL_CW);
-			// glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+			glFrontFace(GL_CW);
+			glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 
 			glDisable(GL_STENCIL_TEST);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -150,7 +160,8 @@ namespace Flux {
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]()
 		{
-			auto& elements = data->VertexDeclaration.GetElements();
+			const auto& createInfo = data->CreateInfo;
+			const auto& elements = createInfo.VertexDeclaration.GetElements();
 			for (uint32 i = 0; i < static_cast<uint32>(elements.size()); i++)
 				glDisableVertexAttribArray(i);
 

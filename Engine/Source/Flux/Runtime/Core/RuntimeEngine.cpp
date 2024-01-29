@@ -84,6 +84,7 @@ namespace Flux {
 		};
 		pipelineCreateInfo.DepthTest = true;
 		pipelineCreateInfo.DepthWrite = true;
+		pipelineCreateInfo.BackfaceCulling = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 	}
 
@@ -97,9 +98,10 @@ namespace Flux {
 		m_IndexBuffer = nullptr;
 	}
 
-	static float s_QuadRotation = 0.0f;
-	static Vector3 cameraPosition(0.0f, 0.0f, 2.5f);
-	static float cameraFov = 60.0f;
+	static float s_QuadRotationX = 0.0f;
+	static float s_QuadRotationZ = 0.0f;
+	static Vector3 s_CameraPosition(0.0f, 0.0f, -2.5f);
+	static float s_CameraFov = 60.0f;
 
 	void RuntimeEngine::OnUpdate(float deltaTime)
 	{
@@ -124,23 +126,28 @@ namespace Flux {
 
 		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
 		// Matrix4x4 projectionMatrix = Matrix4x4::Ortho(-aspectRatio * s_CameraZoomLevel, aspectRatio * s_CameraZoomLevel, -s_CameraZoomLevel, s_CameraZoomLevel);
-		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(cameraFov, aspectRatio, 0.1f, 1000.0f);
+		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(s_CameraFov, aspectRatio, 0.1f, 1000.0f);
 
 		if (Input::GetKey(KeyCode::Up))
-			cameraPosition.Y += deltaTime;
+			s_CameraPosition.Y += deltaTime;
 		if (Input::GetKey(KeyCode::Down))
-			cameraPosition.Y -= deltaTime;
+			s_CameraPosition.Y -= deltaTime;
 		if (Input::GetKey(KeyCode::Left))
-			cameraPosition.X -= deltaTime;
+			s_CameraPosition.X -= deltaTime;
 		if (Input::GetKey(KeyCode::Right))
-			cameraPosition.X += deltaTime;
+			s_CameraPosition.X += deltaTime;
 
-		Matrix4x4 viewMatrix = Matrix4x4::Translate(-cameraPosition);
+		Matrix4x4 viewMatrix = Matrix4x4::Translate(-s_CameraPosition);
 		Matrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
-		s_QuadRotation += 10.0f * deltaTime;
+		s_QuadRotationX += 10.0f * deltaTime;
+		s_QuadRotationZ += 5.0f * deltaTime;
 
-		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(s_QuadRotation * Math::DegToRad, 0.0f, s_QuadRotation * Math::DegToRad));
+		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(
+			s_QuadRotationX * Math::DegToRad, 
+			0.0f, 
+			s_QuadRotationZ * Math::DegToRad)
+		);
 
 		m_Shader->Bind();
 		m_Shader->SetUniform("u_Transform", viewProjectionMatrix * transform);
@@ -155,12 +162,13 @@ namespace Flux {
 	{
 		ImGui::Begin("Debug");
 
-		ImGui::Text("Z rotation: %f deg, %f rad", fmod(s_QuadRotation, 360.0f), s_QuadRotation * Math::DegToRad);
+		ImGui::Text("X rotation: %f deg, %f rad", fmod(s_QuadRotationX, 360.0f), s_QuadRotationX * Math::DegToRad);
+		ImGui::Text("Z rotation: %f deg, %f rad", fmod(s_QuadRotationZ, 360.0f), s_QuadRotationZ * Math::DegToRad);
 
-		ImGui::DragFloat("##CameraPositionX", &cameraPosition.X, 0.01f);
-		ImGui::DragFloat("##CameraPositionY", &cameraPosition.Y, 0.01f);
-		ImGui::DragFloat("##CameraPositionZ", &cameraPosition.Z, 0.01f);
-		ImGui::DragFloat("Field of view", &cameraFov, 0.1f);
+		ImGui::DragFloat("##CameraPositionX", &s_CameraPosition.X, 0.01f);
+		ImGui::DragFloat("##CameraPositionY", &s_CameraPosition.Y, 0.01f);
+		ImGui::DragFloat("##CameraPositionZ", &s_CameraPosition.Z, 0.01f);
+		ImGui::DragFloat("Field of view", &s_CameraFov, 0.1f);
 
 		ImGui::End();
 	}
