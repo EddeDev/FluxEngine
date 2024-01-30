@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vector3.h"
+#include "Matrix2x2.h"
 
 #include "Flux/Runtime/Core/AssertionMacros.h"
 
@@ -26,11 +27,83 @@ namespace Flux {
 			V2 = { 0.0f, 0.0f, scalar };
 		}
 
+		static Matrix3x3 Transpose(const Matrix3x3& m)
+		{
+			Matrix3x3 result;
+			
+			result[0][0] = m[0][0];
+			result[0][1] = m[1][0];
+			result[0][2] = m[2][0];
+
+			result[1][0] = m[0][1];
+			result[1][1] = m[1][1];
+			result[1][2] = m[2][1];
+
+			result[2][0] = m[0][2];
+			result[2][1] = m[1][2];
+			result[2][2] = m[2][2];
+
+			return result;
+		}
+
+		static Matrix3x3 Inverse(const Matrix3x3& m)
+		{
+			float oneOverDeterminant = 1.0f / Determinant(m);
+
+			Matrix3x3 result;
+			result[0][0] =  ((m[1][1] * m[2][2]) - (m[1][2] * m[2][1])) * oneOverDeterminant;
+			result[1][0] = -((m[1][0] * m[2][2]) - (m[1][2] * m[2][0])) * oneOverDeterminant;
+			result[2][0] =  ((m[1][0] * m[2][1]) - (m[1][1] * m[2][0])) * oneOverDeterminant;
+			result[0][1] = -((m[0][1] * m[2][2]) - (m[0][2] * m[2][1])) * oneOverDeterminant;
+			result[1][1] =  ((m[0][0] * m[2][2]) - (m[0][2] * m[2][0])) * oneOverDeterminant;
+			result[2][1] = -((m[0][0] * m[2][1]) - (m[0][1] * m[2][0])) * oneOverDeterminant;
+			result[0][2] =  ((m[0][1] * m[1][2]) - (m[0][2] * m[1][1])) * oneOverDeterminant;
+			result[1][2] = -((m[0][0] * m[1][2]) - (m[0][2] * m[1][0])) * oneOverDeterminant;
+			result[2][2] =  ((m[0][0] * m[1][1]) - (m[0][1] * m[1][0])) * oneOverDeterminant;
+			return result;
+		}
+
+		static float Determinant(const Matrix3x3& m)
+		{
+			Matrix2x2 x;
+			x[0] = { m[1][1], m[1][2] };
+			x[1] = { m[2][1], m[2][2] };
+
+			Matrix2x2 y;
+			y[0] = { m[1][0], m[1][2] };
+			y[1] = { m[2][0], m[2][2] };
+
+			Matrix2x2 z;
+			z[0] = { m[1][0], m[1][1] };
+			z[1] = { m[2][0], m[2][1] };
+
+			return + m[0][0] * Matrix2x2::Determinant(x)
+				   - m[0][1] * Matrix2x2::Determinant(y)
+				   + m[0][2] * Matrix2x2::Determinant(z);
+		}
+
 		Matrix3x3& SetIdentity()
 		{
 			V0 = { 1.0f, 0.0f, 0.0f };
 			V1 = { 0.0f, 1.0f, 0.0f };
 			V2 = { 0.0f, 0.0f, 1.0f };
+			return *this;
+		}
+
+		Matrix3x3 operator*(float scalar) const
+		{
+			Matrix3x3 result;
+			result.V0 = V0 * scalar;
+			result.V1 = V1 * scalar;
+			result.V2 = V2 * scalar;
+			return result;
+		}
+
+		Matrix3x3& operator*=(float scalar)
+		{
+			V0 *= scalar;
+			V1 *= scalar;
+			V2 *= scalar;
 			return *this;
 		}
 

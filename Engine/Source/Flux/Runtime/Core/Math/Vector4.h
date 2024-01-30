@@ -75,7 +75,7 @@ namespace Flux {
 			return result;
 		}
 
-		Vector4 operator*(const Vector4& v)
+		Vector4 operator*(const Vector4& v) const
 		{
 			Vector4 result;
 			result.X = X * v.X;
@@ -85,7 +85,7 @@ namespace Flux {
 			return result;
 		}
 
-		Vector4 operator*(float scalar)
+		Vector4 operator*(float scalar) const
 		{
 			Vector4 result;
 			result.X = X * scalar;
@@ -93,6 +93,15 @@ namespace Flux {
 			result.Z = Z * scalar;
 			result.W = W * scalar;
 			return result;
+		}
+
+		Vector4& operator*=(float scalar)
+		{
+			X *= scalar;
+			Y *= scalar;
+			Z *= scalar;
+			W *= scalar;
+			return *this;
 		}
 
 		Vector4 operator/(const Vector4& v)

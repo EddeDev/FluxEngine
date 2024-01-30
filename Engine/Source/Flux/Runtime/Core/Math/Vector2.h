@@ -64,7 +64,7 @@ namespace Flux {
 			return result;
 		}
 
-		Vector2 operator*(const Vector2& v)
+		Vector2 operator*(const Vector2& v) const
 		{
 			Vector2 result;
 			result.X = X * v.X;
@@ -72,12 +72,19 @@ namespace Flux {
 			return result;
 		}
 
-		Vector2 operator*(float scalar)
+		Vector2 operator*(float scalar) const
 		{
 			Vector2 result;
 			result.X = X * scalar;
 			result.Y = Y * scalar;
 			return result;
+		}
+
+		Vector2& operator*=(float scalar)
+		{
+			X *= scalar;
+			Y *= scalar;
+			return *this;
 		}
 
 		Vector2 operator/(const Vector2& v)

@@ -29,12 +29,187 @@ namespace Flux {
 			V3 = { 0.0f, 0.0f, 0.0f, scalar };
 		}
 
+		Matrix4x4(const Vector4& v0, const Vector4& v1, const Vector4& v2, const Vector4& v3)
+			: V0(v0), V1(v1), V2(v2), V3(v3)
+		{
+		}
+
 		explicit Matrix4x4(const Matrix3x3& other)
 			: V0(other.V0, 0.0f),
 			  V1(other.V1, 0.0f),
 			  V2(other.V2, 0.0f),
 			  V3(Vector3(0.0f), 1.0f)
 		{
+		}
+
+		static Matrix4x4 Transpose(const Matrix4x4& m)
+		{
+			Matrix4x4 result;
+
+			result[0][0] = m[0][0];
+			result[0][1] = m[1][0];
+			result[0][2] = m[2][0];
+			result[0][3] = m[3][0];
+
+			result[1][0] = m[0][1];
+			result[1][1] = m[1][1];
+			result[1][2] = m[2][1];
+			result[1][3] = m[3][1];
+
+			result[2][0] = m[0][2];
+			result[2][1] = m[1][2];
+			result[2][2] = m[2][2];
+			result[2][3] = m[3][2];
+
+			result[3][0] = m[0][3];
+			result[3][1] = m[1][3];
+			result[3][2] = m[2][3];
+			result[3][3] = m[3][3];
+
+			return result;
+		}
+
+		static Matrix4x4 Inverse(const Matrix4x4& m)
+		{
+			Matrix3x3 Ax;
+			Ax[0] = { m[1][1], m[1][2], m[1][3] };
+			Ax[1] = { m[2][1], m[2][2], m[2][3] };
+			Ax[2] = { m[3][1], m[3][2], m[3][3] };
+
+			Matrix3x3 Ay;
+			Ay[0] = { m[1][0], m[1][2], m[1][3] };
+			Ay[1] = { m[2][0], m[2][2], m[2][3] };
+			Ay[2] = { m[3][0], m[3][2], m[3][3] };
+
+			Matrix3x3 Az;
+			Az[0] = { m[1][0], m[1][1], m[1][3] };
+			Az[1] = { m[2][0], m[2][1], m[2][3] };
+			Az[2] = { m[3][0], m[3][1], m[3][3] };
+
+			Matrix3x3 Aw;
+			Aw[0] = { m[1][0], m[1][1], m[1][2] };
+			Aw[1] = { m[2][0], m[2][1], m[2][2] };
+			Aw[2] = { m[3][0], m[3][1], m[3][2] };
+
+			Matrix3x3 Bx;
+			Bx[0] = { m[0][1], m[0][2], m[0][3] };
+			Bx[1] = { m[2][1], m[2][2], m[2][3] };
+			Bx[2] = { m[3][1], m[3][2], m[3][3] };
+
+			Matrix3x3 By;
+			By[0] = { m[0][0], m[0][2], m[0][3] };
+			By[1] = { m[2][0], m[2][2], m[2][3] };
+			By[2] = { m[3][0], m[3][2], m[3][3] };
+
+			Matrix3x3 Bz;
+			Bz[0] = { m[0][0], m[0][1], m[0][3] };
+			Bz[1] = { m[2][0], m[2][1], m[2][3] };
+			Bz[2] = { m[3][0], m[3][1], m[3][3] };
+
+			Matrix3x3 Bw;
+			Bw[0] = { m[0][0], m[0][1], m[0][2] };
+			Bw[1] = { m[2][0], m[2][1], m[2][2] };
+			Bw[2] = { m[3][0], m[3][1], m[3][2] };
+
+			Matrix3x3 Cx;
+			Cx[0] = { m[0][1], m[0][2], m[0][3] };
+			Cx[1] = { m[1][1], m[1][2], m[1][3] };
+			Cx[2] = { m[3][1], m[3][2], m[3][3] };
+
+			Matrix3x3 Cy;
+			Cy[0] = { m[0][0], m[0][2], m[0][3] };
+			Cy[1] = { m[1][0], m[1][2], m[1][3] };
+			Cy[2] = { m[3][0], m[3][2], m[3][3] };
+
+			Matrix3x3 Cz;
+			Cz[0] = { m[0][0], m[0][1], m[0][3] };
+			Cz[1] = { m[1][0], m[1][1], m[1][3] };
+			Cz[2] = { m[3][0], m[3][1], m[3][3] };
+
+			Matrix3x3 Cw;
+			Cw[0] = { m[0][0], m[0][1], m[0][2] };
+			Cw[1] = { m[1][0], m[1][1], m[1][2] };
+			Cw[2] = { m[3][0], m[3][1], m[3][2] };
+
+			Matrix3x3 Dx;
+			Dx[0] = { m[0][1], m[0][2], m[0][3] };
+			Dx[1] = { m[1][1], m[1][2], m[1][3] };
+			Dx[2] = { m[2][1], m[2][2], m[2][3] };
+
+			Matrix3x3 Dy;
+			Dy[0] = { m[0][0], m[0][2], m[0][3] };
+			Dy[1] = { m[1][0], m[1][2], m[1][3] };
+			Dy[2] = { m[2][0], m[2][2], m[2][3] };
+
+			Matrix3x3 Dz;
+			Dz[0] = { m[0][0], m[0][1], m[0][3] };
+			Dz[1] = { m[1][0], m[1][1], m[1][3] };
+			Dz[2] = { m[2][0], m[2][1], m[2][3] };
+
+			Matrix3x3 Dw;
+			Dw[0] = { m[0][0], m[0][1], m[0][2] };
+			Dw[1] = { m[1][0], m[1][1], m[1][2] };
+			Dw[2] = { m[2][0], m[2][1], m[2][2] };
+
+			Matrix4x4 result;
+			result[0][0] = Matrix3x3::Determinant(Ax);
+			result[1][0] = -Matrix3x3::Determinant(Ay);
+			result[2][0] = Matrix3x3::Determinant(Az);
+			result[3][0] = -Matrix3x3::Determinant(Aw);
+
+			result[0][1] = -Matrix3x3::Determinant(Bx);
+			result[1][1] = Matrix3x3::Determinant(By);
+			result[2][1] = -Matrix3x3::Determinant(Bz);
+			result[3][1] = Matrix3x3::Determinant(Bw);
+
+			result[0][2] = Matrix3x3::Determinant(Cx);
+			result[1][2] = -Matrix3x3::Determinant(Cy);
+			result[2][2] = Matrix3x3::Determinant(Cz);
+			result[3][2] = -Matrix3x3::Determinant(Cw);
+
+			result[0][3] = -Matrix3x3::Determinant(Dx);
+			result[1][3] = Matrix3x3::Determinant(Dy);
+			result[2][3] = -Matrix3x3::Determinant(Dz);
+			result[3][3] = Matrix3x3::Determinant(Dw);
+
+			float determinant =
+				m[0][0] * result[0][0] +
+				m[0][1] * result[0][1] +
+				m[0][2] * result[0][2] +
+				m[0][3] * result[0][3];
+
+			result *= 1.0f / determinant;
+
+			return result;
+		}
+
+		static float Determinant(const Matrix4x4& m)
+		{
+			Matrix3x3 x;
+			x[0] = { m[1][1], m[1][2], m[1][3] };
+			x[1] = { m[2][1], m[2][2], m[2][3] };
+			x[2] = { m[3][1], m[3][2], m[3][3] };
+
+			Matrix3x3 y;
+			y[0] = { m[1][0], m[1][2], m[1][3] };
+			y[1] = { m[2][0], m[2][2], m[2][3] };
+			y[2] = { m[3][0], m[3][2], m[3][3] };
+
+			Matrix3x3 z;
+			z[0] = { m[1][0], m[1][1], m[1][3] };
+			z[1] = { m[2][0], m[2][1], m[2][3] };
+			z[2] = { m[3][0], m[3][1], m[3][3] };
+
+			Matrix3x3 w;
+			w[0] = { m[1][0], m[1][1], m[1][2] };
+			w[1] = { m[2][0], m[2][1], m[2][2] };
+			w[2] = { m[3][0], m[3][1], m[3][2] };
+
+			return
+				+ m[0][0] * Matrix3x3::Determinant(x)
+				- m[0][1] * Matrix3x3::Determinant(y)
+				+ m[0][2] * Matrix3x3::Determinant(z)
+				- m[0][3] * Matrix3x3::Determinant(w);
 		}
 
 		static Matrix4x4 Translate(const Vector3& translation)
@@ -139,6 +314,52 @@ namespace Flux {
 			V2.W = 0.0f;
 			V3.W = 1.0f;
 
+			return *this;
+		}
+
+		float Determinant() const
+		{
+			const Matrix4x4& m = *this;
+
+			float xDeterminant =
+				+ m[1][1] * (m[2][2] * m[3][3] - m[2][3] * m[3][2])
+				- m[1][2] * (m[2][1] * m[3][3] - m[2][3] * m[3][1])
+				+ m[1][3] * (m[2][1] * m[3][2] - m[2][2] * m[3][1]);
+
+			float yDeterminant =
+				+ m[1][0] * (m[2][2] * m[3][3] - m[2][3] * m[3][2])
+				- m[1][2] * (m[2][0] * m[3][3] - m[2][3] * m[3][0])
+				+ m[1][3] * (m[2][0] * m[3][2] - m[2][2] * m[3][0]);
+
+			float zDeterminant =
+				+ m[1][0] * (m[2][1] * m[3][3] - m[2][3] * m[3][1])
+				- m[1][1] * (m[2][0] * m[3][3] - m[2][3] * m[3][0])
+				+ m[1][3] * (m[2][0] * m[3][1] - m[2][1] * m[3][0]);
+
+			float wDeterminant =
+				+ m[1][0] * (m[2][1] * m[3][2] - m[2][2] * m[3][1])
+				- m[1][1] * (m[2][0] * m[3][2] - m[2][2] * m[3][0])
+				+ m[1][2] * (m[2][0] * m[3][1] - m[2][1] * m[3][0]);
+
+			return (m[0][0] * xDeterminant) - (m[0][1] * yDeterminant) + (m[0][2] * zDeterminant) - (m[0][3] * wDeterminant);
+		}
+
+		Matrix4x4 operator*(float scalar) const
+		{
+			Matrix4x4 result;
+			result.V0 = V0 * scalar;
+			result.V1 = V1 * scalar;
+			result.V2 = V2 * scalar;
+			result.V3 = V3 * scalar;
+			return result;
+		}
+
+		Matrix4x4& operator*=(float scalar)
+		{
+			V0 *= scalar;
+			V1 *= scalar;
+			V2 *= scalar;
+			V3 *= scalar;
 			return *this;
 		}
 

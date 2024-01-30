@@ -136,7 +136,7 @@ namespace Flux {
 		if (Input::GetKey(KeyCode::Right))
 			s_CameraPosition.X += deltaTime;
 
-		Matrix4x4 viewMatrix = Matrix4x4::Translate(-s_CameraPosition);
+		Matrix4x4 viewMatrix = Matrix4x4::Inverse(Matrix4x4::Translate(s_CameraPosition));
 		Matrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
 		s_QuadRotationX += 10.0f * deltaTime;
