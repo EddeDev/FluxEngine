@@ -125,7 +125,7 @@ namespace Flux {
 		m_IndexBuffer->Bind();
 
 		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
-		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(s_CameraFov, aspectRatio, 0.1f, 10.0f);
+		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(s_CameraFov, aspectRatio, 0.1f, 1000.0f);
 
 		if (Input::GetKey(KeyCode::Up))
 			s_CameraPosition.Y += deltaTime;
@@ -142,11 +142,7 @@ namespace Flux {
 		s_QuadRotationX += 10.0f * deltaTime;
 		s_QuadRotationZ += 5.0f * deltaTime;
 
-		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(
-			s_QuadRotationX * Math::DegToRad, 
-			0.0f, 
-			s_QuadRotationZ * Math::DegToRad)
-		);
+		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(), { 10.0f, 1.0f, 10.0f });
 
 		m_Shader->Bind();
 		m_Shader->SetUniform("u_Transform", viewProjectionMatrix * transform);
