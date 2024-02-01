@@ -14,13 +14,14 @@ layout(push_constant) uniform Transform
 } u_Constants;
 */
 uniform mat4 u_Transform;
+uniform mat4 u_ViewProjMatrix;
 
 void main()
 {
     v_Normal = mat3(u_Transform) * a_Normal;
     v_WorldPosition = vec3(u_Transform * vec4(a_Position, 1.0));
 
-    gl_Position = u_Transform * vec4(a_Position, 1.0);
+    gl_Position = u_ViewProjMatrix * u_Transform * vec4(a_Position, 1.0);
 }
 
 #stage fragment
@@ -36,7 +37,7 @@ void main()
     const vec3 lightPos = vec3(2000, 1000, -2000);
     const vec3 lightColor = vec3(1.0);
 
-    const vec3 objectColor = vec3(1.0);
+    const vec3 objectColor = vec3(0.6, 0.4, 0.2);
 
     vec3 lightDir = normalize(lightPos - v_WorldPosition);
 

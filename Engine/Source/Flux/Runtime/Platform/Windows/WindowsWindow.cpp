@@ -412,10 +412,32 @@ namespace Flux {
 			if (GetKeyState(VK_NUMLOCK) & 1)
 				mods |= FLUX_MOD_NUM_LOCK;
 
-			if (uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN)
+			uint32 i;
+			for (i = 0; i <= FLUX_MOUSE_BUTTON_LAST; i++)
+			{
+				if (m_MouseButtons[i])
+					break;
+			}
+
+			if (i > FLUX_MOUSE_BUTTON_LAST)
+				SetCapture(m_WindowHandle);
+
+			bool pressed = uMsg == WM_LBUTTONDOWN || uMsg == WM_RBUTTONDOWN || uMsg == WM_MBUTTONDOWN || uMsg == WM_XBUTTONDOWN;
+			m_MouseButtons[button] = pressed;
+
+			if (pressed)
 				m_EventQueue->AddEvent<MouseButtonPressedEvent>((MouseButtonCode)button);
 			else
 				m_EventQueue->AddEvent<MouseButtonReleasedEvent>((MouseButtonCode)button);
+
+			for (i = 0; i <= FLUX_MOUSE_BUTTON_LAST; i++)
+			{
+				if (m_MouseButtons[i])
+					break;
+			}
+
+			if (i > FLUX_MOUSE_BUTTON_LAST)
+				ReleaseCapture();
 			break;
 		}
 		case WM_MOUSEMOVE:

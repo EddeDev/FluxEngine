@@ -46,6 +46,8 @@ namespace Flux {
 
 		Ref<EventQueue> m_EventQueue;
 
+		bool m_MouseButtons[FLUX_MOUSE_BUTTON_LAST + 1] = {};
+
 		WCHAR m_HighSurrogate = 0;
 
 		bool m_Minimized = false;

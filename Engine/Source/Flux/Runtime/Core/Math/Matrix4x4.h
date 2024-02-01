@@ -71,112 +71,112 @@ namespace Flux {
 
 		static Matrix4x4 Inverse(const Matrix4x4& m)
 		{
-			Matrix3x3 Ax;
-			Ax[0] = { m[1][1], m[1][2], m[1][3] };
-			Ax[1] = { m[2][1], m[2][2], m[2][3] };
-			Ax[2] = { m[3][1], m[3][2], m[3][3] };
+			Matrix3x3 xx;
+			xx[0] = { m[1][1], m[1][2], m[1][3] };
+			xx[1] = { m[2][1], m[2][2], m[2][3] };
+			xx[2] = { m[3][1], m[3][2], m[3][3] };
 
-			Matrix3x3 Ay;
-			Ay[0] = { m[1][0], m[1][2], m[1][3] };
-			Ay[1] = { m[2][0], m[2][2], m[2][3] };
-			Ay[2] = { m[3][0], m[3][2], m[3][3] };
+			Matrix3x3 xy;
+			xy[0] = { m[1][0], m[1][2], m[1][3] };
+			xy[1] = { m[2][0], m[2][2], m[2][3] };
+			xy[2] = { m[3][0], m[3][2], m[3][3] };
 
-			Matrix3x3 Az;
-			Az[0] = { m[1][0], m[1][1], m[1][3] };
-			Az[1] = { m[2][0], m[2][1], m[2][3] };
-			Az[2] = { m[3][0], m[3][1], m[3][3] };
+			Matrix3x3 xz;
+			xz[0] = { m[1][0], m[1][1], m[1][3] };
+			xz[1] = { m[2][0], m[2][1], m[2][3] };
+			xz[2] = { m[3][0], m[3][1], m[3][3] };
 
-			Matrix3x3 Aw;
-			Aw[0] = { m[1][0], m[1][1], m[1][2] };
-			Aw[1] = { m[2][0], m[2][1], m[2][2] };
-			Aw[2] = { m[3][0], m[3][1], m[3][2] };
+			Matrix3x3 xw;
+			xw[0] = { m[1][0], m[1][1], m[1][2] };
+			xw[1] = { m[2][0], m[2][1], m[2][2] };
+			xw[2] = { m[3][0], m[3][1], m[3][2] };
 
-			Matrix3x3 Bx;
-			Bx[0] = { m[0][1], m[0][2], m[0][3] };
-			Bx[1] = { m[2][1], m[2][2], m[2][3] };
-			Bx[2] = { m[3][1], m[3][2], m[3][3] };
+			Matrix3x3 yx;
+			yx[0] = { m[0][1], m[0][2], m[0][3] };
+			yx[1] = { m[2][1], m[2][2], m[2][3] };
+			yx[2] = { m[3][1], m[3][2], m[3][3] };
 
-			Matrix3x3 By;
-			By[0] = { m[0][0], m[0][2], m[0][3] };
-			By[1] = { m[2][0], m[2][2], m[2][3] };
-			By[2] = { m[3][0], m[3][2], m[3][3] };
+			Matrix3x3 yy;
+			yy[0] = { m[0][0], m[0][2], m[0][3] };
+			yy[1] = { m[2][0], m[2][2], m[2][3] };
+			yy[2] = { m[3][0], m[3][2], m[3][3] };
 
-			Matrix3x3 Bz;
-			Bz[0] = { m[0][0], m[0][1], m[0][3] };
-			Bz[1] = { m[2][0], m[2][1], m[2][3] };
-			Bz[2] = { m[3][0], m[3][1], m[3][3] };
+			Matrix3x3 yz;
+			yz[0] = { m[0][0], m[0][1], m[0][3] };
+			yz[1] = { m[2][0], m[2][1], m[2][3] };
+			yz[2] = { m[3][0], m[3][1], m[3][3] };
 
-			Matrix3x3 Bw;
-			Bw[0] = { m[0][0], m[0][1], m[0][2] };
-			Bw[1] = { m[2][0], m[2][1], m[2][2] };
-			Bw[2] = { m[3][0], m[3][1], m[3][2] };
+			Matrix3x3 yw;
+			yw[0] = { m[0][0], m[0][1], m[0][2] };
+			yw[1] = { m[2][0], m[2][1], m[2][2] };
+			yw[2] = { m[3][0], m[3][1], m[3][2] };
 
-			Matrix3x3 Cx;
-			Cx[0] = { m[0][1], m[0][2], m[0][3] };
-			Cx[1] = { m[1][1], m[1][2], m[1][3] };
-			Cx[2] = { m[3][1], m[3][2], m[3][3] };
+			Matrix3x3 zx;
+			zx[0] = { m[0][1], m[0][2], m[0][3] };
+			zx[1] = { m[1][1], m[1][2], m[1][3] };
+			zx[2] = { m[3][1], m[3][2], m[3][3] };
 
-			Matrix3x3 Cy;
-			Cy[0] = { m[0][0], m[0][2], m[0][3] };
-			Cy[1] = { m[1][0], m[1][2], m[1][3] };
-			Cy[2] = { m[3][0], m[3][2], m[3][3] };
+			Matrix3x3 zy;
+			zy[0] = { m[0][0], m[0][2], m[0][3] };
+			zy[1] = { m[1][0], m[1][2], m[1][3] };
+			zy[2] = { m[3][0], m[3][2], m[3][3] };
 
-			Matrix3x3 Cz;
-			Cz[0] = { m[0][0], m[0][1], m[0][3] };
-			Cz[1] = { m[1][0], m[1][1], m[1][3] };
-			Cz[2] = { m[3][0], m[3][1], m[3][3] };
+			Matrix3x3 zz;
+			zz[0] = { m[0][0], m[0][1], m[0][3] };
+			zz[1] = { m[1][0], m[1][1], m[1][3] };
+			zz[2] = { m[3][0], m[3][1], m[3][3] };
 
-			Matrix3x3 Cw;
-			Cw[0] = { m[0][0], m[0][1], m[0][2] };
-			Cw[1] = { m[1][0], m[1][1], m[1][2] };
-			Cw[2] = { m[3][0], m[3][1], m[3][2] };
+			Matrix3x3 zw;
+			zw[0] = { m[0][0], m[0][1], m[0][2] };
+			zw[1] = { m[1][0], m[1][1], m[1][2] };
+			zw[2] = { m[3][0], m[3][1], m[3][2] };
 
-			Matrix3x3 Dx;
-			Dx[0] = { m[0][1], m[0][2], m[0][3] };
-			Dx[1] = { m[1][1], m[1][2], m[1][3] };
-			Dx[2] = { m[2][1], m[2][2], m[2][3] };
+			Matrix3x3 wx;
+			wx[0] = { m[0][1], m[0][2], m[0][3] };
+			wx[1] = { m[1][1], m[1][2], m[1][3] };
+			wx[2] = { m[2][1], m[2][2], m[2][3] };
 
-			Matrix3x3 Dy;
-			Dy[0] = { m[0][0], m[0][2], m[0][3] };
-			Dy[1] = { m[1][0], m[1][2], m[1][3] };
-			Dy[2] = { m[2][0], m[2][2], m[2][3] };
+			Matrix3x3 wy;
+			wy[0] = { m[0][0], m[0][2], m[0][3] };
+			wy[1] = { m[1][0], m[1][2], m[1][3] };
+			wy[2] = { m[2][0], m[2][2], m[2][3] };
 
-			Matrix3x3 Dz;
-			Dz[0] = { m[0][0], m[0][1], m[0][3] };
-			Dz[1] = { m[1][0], m[1][1], m[1][3] };
-			Dz[2] = { m[2][0], m[2][1], m[2][3] };
+			Matrix3x3 wz;
+			wz[0] = { m[0][0], m[0][1], m[0][3] };
+			wz[1] = { m[1][0], m[1][1], m[1][3] };
+			wz[2] = { m[2][0], m[2][1], m[2][3] };
 
-			Matrix3x3 Dw;
-			Dw[0] = { m[0][0], m[0][1], m[0][2] };
-			Dw[1] = { m[1][0], m[1][1], m[1][2] };
-			Dw[2] = { m[2][0], m[2][1], m[2][2] };
+			Matrix3x3 ww;
+			ww[0] = { m[0][0], m[0][1], m[0][2] };
+			ww[1] = { m[1][0], m[1][1], m[1][2] };
+			ww[2] = { m[2][0], m[2][1], m[2][2] };
 
 			Matrix4x4 result;
-			result[0][0] = Matrix3x3::Determinant(Ax);
-			result[1][0] = -Matrix3x3::Determinant(Ay);
-			result[2][0] = Matrix3x3::Determinant(Az);
-			result[3][0] = -Matrix3x3::Determinant(Aw);
+			result[0][0] = Matrix3x3::Determinant(xx);
+			result[1][0] = -Matrix3x3::Determinant(xy);
+			result[2][0] = Matrix3x3::Determinant(xz);
+			result[3][0] = -Matrix3x3::Determinant(xw);
 
-			result[0][1] = -Matrix3x3::Determinant(Bx);
-			result[1][1] = Matrix3x3::Determinant(By);
-			result[2][1] = -Matrix3x3::Determinant(Bz);
-			result[3][1] = Matrix3x3::Determinant(Bw);
+			result[0][1] = -Matrix3x3::Determinant(yx);
+			result[1][1] = Matrix3x3::Determinant(yy);
+			result[2][1] = -Matrix3x3::Determinant(yz);
+			result[3][1] = Matrix3x3::Determinant(yw);
 
-			result[0][2] = Matrix3x3::Determinant(Cx);
-			result[1][2] = -Matrix3x3::Determinant(Cy);
-			result[2][2] = Matrix3x3::Determinant(Cz);
-			result[3][2] = -Matrix3x3::Determinant(Cw);
+			result[0][2] = Matrix3x3::Determinant(zx);
+			result[1][2] = -Matrix3x3::Determinant(zy);
+			result[2][2] = Matrix3x3::Determinant(zz);
+			result[3][2] = -Matrix3x3::Determinant(zw);
 
-			result[0][3] = -Matrix3x3::Determinant(Dx);
-			result[1][3] = Matrix3x3::Determinant(Dy);
-			result[2][3] = -Matrix3x3::Determinant(Dz);
-			result[3][3] = Matrix3x3::Determinant(Dw);
+			result[0][3] = -Matrix3x3::Determinant(wx);
+			result[1][3] = Matrix3x3::Determinant(wy);
+			result[2][3] = -Matrix3x3::Determinant(wz);
+			result[3][3] = Matrix3x3::Determinant(ww);
 
 			float determinant =
 				m[0][0] * result[0][0] +
-				m[0][1] * result[0][1] +
-				m[0][2] * result[0][2] +
-				m[0][3] * result[0][3];
+				m[0][1] * result[1][0] +
+				m[0][2] * result[2][0] +
+				m[0][3] * result[3][0];
 
 			result *= 1.0f / determinant;
 

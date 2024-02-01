@@ -98,9 +98,8 @@ namespace Flux {
 		m_IndexBuffer = nullptr;
 	}
 
-	static float s_QuadRotationX = 0.0f;
-	static float s_QuadRotationZ = 0.0f;
 	static Vector3 s_CameraPosition(0.0f, 0.0f, -2.5f);
+	static Vector3 s_CameraRotation(0.0f, 0.0f, 0.0f);
 	static float s_CameraFov = 60.0f;
 
 	void RuntimeEngine::OnUpdate(float deltaTime)
@@ -136,17 +135,21 @@ namespace Flux {
 		if (Input::GetKey(KeyCode::Right))
 			s_CameraPosition.X += deltaTime;
 
-		Matrix4x4 viewMatrix = Matrix4x4::Inverse(Matrix4x4::Translate(s_CameraPosition));
+		Matrix4x4 viewTrMatrix = Math::BuildTransformationMatrix(s_CameraPosition, s_CameraRotation * Math::DegToRad);
+
+		Matrix4x4 viewMatrix = Matrix4x4::Inverse(viewTrMatrix);
+
+		Matrix4x4 identityMatrix = viewTrMatrix * viewMatrix;
+
+
+
 		Matrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
-		s_QuadRotationX += 10.0f * deltaTime;
-		s_QuadRotationZ += 5.0f * deltaTime;
-
-		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(), { 10.0f, 1.0f, 10.0f });
-
 		m_Shader->Bind();
-		m_Shader->SetUniform("u_Transform", viewProjectionMatrix * transform);
+		m_Shader->SetUniform("u_ViewProjMatrix", viewProjectionMatrix);
 		
+		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(), { 10.0f, 1.0f, 10.0f });
+		m_Shader->SetUniform("u_Transform", transform);
 		m_Pipeline->DrawIndexed(
 			m_IndexBuffer->GetDataType(),
 			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
@@ -157,12 +160,14 @@ namespace Flux {
 	{
 		ImGui::Begin("Debug");
 
-		ImGui::Text("X rotation: %f deg, %f rad", fmod(s_QuadRotationX, 360.0f), s_QuadRotationX * Math::DegToRad);
-		ImGui::Text("Z rotation: %f deg, %f rad", fmod(s_QuadRotationZ, 360.0f), s_QuadRotationZ * Math::DegToRad);
+		ImGui::DragFloat("Camera Position X", &s_CameraPosition.X, 0.01f);
+		ImGui::DragFloat("Camera Position Y", &s_CameraPosition.Y, 0.01f);
+		ImGui::DragFloat("Camera Position Z", &s_CameraPosition.Z, 0.01f);
 
-		ImGui::DragFloat("##CameraPositionX", &s_CameraPosition.X, 0.01f);
-		ImGui::DragFloat("##CameraPositionY", &s_CameraPosition.Y, 0.01f);
-		ImGui::DragFloat("##CameraPositionZ", &s_CameraPosition.Z, 0.01f);
+		ImGui::DragFloat("Camera Rotation X", &s_CameraRotation.X, 0.1f);
+		ImGui::DragFloat("Camera Rotation Y", &s_CameraRotation.Y, 0.1f);
+		ImGui::DragFloat("Camera Rotation Z", &s_CameraRotation.Z, 0.1f);
+
 		ImGui::DragFloat("Field of view", &s_CameraFov, 0.1f);
 
 		ImGui::End();
