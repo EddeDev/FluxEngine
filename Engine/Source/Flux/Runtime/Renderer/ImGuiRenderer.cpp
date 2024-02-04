@@ -484,7 +484,7 @@ namespace Flux {
 
 				const uint32 indexBufferSize = commandList->IdxBuffer.Size * sizeof(ImDrawIdx);
 				if (!m_IndexBuffer || indexBufferSize > m_IndexBuffer->GetSize())
-					m_IndexBuffer = IndexBuffer::Create(indexBufferSize, sizeof(ImDrawIdx) == 2 ? IndexBufferDataType::UInt16 : IndexBufferDataType::UInt32, IndexBufferUsage::Stream);
+					m_IndexBuffer = IndexBuffer::Create(indexBufferSize, IndexBufferUsage::Stream);
 				m_IndexBuffer->SetData(commandList->IdxBuffer.Data, indexBufferSize);
 
 				m_VertexBuffer->Bind();
@@ -534,10 +534,12 @@ namespace Flux {
 								it->second->Bind();
 						}
 
+						constexpr IndexFormat indexFormat = sizeof(ImDrawIdx) == 2 ? IndexFormat::UInt16 : IndexFormat::UInt32;
+
 						m_Pipeline->DrawIndexed(
-							m_IndexBuffer->GetDataType(),
+							indexFormat,
 							command->ElemCount,
-							command->IdxOffset,
+							command->IdxOffset * Utils::IndexFormatSize(indexFormat),
 							command->VtxOffset
 						);
 					}

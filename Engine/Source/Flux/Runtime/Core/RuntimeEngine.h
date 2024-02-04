@@ -2,11 +2,13 @@
 
 #include "Engine.h"
 
-#include "Flux/Runtime/Renderer/VertexBuffer.h"
-#include "Flux/Runtime/Renderer/IndexBuffer.h"
 #include "Flux/Runtime/Renderer/Shader.h"
 #include "Flux/Runtime/Renderer/GraphicsPipeline.h"
-#include "Flux/Runtime/Renderer/Texture.h"
+
+#include "Flux/Runtime/Renderer/Mesh.h"
+
+// TODO: Temp
+#include "Flux/Editor/EditorCamera.h"
 
 namespace Flux {
 
@@ -18,14 +20,18 @@ namespace Flux {
 	protected:
 		virtual void OnInit() override;
 		virtual void OnShutdown() override;
-		virtual void OnUpdate(float deltaTime) override;
+		virtual void OnUpdate() override;
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
 	private:
-		Ref<VertexBuffer> m_VertexBuffer;
-		Ref<IndexBuffer> m_IndexBuffer;
+		void OnWindowResizeEvent(WindowResizeEvent& event);
+	private:
 		Ref<Shader> m_Shader;
 		Ref<GraphicsPipeline> m_Pipeline;
+
+		Ref<Mesh> m_Mesh;
+
+		EditorCamera m_EditorCamera;
 	};
 
 }

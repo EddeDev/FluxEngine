@@ -2,6 +2,7 @@
 
 #ifdef FLUX_PLATFORM_WINDOWS
 	#define OEMRESOURCE
+	#define NOMINMAX
 	#include <Windows.h>
 
 	#ifdef UNICODE

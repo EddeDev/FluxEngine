@@ -22,6 +22,12 @@ namespace Flux {
 		}
 	}
 
+	void EventQueue::AddEvent(Shared<Event> event)
+	{
+		std::lock_guard<std::mutex> lock(m_Mutex);
+		m_EventQueue.push(event);
+	}
+
 	void EventQueue::SetEventCallback(const EventCallback& callback)
 	{
 		std::lock_guard<std::mutex> lock(m_Mutex);

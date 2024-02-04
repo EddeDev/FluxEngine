@@ -12,8 +12,10 @@ namespace Flux {
 		Vector2 V1;
 
 		Matrix2x2()
-			: V0(Vector2(0.0f)),
-			  V1(Vector2(0.0f))
+#if 0
+			: V0(0.0f),
+			  V1(0.0f)
+#endif
 		{
 		}
 
@@ -28,7 +30,7 @@ namespace Flux {
 		{
 		}
 
-		static Matrix2x2 Transpose(const Matrix2x2& m)
+		inline static Matrix2x2 Transpose(const Matrix2x2& m)
 		{
 			Matrix2x2 result;
 			result[0][0] = m[0][0];
@@ -38,7 +40,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix2x2 Inverse(const Matrix2x2& m)
+		inline static Matrix2x2 Inverse(const Matrix2x2& m)
 		{
 			float oneOverDeterminant = 1.0f / Determinant(m);
 
@@ -50,7 +52,7 @@ namespace Flux {
 			return result;
 		}
 		
-		static float Determinant(const Matrix2x2& m)
+		inline static float Determinant(const Matrix2x2& m)
 		{
 			return m[0][0] * m[1][1] - m[0][1] * m[1][0];
 		}

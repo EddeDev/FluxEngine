@@ -186,19 +186,30 @@ namespace Flux {
 		// Show window
 		SubmitToEventThread([this]() { m_MainWindow->SetVisible(true); });
 
+		m_LastTime = Platform::GetTime();
+
 		while (m_Running)
 		{
 			m_CurrentTime = Platform::GetTime();
 			m_DeltaTime = Math::Min(m_CurrentTime - m_LastTime, m_MaxDeltaTime);
 			m_LastTime = m_CurrentTime;
 
+			m_Accumulator += m_DeltaTime;
+			while (m_Accumulator > m_FixedDeltaTime)
+			{
+				m_TickCounter++;
+				m_Accumulator -= m_FixedDeltaTime;
+			}
+
 			m_FrameCounter++;
 			m_EventCounter += m_EventQueue->GetEventCount();
 			if (m_CurrentTime >= m_LastFrameTime + 1.0f)
 			{
 				m_FramesPerSecond = m_FrameCounter;
+				m_TicksPerSecond = m_TickCounter;
 				m_EventsPerSecond = m_EventCounter;
 				m_FrameCounter = 0;
+				m_TickCounter = 0;
 				m_EventCounter = 0;
 				m_LastFrameTime = m_CurrentTime;
 			}
@@ -207,13 +218,13 @@ namespace Flux {
 
 			Renderer::BeginFrame();
 
-			Input::Update();
+			Input::OnUpdate();
 
 			m_EventQueue->DispatchEvents();
 
 			if (!m_Minimized)
 			{
-				OnUpdate(m_DeltaTime);
+				OnUpdate();
 
 				if (m_ImGuiRenderer)
 				{
@@ -221,6 +232,10 @@ namespace Flux {
 					OnImGuiRender();
 					m_ImGuiRenderer->Render();
 				}
+			}
+			else
+			{
+				Platform::Sleep(0.2f);
 			}
 
 			// Wait for the previous frame to finish
@@ -233,11 +248,14 @@ namespace Flux {
 				m_RenderThreadWaitTime = float(end - start) * 0.001f * 0.001f;
 			}
 
-			// Swap buffers
-			FLUX_SUBMIT_RENDER_COMMAND([context = m_Context, vsync = m_VSync]() mutable
+			if (!m_Minimized)
 			{
-				context->SwapBuffers(vsync ? 1 : 0);
-			});
+				// Swap buffers
+				FLUX_SUBMIT_RENDER_COMMAND([context = m_Context, vsync = m_VSync]() mutable
+				{
+					context->SwapBuffers(vsync ? 1 : 0);
+				});
+			}
 
 			// Flush render command queue
 			uint32 queueIndex = Renderer::GetCurrentQueueIndex();

@@ -11,7 +11,9 @@ namespace Flux {
 		float X, Y, Z, W;
 
 		Vector4()
+#if 0
 			: X(0.0f), Y(0.0f), Z(0.0f), W(0.0f)
+#endif
 		{
 		}
 
@@ -28,6 +30,28 @@ namespace Flux {
 		Vector4(float x, float y, float z, float w)
 			: X(x), Y(y), Z(z), W(w)
 		{
+		}
+
+		inline static Vector4 Lerp(const Vector4& a, const Vector4& b, float t)
+		{
+			t = Math::Clamp(t, 0.0f, 1.0f);
+
+			Vector4 result;
+			result.X = Math::LerpUnclamped(a.X, b.X, t);
+			result.Y = Math::LerpUnclamped(a.Y, b.Y, t);
+			result.Z = Math::LerpUnclamped(a.Z, b.Z, t);
+			result.W = Math::LerpUnclamped(a.W, b.W, t);
+			return result;
+		}
+
+		inline static Vector4 LerpUnclamped(const Vector4& a, const Vector4& b, float t)
+		{
+			Vector4 result;
+			result.X = Math::LerpUnclamped(a.X, b.X, t);
+			result.Y = Math::LerpUnclamped(a.Y, b.Y, t);
+			result.Z = Math::LerpUnclamped(a.Z, b.Z, t);
+			result.W = Math::LerpUnclamped(a.W, b.W, t);
+			return result;
 		}
 
 		float LengthSquared() const
@@ -55,7 +79,7 @@ namespace Flux {
 			return { -X, -Y, -Z, -W };
 		}
 
-		Vector4 operator+(const Vector4& v)
+		Vector4 operator+(const Vector4& v) const
 		{
 			Vector4 result;
 			result.X = X + v.X;
@@ -65,7 +89,16 @@ namespace Flux {
 			return result;
 		}
 
-		Vector4 operator-(const Vector4& v)
+		Vector4& operator+=(const Vector4& v)
+		{
+			X += v.X;
+			Y += v.Y;
+			Z += v.Z;
+			W += v.W;
+			return *this;
+		}
+
+		Vector4 operator-(const Vector4& v) const
 		{
 			Vector4 result;
 			result.X = X - v.X;
@@ -73,6 +106,15 @@ namespace Flux {
 			result.Z = Z - v.Z;
 			result.W = W - v.W;
 			return result;
+		}
+
+		Vector4& operator-=(const Vector4& v)
+		{
+			X -= v.X;
+			Y -= v.Y;
+			Z -= v.Z;
+			W -= v.W;
+			return *this;
 		}
 
 		Vector4 operator*(const Vector4& v) const

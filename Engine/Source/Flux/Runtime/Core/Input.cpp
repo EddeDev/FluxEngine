@@ -15,6 +15,10 @@ namespace Flux {
 
 		float MouseX;
 		float MouseY;
+		float PreviousMouseX;
+		float PreviousMouseY;
+		float MouseDeltaX;
+		float MouseDeltaY;
 
 		float MouseScrollX;
 		float MouseScrollY;
@@ -43,10 +47,15 @@ namespace Flux {
 		s_Data = nullptr;
 	}
 
-	void Input::Update()
+	void Input::OnUpdate()
 	{
 		memset(s_Data->KeyStates, 0, static_cast<int32>(KeyCode::Last));
 		memset(s_Data->MouseButtonStates, 0, static_cast<int32>(MouseButtonCode::ButtonLast));
+
+		s_Data->MouseDeltaX = s_Data->MouseX - s_Data->PreviousMouseX;
+		s_Data->MouseDeltaY = s_Data->MouseY - s_Data->PreviousMouseY;
+		s_Data->PreviousMouseX = s_Data->MouseX;
+		s_Data->PreviousMouseY = s_Data->MouseY;
 
 		s_Data->MouseScrollX = 0.0f;
 		s_Data->MouseScrollY = 0.0f;
@@ -128,6 +137,45 @@ namespace Flux {
 		}
 
 		return s_Data->MouseButtonStates[static_cast<int32>(button)] == MouseButtonState::Released;
+	}
+
+	float Input::GetAxis(std::string_view name)
+	{
+		// TODO: Input manager
+
+		if (name == "Horizontal")
+		{
+			float left = GetKey(KeyCode::A) ? -1.0f : 0.0f;
+			float right = GetKey(KeyCode::D) ? 1.0f : 0.0f;
+
+			return left + right;
+		}
+
+		if (name == "Vertical")
+		{
+			float up = GetKey(KeyCode::W) ? 1.0f : 0.0f;
+			float down = GetKey(KeyCode::S) ? -1.0f : 0.0f;
+
+			return up + down;
+		}
+
+		if (name == "Mouse X")
+			return s_Data->MouseDeltaX;
+
+		if (name == "Mouse Y")
+			return s_Data->MouseDeltaY;
+
+		return 0.0f;
+	}
+
+	float Input::GetMouseScrollDeltaX()
+	{
+		return s_Data->MouseScrollX;
+	}
+
+	float Input::GetMouseScrollDeltaY()
+	{
+		return s_Data->MouseScrollY;
 	}
 
 	void Input::OnEvent(Event& event)

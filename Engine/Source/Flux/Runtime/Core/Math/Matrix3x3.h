@@ -14,9 +14,11 @@ namespace Flux {
 		Vector3 V2;
 
 		Matrix3x3()
-			: V0(Vector3(0.0f)),
-			  V1(Vector3(0.0f)),
-			  V2(Vector3(0.0f))
+#if 0
+			: V0(0.0f),
+			  V1(0.0f),
+			  V2(0.0f)
+#endif
 		{
 		}
 
@@ -27,7 +29,7 @@ namespace Flux {
 			V2 = { 0.0f, 0.0f, scalar };
 		}
 
-		static Matrix3x3 Transpose(const Matrix3x3& m)
+		inline static Matrix3x3 Transpose(const Matrix3x3& m)
 		{
 			Matrix3x3 result;
 			
@@ -46,7 +48,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix3x3 Inverse(const Matrix3x3& m)
+		inline static Matrix3x3 Inverse(const Matrix3x3& m)
 		{
 			float oneOverDeterminant = 1.0f / Determinant(m);
 
@@ -63,7 +65,7 @@ namespace Flux {
 			return result;
 		}
 
-		static float Determinant(const Matrix3x3& m)
+		inline static float Determinant(const Matrix3x3& m)
 		{
 			Matrix2x2 x;
 			x[0] = { m[1][1], m[1][2] };

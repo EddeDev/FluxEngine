@@ -37,15 +37,15 @@ namespace Flux {
 			return 0;
 		}
 
-		static uint32 OpenGLIndexBufferDataType(IndexBufferDataType dataType)
+		static uint32 OpenGLIndexFormat(IndexFormat format)
 		{
-			switch (dataType)
+			switch (format)
 			{
-			case IndexBufferDataType::UInt32: return GL_UNSIGNED_INT;
-			case IndexBufferDataType::UInt16: return GL_UNSIGNED_SHORT;
-			case IndexBufferDataType::UInt8:  return GL_UNSIGNED_BYTE;
+			case IndexFormat::UInt32: return GL_UNSIGNED_INT;
+			case IndexFormat::UInt16: return GL_UNSIGNED_SHORT;
+			case IndexFormat::UInt8:  return GL_UNSIGNED_BYTE;
 			}
-			FLUX_VERIFY(false, "Unknown index buffer data type!");
+			FLUX_VERIFY(false, "Unknown index format!");
 			return 0;
 		}
 
@@ -181,17 +181,17 @@ namespace Flux {
 		});
 	}
 
-	void OpenGLPipeline::DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
+	void OpenGLPipeline::DrawIndexed(IndexFormat indexFormat, uint32 indexCount, uint32 startIndexLocation, uint32 baseVertexLocation) const
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, topology = m_Topology, dataType, indexCount, startIndexLocation, baseVertexLocation]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, topology = m_Topology, indexFormat, indexCount, startIndexLocation, baseVertexLocation]()
 		{
 			glDrawElementsBaseVertex(
 				Utils::OpenGLPrimitiveTopology(topology),
 				indexCount,
-				Utils::OpenGLIndexBufferDataType(dataType),
-				(const void*)(intptr)(startIndexLocation * Utils::IndexBufferDataTypeSize(dataType)),
+				Utils::OpenGLIndexFormat(indexFormat),
+				(const void*)(intptr)startIndexLocation,
 				baseVertexLocation
 			);
 		});

@@ -14,10 +14,12 @@ namespace Flux {
 		Vector4 V3;
 
 		Matrix4x4()
-			: V0(Vector4(0.0f)), 
-			  V1(Vector4(0.0f)), 
-			  V2(Vector4(0.0f)), 
-			  V3(Vector4(0.0f))
+#if 0
+			: V0(0.0f), 
+			  V1(0.0f), 
+			  V2(0.0f), 
+			  V3(0.0f)
+#endif
 		{
 		}
 
@@ -42,7 +44,7 @@ namespace Flux {
 		{
 		}
 
-		static Matrix4x4 Transpose(const Matrix4x4& m)
+		inline static Matrix4x4 Transpose(const Matrix4x4& m)
 		{
 			Matrix4x4 result;
 
@@ -69,7 +71,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix4x4 Inverse(const Matrix4x4& m)
+		inline static Matrix4x4 Inverse(const Matrix4x4& m)
 		{
 			Matrix3x3 xx;
 			xx[0] = { m[1][1], m[1][2], m[1][3] };
@@ -183,7 +185,7 @@ namespace Flux {
 			return result;
 		}
 
-		static float Determinant(const Matrix4x4& m)
+		inline static float Determinant(const Matrix4x4& m)
 		{
 			Matrix3x3 x;
 			x[0] = { m[1][1], m[1][2], m[1][3] };
@@ -212,7 +214,7 @@ namespace Flux {
 				- m[0][3] * Matrix3x3::Determinant(w);
 		}
 
-		static Matrix4x4 Translate(const Vector3& translation)
+		inline static Matrix4x4 Translate(const Vector3& translation)
 		{
 			Matrix4x4 result(1.0f);
 			result.V3.X = translation.X;
@@ -221,7 +223,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix4x4 Scale(const Vector3& scale)
+		inline static Matrix4x4 Scale(const Vector3& scale)
 		{
 			Matrix4x4 result(1.0f);
 			result.V0.X = scale.X;
@@ -230,7 +232,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix4x4 Ortho(float left, float right, float bottom, float top)
+		inline static Matrix4x4 Ortho(float left, float right, float bottom, float top)
 		{
 			Matrix4x4 result(1.0f);
 
@@ -244,7 +246,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix4x4 Ortho(float left, float right, float bottom, float top, float nearClip, float farClip)
+		inline static Matrix4x4 Ortho(float left, float right, float bottom, float top, float nearClip, float farClip)
 		{
 			Matrix4x4 result(1.0f);
 
@@ -259,7 +261,7 @@ namespace Flux {
 			return result;
 		}
 
-		static Matrix4x4 Perspective(float fov, float aspectRatio, float nearClip, float farClip)
+		inline static Matrix4x4 Perspective(float fov, float aspectRatio, float nearClip, float farClip)
 		{
 			Matrix4x4 result(0.0f);
 

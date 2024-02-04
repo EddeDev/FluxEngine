@@ -50,7 +50,7 @@ namespace Flux {
 	protected:
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}
-		virtual void OnUpdate(float deltaTime) {}
+		virtual void OnUpdate() {}
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event& event) {}
 	private:
@@ -94,12 +94,15 @@ namespace Flux {
 		float m_FixedDeltaTime = 1.0f / 50.0f;
 		float m_MaxDeltaTime = 1.0f / 30.0f;
 		float m_CurrentTime = 0.0f;
+		float m_Accumulator = 0.0f;
 		float m_LastTime = 0.0f;
 
 		float m_LastFrameTime = 0.0f;
 		uint32 m_FrameCounter = 0;
+		uint32 m_TickCounter = 0;
 		uint32 m_EventCounter = 0;
 		uint32 m_FramesPerSecond = 0;
+		uint32 m_TicksPerSecond = 0;
 		uint32 m_EventsPerSecond = 0;
 
 		float m_RenderThreadWaitTime = 0.0f;

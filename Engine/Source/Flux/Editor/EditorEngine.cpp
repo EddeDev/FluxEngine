@@ -37,7 +37,7 @@ namespace Flux {
 		delete[] m_ViewportPlaceholderTextureData;
 	}
 
-	void EditorEngine::OnUpdate(float deltaTime)
+	void EditorEngine::OnUpdate()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
@@ -133,12 +133,14 @@ namespace Flux {
 		ImGui::Text("%s build", buildConfigString);
 		ImGui::Separator();
 
+		ImGui::Text("Ticks per second: %d", m_TicksPerSecond);
 		ImGui::Text("Events per second: %d", m_EventsPerSecond);
 		ImGui::Separator();
 
 		ImGui::Checkbox("V-Sync", &m_VSync);
 		ImGui::Text("%d fps", m_FramesPerSecond);
 		ImGui::Text("Delta Time: %.2fms", m_DeltaTime * 1000.0f);
+		// ImGui::DragFloat("Fixed Delta Time", &m_FixedDeltaTime, 0.001f, 0.001f, 0.1f);
 		ImGui::Text("Fixed Delta Time: %.2f", m_FixedDeltaTime);
 
 		ImGui::Separator();

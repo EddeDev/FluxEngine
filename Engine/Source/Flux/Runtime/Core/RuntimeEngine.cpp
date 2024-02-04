@@ -21,59 +21,11 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		float vertices[] =
-		{
-			-0.5f,  0.5f,  0.5f, -1.0f, 0.0f,  0.0f,
-			-0.5f,  0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
-			-0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
-			-0.5f, -0.5f,  0.5f, -1.0f, 0.0f,  0.0f,
-
-			 0.5f, -0.5f,  0.5f, 1.0f,  0.0f,  0.0f,
-			 0.5f, -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
-			 0.5f,  0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
-			 0.5f,  0.5f,  0.5f, 1.0f,  0.0f,  0.0f,
-
-			-0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f,
-			-0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f,
-			 0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f,
-			 0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f,
-
-			 0.5f, 0.5f,   0.5f, 0.0f,  1.0f,  0.0f,
-			 0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,
-			-0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,
-			-0.5f, 0.5f,   0.5f, 0.0f,  1.0f,  0.0f,
-									   
-			-0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
-			 0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
-			 0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
-			-0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f,
-
-			-0.5f,  0.5f,  0.5f, 0.0f,  0.0f,  1.0f,
-			-0.5f, -0.5f,  0.5f, 0.0f,  0.0f,  1.0f,
-			 0.5f, -0.5f,  0.5f, 0.0f,  0.0f,  1.0f,
-			 0.5f,  0.5f,  0.5f, 0.0f,  0.0f,  1.0f
-		};
-
-		uint32* indices = new uint32[6 * 6];
-
-		uint32 offset = 0;
-		for (uint32 i = 0; i < 6 * 6; i += 6)
-		{
-			indices[i + 0] = offset + 0;
-			indices[i + 1] = offset + 1;
-			indices[i + 2] = offset + 2;
-
-			indices[i + 3] = offset + 2;
-			indices[i + 4] = offset + 3;
-			indices[i + 5] = offset + 0;
-
-			offset += 4;
-		}
-
-		m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
-		m_IndexBuffer = IndexBuffer::Create(indices, 6 * 6 * sizeof(uint32), IndexBufferDataType::UInt32);
-
-		delete[] indices;
+		uint32 width = m_MainWindow->GetWidth();
+		uint32 height = m_MainWindow->GetHeight();
+		m_EditorCamera.SetViewportSize(width, height);
+		m_EditorCamera.SetPosition({ 5.0f, 4.0f, -8.0f });
+		m_EditorCamera.SetRotation({ 20.0f, -25.0f, 0.0f });
 
 		m_Shader = Shader::Create("Resources/Shaders/Shader.glsl");
 
@@ -86,6 +38,8 @@ namespace Flux {
 		pipelineCreateInfo.DepthWrite = true;
 		pipelineCreateInfo.BackfaceCulling = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
+
+		m_Mesh = Mesh::LoadFromFile("Resources/Meshes/test.fbx");
 	}
 
 	void RuntimeEngine::OnShutdown()
@@ -94,15 +48,10 @@ namespace Flux {
 
 		m_Shader = nullptr;
 		m_Pipeline = nullptr;
-		m_VertexBuffer = nullptr;
-		m_IndexBuffer = nullptr;
+		m_Mesh = nullptr;
 	}
 
-	static Vector3 s_CameraPosition(0.0f, 0.0f, -2.5f);
-	static Vector3 s_CameraRotation(0.0f, 0.0f, 0.0f);
-	static float s_CameraFov = 60.0f;
-
-	void RuntimeEngine::OnUpdate(float deltaTime)
+	void RuntimeEngine::OnUpdate()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
@@ -118,64 +67,53 @@ namespace Flux {
 			glViewport(0, 0, windowWidth, windowHeight);
 		});
 
-		m_VertexBuffer->Bind();
+		// TODO
+		float deltaTime = m_DeltaTime;
+		m_EditorCamera.OnUpdate(deltaTime);
+
+		m_Mesh->GetVertexBuffer()->Bind();
 		m_Pipeline->Bind();
 		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
-		m_IndexBuffer->Bind();
-
-		float aspectRatio = (float)m_MainWindow->GetWidth() / (float)m_MainWindow->GetHeight();
-		Matrix4x4 projectionMatrix = Matrix4x4::Perspective(s_CameraFov, aspectRatio, 0.1f, 1000.0f);
-
-		if (Input::GetKey(KeyCode::Up))
-			s_CameraPosition.Y += deltaTime;
-		if (Input::GetKey(KeyCode::Down))
-			s_CameraPosition.Y -= deltaTime;
-		if (Input::GetKey(KeyCode::Left))
-			s_CameraPosition.X -= deltaTime;
-		if (Input::GetKey(KeyCode::Right))
-			s_CameraPosition.X += deltaTime;
-
-		Matrix4x4 viewTrMatrix = Math::BuildTransformationMatrix(s_CameraPosition, s_CameraRotation * Math::DegToRad);
-
-		Matrix4x4 viewMatrix = Matrix4x4::Inverse(viewTrMatrix);
-
-		Matrix4x4 identityMatrix = viewTrMatrix * viewMatrix;
-
-
-
-		Matrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
+		m_Mesh->GetIndexBuffer()->Bind();
 
 		m_Shader->Bind();
-		m_Shader->SetUniform("u_ViewProjMatrix", viewProjectionMatrix);
-		
-		Matrix4x4 transform = Math::BuildTransformationMatrix({}, Vector3(), { 10.0f, 1.0f, 10.0f });
-		m_Shader->SetUniform("u_Transform", transform);
-		m_Pipeline->DrawIndexed(
-			m_IndexBuffer->GetDataType(),
-			m_IndexBuffer->GetSize() / Utils::IndexBufferDataTypeSize(IndexBufferDataType::UInt32)
-		);
+		m_Shader->SetUniform("u_ViewProjectionMatrix", m_EditorCamera.GetProjectionMatrix() * m_EditorCamera.GetViewMatrix());
+
+		auto& properties = m_Mesh->GetProperties();
+
+		Matrix4x4 meshTransform = Math::BuildTransformationMatrix({ 0.0f, 0.0f, 2.0f }, Vector3(0.0f), Vector3(1.0f));
+
+		for (uint32 i = 0; i < (uint32)properties.Submeshes.size(); i++)
+		{
+			auto& submesh = properties.Submeshes[i];
+
+			m_Shader->SetUniform("u_Transform", meshTransform * submesh.WorldTransform);
+			m_Pipeline->DrawIndexed(
+				submesh.IndexFormat,
+				submesh.IndexCount, 
+				submesh.StartIndexLocation,
+				submesh.BaseVertexLocation
+			);
+		}
 	}
 
 	void RuntimeEngine::OnImGuiRender()
 	{
 		ImGui::Begin("Debug");
-
-		ImGui::DragFloat("Camera Position X", &s_CameraPosition.X, 0.01f);
-		ImGui::DragFloat("Camera Position Y", &s_CameraPosition.Y, 0.01f);
-		ImGui::DragFloat("Camera Position Z", &s_CameraPosition.Z, 0.01f);
-
-		ImGui::DragFloat("Camera Rotation X", &s_CameraRotation.X, 0.1f);
-		ImGui::DragFloat("Camera Rotation Y", &s_CameraRotation.Y, 0.1f);
-		ImGui::DragFloat("Camera Rotation Z", &s_CameraRotation.Z, 0.1f);
-
-		ImGui::DragFloat("Field of view", &s_CameraFov, 0.1f);
-
+		ImGui::Text("Camera Position: [%.2f, %.2f, %.2f]", m_EditorCamera.GetPosition().X, m_EditorCamera.GetPosition().Y, m_EditorCamera.GetPosition().Z);
+		ImGui::Text("Camera Rotation: [%.2f, %.2f, %.2f]", m_EditorCamera.GetRotation().X, m_EditorCamera.GetRotation().Y, m_EditorCamera.GetRotation().Z);
 		ImGui::End();
 	}
 
 	void RuntimeEngine::OnEvent(Event& event)
 	{
+		EventHandler handler(event);
+		handler.Bind<WindowResizeEvent>(FLUX_BIND_CALLBACK(OnWindowResizeEvent, this));
 	}
 
+	void RuntimeEngine::OnWindowResizeEvent(WindowResizeEvent& event)
+	{
+		m_EditorCamera.SetViewportSize(event.GetWidth(), event.GetHeight());
+	}
 
 }

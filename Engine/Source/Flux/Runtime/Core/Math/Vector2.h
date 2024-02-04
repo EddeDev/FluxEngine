@@ -11,7 +11,9 @@ namespace Flux {
 		float X, Y;
 
 		Vector2()
+#if 0
 			: X(0.0f), Y(0.0f)
+#endif
 		{
 		}
 
@@ -23,6 +25,24 @@ namespace Flux {
 		Vector2(float x, float y)
 			: X(x), Y(y)
 		{
+		}
+
+		inline static Vector2 Lerp(const Vector2& a, const Vector2& b, float t)
+		{
+			t = Math::Clamp(t, 0.0f, 1.0f);
+
+			Vector2 result;
+			result.X = Math::LerpUnclamped(a.X, b.X, t);
+			result.Y = Math::LerpUnclamped(a.Y, b.Y, t);
+			return result;
+		}
+
+		inline static Vector2 LerpUnclamped(const Vector2& a, const Vector2& b, float t)
+		{
+			Vector2 result;
+			result.X = Math::LerpUnclamped(a.X, b.X, t);
+			result.Y = Math::LerpUnclamped(a.Y, b.Y, t);
+			return result;
 		}
 
 		float LengthSquared() const
@@ -48,7 +68,7 @@ namespace Flux {
 			return { -X, -Y };
 		}
 
-		Vector2 operator+(const Vector2& v)
+		Vector2 operator+(const Vector2& v) const
 		{
 			Vector2 result;
 			result.X = X + v.X;
@@ -56,12 +76,26 @@ namespace Flux {
 			return result;
 		}
 
-		Vector2 operator-(const Vector2& v)
+		Vector2& operator+=(const Vector2& v)
+		{
+			X += v.X;
+			Y += v.Y;
+			return *this;
+		}
+
+		Vector2 operator-(const Vector2& v) const
 		{
 			Vector2 result;
 			result.X = X - v.X;
 			result.Y = Y - v.Y;
 			return result;
+		}
+
+		Vector2& operator-=(const Vector2& v)
+		{
+			X -= v.X;
+			Y -= v.Y;
+			return *this;
 		}
 
 		Vector2 operator*(const Vector2& v) const

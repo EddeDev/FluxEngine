@@ -93,25 +93,61 @@ namespace Flux {
 		}
 
 		template<typename T>
-		inline T Min(T a, T b)
+		inline constexpr T Pow(T f, T p)
+		{
+			return pow(f, p);
+		}
+
+		template<typename T>
+		inline constexpr T Exp(T power)
+		{
+			return exp(power);
+		}
+
+		template<typename T>
+		inline constexpr T Min(T a, T b)
 		{
 			return a < b ? a : b;
 		}
 
 		template<typename T>
-		inline T Max(T a, T b)
+		inline constexpr T Max(T a, T b)
 		{
 			return a > b ? a : b;
 		}
 
 		template<typename T>
-		inline T Clamp(T value, T min, T max)
+		inline constexpr T Clamp(T value, T min, T max)
 		{
 			if (value < min)
 				value = min;
 			else if (value > max)
 				value = max;
 			return value;
+		}
+
+		template<typename T>
+		inline constexpr T Lerp(T a, T b, T t)
+		{
+			return a + (b - a) * Clamp(t, static_cast<T>(0), static_cast<T>(1));
+		}
+
+		template<typename T>
+		inline constexpr T LerpUnclamped(T a, T b, T t)
+		{
+			return a + (b - a) * t;
+		}
+
+		template<typename T>
+		inline constexpr T GammaToLinearSpace(T value)
+		{
+			return Pow(value, static_cast<T>(2.2));
+		}
+
+		template<typename T>
+		inline constexpr T LinearToGammaSpace(T value)
+		{
+			return Pow(value, static_cast<T>(1.0 / 2.2));
 		}
 
 	}

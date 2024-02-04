@@ -14,7 +14,7 @@ namespace Flux {
 	protected:
 		virtual void OnInit() override;
 		virtual void OnShutdown() override;
-		virtual void OnUpdate(float deltaTime) override;
+		virtual void OnUpdate() override;
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
 	private:

@@ -15,7 +15,7 @@ namespace Flux {
 
 		virtual void Scissor(int32 x, int32 y, int32 width, int32 height) const override;
 
-		virtual void DrawIndexed(IndexBufferDataType dataType, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const override;
+		virtual void DrawIndexed(IndexFormat indexFormat, uint32 indexCount, uint32 startIndexLocation = 0, uint32 baseVertexLocation = 0) const override;
 	private:
 		PrimitiveTopology m_Topology = PrimitiveTopology::None;
 		

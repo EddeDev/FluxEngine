@@ -37,7 +37,7 @@ namespace Flux {
 		static void Shutdown();
 
 		static void OnEvent(Event& event);
-		static void Update();
+		static void OnUpdate();
 
 		static bool GetKey(KeyCode key);
 		static bool GetKeyDown(KeyCode key);
@@ -46,6 +46,11 @@ namespace Flux {
 		static bool GetMouseButton(MouseButtonCode button);
 		static bool GetMouseButtonDown(MouseButtonCode button);
 		static bool GetMouseButtonUp(MouseButtonCode button);
+
+		static float GetAxis(std::string_view name);
+
+		static float GetMouseScrollDeltaX();
+		static float GetMouseScrollDeltaY();
 	private:
 		static void OnKeyPressedEvent(KeyPressedEvent& event);
 		static void OnKeyReleasedEvent(KeyReleasedEvent& event);

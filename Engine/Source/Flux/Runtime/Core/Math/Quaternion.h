@@ -13,7 +13,9 @@ namespace Flux {
 		float X, Y, Z, W;
 
 		Quaternion()
+#if 0
 			: X(0.0f), Y(0.0f), Z(0.0f), W(0.0f)
+#endif
 		{
 		}
 
@@ -106,6 +108,14 @@ namespace Flux {
 		Matrix4x4 ToMatrix4x4() const
 		{
 			return Matrix4x4(ToMatrix3x3());
+		}
+
+		Vector3 operator*(const Vector3& v) const
+		{
+			Vector3 a(X, Y, Z);
+			Vector3 b(Vector3::Cross(a, v));
+
+			return v + ((b * W) + Vector3::Cross(a, b)) * 2.0f;
 		}
 
 		float& operator[](uint32 index)

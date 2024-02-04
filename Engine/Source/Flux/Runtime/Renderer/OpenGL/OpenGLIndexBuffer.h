@@ -7,8 +7,8 @@ namespace Flux {
 	class OpenGLIndexBuffer : public IndexBuffer
 	{
 	public:
-		OpenGLIndexBuffer(uint64 size, IndexBufferDataType dataType, IndexBufferUsage usage);
-		OpenGLIndexBuffer(const void* data, uint64 size, IndexBufferDataType dataType, IndexBufferUsage usage);
+		OpenGLIndexBuffer(uint64 size, IndexBufferUsage usage);
+		OpenGLIndexBuffer(const void* data, uint64 size, IndexBufferUsage usage);
 		virtual ~OpenGLIndexBuffer();
 
 		virtual void Bind() const override;
@@ -18,11 +18,9 @@ namespace Flux {
 
 		virtual uint64 GetSize() const override { return m_Data->Storage.GetSize(); }
 
-		virtual IndexBufferDataType GetDataType() const override { return m_DataType; }
 		virtual IndexBufferUsage GetUsage() const override { return m_Usage; }
 	private:
 		IndexBufferUsage m_Usage;
-		IndexBufferDataType m_DataType;
 
 		struct OpenGLIndexBufferData
 		{

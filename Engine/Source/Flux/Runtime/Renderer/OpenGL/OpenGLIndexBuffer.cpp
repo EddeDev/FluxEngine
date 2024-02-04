@@ -24,8 +24,8 @@ namespace Flux {
 
 	}
 
-	OpenGLIndexBuffer::OpenGLIndexBuffer(uint64 size, IndexBufferDataType dataType, IndexBufferUsage usage)
-		: m_DataType(dataType), m_Usage(usage)
+	OpenGLIndexBuffer::OpenGLIndexBuffer(uint64 size, IndexBufferUsage usage)
+		: m_Usage(usage)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
@@ -39,8 +39,8 @@ namespace Flux {
 		});
 	}
 
-	OpenGLIndexBuffer::OpenGLIndexBuffer(const void* data, uint64 size, IndexBufferDataType dataType, IndexBufferUsage usage)
-		: m_DataType(dataType), m_Usage(usage)
+	OpenGLIndexBuffer::OpenGLIndexBuffer(const void* data, uint64 size, IndexBufferUsage usage)
+		: m_Usage(usage)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 

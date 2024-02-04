@@ -18,16 +18,14 @@ namespace Flux {
 		void AddEvent(TArgs&&... args)
 		{
 			static_assert(std::is_base_of<Event, T>::value);
-
-			Shared<Event> event = CreateShared<T>(std::forward<TArgs>(args)...);
-
-			std::lock_guard<std::mutex> lock(m_Mutex);
-			m_EventQueue.push(event);
+			AddEvent(CreateShared<T>(std::forward<TArgs>(args)...));
 		}
 
 		void SetEventCallback(const EventCallback& callback);
 
 		uint32 GetEventCount();
+	private:
+		void AddEvent(Shared<Event> event);
 	private:
 		std::queue<Shared<Event>> m_EventQueue;
 		EventCallback m_EventCallback;

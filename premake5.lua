@@ -28,7 +28,8 @@ project "FluxEngine"
     {
         "Engine/Source",
         "Engine/Libraries/spdlog/include",
-        "Engine/Libraries/Glad/include",
+        "Engine/Libraries/glad/include",
+        "Engine/Libraries/assimp/include",
         "Engine/Libraries/ImGui"
     }
 
@@ -73,6 +74,16 @@ project "FluxEngine"
         runtime "Debug"
         symbols "On"
 
+        links
+        {
+            "%{wks.location}/Engine/Libraries/assimp/lib/assimp-vc143-mtd.lib"
+        }
+
+        postbuildcommands
+		{
+            '{COPY} "%{wks.location}/Engine/Libraries/assimp/bin/assimp-vc143-mtd.dll" "%{cfg.targetdir}"'
+		}
+
         if VulkanSDK ~= nil then
             links
             {
@@ -93,6 +104,16 @@ project "FluxEngine"
         runtime "Release"
         optimize "On"
 
+        links
+        {
+            "%{wks.location}/Engine/Libraries/assimp/lib/assimp-vc143-mt.lib"
+        }
+
+        postbuildcommands
+		{
+            '{COPY} "%{wks.location}/Engine/Libraries/assimp/bin/assimp-vc143-mt.dll" "%{cfg.targetdir}"'
+		}
+
         if VulkanSDK ~= nil then
             links
             {
@@ -112,6 +133,16 @@ project "FluxEngine"
         runtime "Release"
         optimize "On"
         symbols "Off"
+
+        links
+        {
+            "%{wks.location}/Engine/Libraries/assimp/lib/assimp-vc143-mt.lib"
+        }
+
+        postbuildcommands
+		{
+            '{COPY} "%{wks.location}/Engine/Libraries/assimp/bin/assimp-vc143-mt.dll" "%{cfg.targetdir}"'
+		}
 
         if VulkanSDK ~= nil then
             links
