@@ -10,13 +10,15 @@ namespace Flux {
 	void EditorCamera::OnUpdate(float deltaTime)
 	{
 		bool isUsing = Input::GetMouseButton(MouseButtonCode::ButtonRight);
+
+		// FLUX_INFO("IsUsing: {0} ({1}, {2})", isUsing, Input::GetAxis("Mouse X"), Input::GetAxis("Mouse Y"));
 		if (isUsing)
 		{
 			float mouseX = Input::GetAxis("Mouse X");
 			float mouseY = Input::GetAxis("Mouse Y");
 
-			m_TargetRotation.X += mouseY * 0.2f;
-			m_TargetRotation.Y += mouseX * 0.2f;
+			m_TargetRotation.X += mouseY * 15.0f * deltaTime;
+			m_TargetRotation.Y += mouseX * 15.0f * deltaTime;
 
 			m_TargetRotation.X = Math::Clamp(m_TargetRotation.X, -89.0f, 89.0f);
 		}

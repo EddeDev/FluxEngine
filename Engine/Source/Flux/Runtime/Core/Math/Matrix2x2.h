@@ -42,13 +42,13 @@ namespace Flux {
 
 		inline static Matrix2x2 Inverse(const Matrix2x2& m)
 		{
-			float oneOverDeterminant = 1.0f / Determinant(m);
+			float invDeterminant = 1.0f / Determinant(m);
 
 			Matrix2x2 result;
-			result[0][0] =  m[1][1] * oneOverDeterminant;
-			result[0][1] = -m[0][1] * oneOverDeterminant;
-			result[1][0] = -m[1][0] * oneOverDeterminant;
-			result[1][1] =  m[0][0] * oneOverDeterminant;
+			result[0][0] =  m[1][1] * invDeterminant;
+			result[0][1] = -m[0][1] * invDeterminant;
+			result[1][0] = -m[1][0] * invDeterminant;
+			result[1][1] =  m[0][0] * invDeterminant;
 			return result;
 		}
 		

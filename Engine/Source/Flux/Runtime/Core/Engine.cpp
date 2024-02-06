@@ -114,7 +114,7 @@ namespace Flux {
 		{
 			Platform::WaitMessage();
 			Platform::PumpMessages();
-
+			
 			Utils::ExecuteQueue(m_EventThreadQueue, m_EventThreadMutex);
 		}
 
@@ -127,6 +127,7 @@ namespace Flux {
 		}
 		else
 		{
+			// TODO
 			m_MainThread->Submit(FLUX_BIND_CALLBACK(DestroyRendererContext, this));
 		}
 	}

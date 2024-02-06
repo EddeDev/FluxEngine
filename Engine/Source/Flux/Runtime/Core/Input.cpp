@@ -22,6 +22,8 @@ namespace Flux {
 
 		float MouseScrollX;
 		float MouseScrollY;
+
+		bool IsFirstFrame;
 	};
 
 	static InputData* s_Data = nullptr;
@@ -34,6 +36,8 @@ namespace Flux {
 
 		s_Data->KeyStates = new KeyState[static_cast<size_t>(KeyCode::Last)];
 		s_Data->MouseButtonStates = new MouseButtonState[static_cast<size_t>(MouseButtonCode::ButtonLast)];
+
+		s_Data->IsFirstFrame = true;
 	}
 
 	void Input::Shutdown()
@@ -51,6 +55,14 @@ namespace Flux {
 	{
 		memset(s_Data->KeyStates, 0, static_cast<int32>(KeyCode::Last));
 		memset(s_Data->MouseButtonStates, 0, static_cast<int32>(MouseButtonCode::ButtonLast));
+
+		if (s_Data->IsFirstFrame)
+		{
+			s_Data->PreviousMouseX = s_Data->MouseX;
+			s_Data->PreviousMouseY = s_Data->MouseY;
+
+			s_Data->IsFirstFrame = false;
+		}
 
 		s_Data->MouseDeltaX = s_Data->MouseX - s_Data->PreviousMouseX;
 		s_Data->MouseDeltaY = s_Data->MouseY - s_Data->PreviousMouseY;

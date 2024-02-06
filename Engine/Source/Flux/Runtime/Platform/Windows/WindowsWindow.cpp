@@ -232,12 +232,12 @@ namespace Flux {
 		case WM_SETFOCUS:
 		{
 			m_EventQueue->AddEvent<WindowFocusEvent>(this, true);
-			break;
+			return FALSE;
 		}
 		case WM_KILLFOCUS:
 		{
 			m_EventQueue->AddEvent<WindowFocusEvent>(this, false);
-			break;
+			return FALSE;
 		}
 		case WM_SIZE:
 		{
@@ -263,12 +263,17 @@ namespace Flux {
 				m_Minimized = minimized;
 				m_Maximized = maximized;
 			}
-			break;
+
+			return FALSE;
+		}
+		case WM_ERASEBKGND:
+		{
+			return TRUE;
 		}
 		case WM_CLOSE:
 		{
 			m_EventQueue->AddEvent<WindowCloseEvent>(this);
-			return 0;
+			return FALSE;
 		}
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
@@ -367,7 +372,8 @@ namespace Flux {
 				if (uMsg != WM_SYSCHAR)
 					m_EventQueue->AddEvent<KeyTypedEvent>(codepoint);
 			}
-			return 0;
+
+			return FALSE;
 		}
 		case WM_UNICHAR:
 		{
@@ -375,7 +381,7 @@ namespace Flux {
 				return TRUE;
 
 			m_EventQueue->AddEvent<KeyTypedEvent>((char32)wParam);
-			break;
+			return FALSE;
 		}
 		case WM_LBUTTONDOWN:
 		case WM_RBUTTONDOWN:
@@ -397,20 +403,6 @@ namespace Flux {
 				button = FLUX_MOUSE_BUTTON_4;
 			else
 				button = FLUX_MOUSE_BUTTON_5;
-
-			int32 mods = 0;
-			if (GetKeyState(VK_SHIFT) & 0x8000)
-				mods |= FLUX_MOD_SHIFT;
-			if (GetKeyState(VK_CONTROL) & 0x8000)
-				mods |= FLUX_MOD_CONTROL;
-			if (GetKeyState(VK_MENU) & 0x8000)
-				mods |= FLUX_MOD_ALT;
-			if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
-				mods |= FLUX_MOD_SUPER;
-			if (GetKeyState(VK_CAPITAL) & 1)
-				mods |= FLUX_MOD_CAPS_LOCK;
-			if (GetKeyState(VK_NUMLOCK) & 1)
-				mods |= FLUX_MOD_NUM_LOCK;
 
 			uint32 i;
 			for (i = 0; i <= FLUX_MOUSE_BUTTON_LAST; i++)
@@ -438,7 +430,11 @@ namespace Flux {
 
 			if (i > FLUX_MOUSE_BUTTON_LAST)
 				ReleaseCapture();
-			break;
+
+			if (uMsg == WM_XBUTTONDOWN || uMsg == WM_XBUTTONUP)
+				return TRUE;
+
+			return FALSE;
 		}
 		case WM_MOUSEMOVE:
 		{
@@ -446,7 +442,7 @@ namespace Flux {
 			const int32 y = GET_Y_LPARAM(lParam);
 
 			m_EventQueue->AddEvent<MouseMovedEvent>((float)x, (float)y);
-			break;
+			return FALSE;
 		}
 		case WM_MOUSEWHEEL:
 		{
@@ -454,7 +450,7 @@ namespace Flux {
 			const float y = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
 
 			m_EventQueue->AddEvent<MouseScrolledEvent>((float)x, (float)y);
-			break;
+			return FALSE;
 		}
 		case WM_MOUSEHWHEEL:
 		{
@@ -462,7 +458,7 @@ namespace Flux {
 			const float y = 0.0f;
 
 			m_EventQueue->AddEvent<MouseScrolledEvent>((float)x, (float)y);
-			break;
+			return FALSE;
 		}
 		case WM_SETCURSOR:
 		{
