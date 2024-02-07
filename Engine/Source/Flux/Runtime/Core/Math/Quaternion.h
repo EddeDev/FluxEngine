@@ -13,9 +13,6 @@ namespace Flux {
 		float X, Y, Z, W;
 
 		Quaternion()
-#if 0
-			: X(0.0f), Y(0.0f), Z(0.0f), W(0.0f)
-#endif
 		{
 		}
 
@@ -144,7 +141,7 @@ namespace Flux {
 			return X;
 		}
 
-		const float* GetFloatPointer() const { return &X; }
+		const float* GetPointer() const { return &X; }
 	};
 
 }

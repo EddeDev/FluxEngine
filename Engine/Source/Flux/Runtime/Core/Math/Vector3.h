@@ -6,17 +6,30 @@ namespace Flux {
 
 	struct Vector3
 	{
-		float X, Y, Z;
+		union
+		{
+			struct
+			{
+				float X, Y, Z;
+			};
+
+			struct
+			{
+				float R, G, B;
+			};
+		};
 
 		Vector3()
-#if 0
-			: X(0.0f), Y(0.0f), Z(0.0f)
-#endif
 		{
 		}
 
 		explicit Vector3(float scalar)
 			: X(scalar), Y(scalar), Z(scalar)
+		{
+		}
+
+		Vector3(const Vector2& v, float z)
+			: X(v.X), Y(v.Y), Z(z)
 		{
 		}
 
@@ -180,7 +193,7 @@ namespace Flux {
 			return X;
 		}
 
-		const float* GetFloatPointer() const { return &X; }
+		const float* GetPointer() const { return &X; }
 	};
 
 }

@@ -8,12 +8,20 @@ namespace Flux {
 
 	struct Vector2
 	{
-		float X, Y;
+		union
+		{
+			struct
+			{
+				float X, Y;
+			};
+
+			struct
+			{
+				float R, G;
+			};
+		};
 
 		Vector2()
-#if 0
-			: X(0.0f), Y(0.0f)
-#endif
 		{
 		}
 
@@ -159,7 +167,7 @@ namespace Flux {
 			return X;
 		}
 
-		const float* GetFloatPointer() const { return &X; }
+		const float* GetPointer() const { return &X; }
 	};
 
 }

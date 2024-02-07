@@ -133,7 +133,8 @@ namespace Flux {
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback([](uint32 source, uint32 type, uint32 id, uint32 severity, int32 length, const char* message, const void* userParam)
 		{
-			switch (severity) {
+			switch (severity)
+			{
 			case GL_DEBUG_SEVERITY_HIGH:
 				FLUX_CRITICAL("[OpenGL] {0}", message);
 				FLUX_VERIFY(false);

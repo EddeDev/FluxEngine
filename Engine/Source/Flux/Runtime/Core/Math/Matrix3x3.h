@@ -14,11 +14,6 @@ namespace Flux {
 		Vector3 V2;
 
 		Matrix3x3()
-#if 0
-			: V0(0.0f),
-			  V1(0.0f),
-			  V2(0.0f)
-#endif
 		{
 		}
 
@@ -161,7 +156,7 @@ namespace Flux {
 			return V0;
 		}
 
-		const float* GetFloatPointer() const { return &V0.X; }
+		const float* GetPointer() const { return &V0.X; }
 	};
 
 }

@@ -39,6 +39,10 @@ namespace Flux {
 		pipelineCreateInfo.BackfaceCulling = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 
+		FramebufferCreateInfo framebufferCreateInfo;
+		framebufferCreateInfo.Attachments = { TextureFormat::RGBA32 };
+		m_Framebuffer = Framebuffer::Create(framebufferCreateInfo);
+
 		m_Mesh = Mesh::LoadFromFile("Resources/Meshes/test.fbx");
 	}
 
@@ -48,8 +52,12 @@ namespace Flux {
 
 		m_Shader = nullptr;
 		m_Pipeline = nullptr;
+		m_Framebuffer = nullptr;
 		m_Mesh = nullptr;
 	}
+
+	static int32 s_NumMeshesX = 32;
+	static int32 s_NumMeshesZ = 32;
 
 	void RuntimeEngine::OnUpdate()
 	{
@@ -81,27 +89,69 @@ namespace Flux {
 
 		auto& properties = m_Mesh->GetProperties();
 
-		Matrix4x4 meshTransform = Math::BuildTransformationMatrix({ 0.0f, 0.0f, 2.0f }, Vector3(0.0f), Vector3(1.0f));
-
-		for (uint32 i = 0; i < (uint32)properties.Submeshes.size(); i++)
+		for (int32 x = 0; x < s_NumMeshesX; x++)
 		{
-			auto& submesh = properties.Submeshes[i];
+			for (int32 z = 0; z < s_NumMeshesZ; z++)
+			{
+				Matrix4x4 meshTransform = Math::BuildTransformationMatrix({ (x - s_NumMeshesX / 2) * 12.0f, 0.0f, (z - s_NumMeshesZ / 2) * 12.0f }, Vector3(0.0f), Vector3(1.0f));
+				
+				for (uint32 i = 0; i < (uint32)properties.Submeshes.size(); i++)
+				{
+					auto& submesh = properties.Submeshes[i];
 
-			m_Shader->SetUniform("u_Transform", meshTransform * submesh.WorldTransform);
-			m_Pipeline->DrawIndexed(
-				submesh.IndexFormat,
-				submesh.IndexCount, 
-				submesh.StartIndexLocation,
-				submesh.BaseVertexLocation
-			);
+					m_Shader->SetUniform("u_Transform", meshTransform * submesh.WorldTransform);
+					m_Pipeline->DrawIndexed(
+						submesh.IndexFormat,
+						submesh.IndexCount,
+						submesh.StartIndexLocation,
+						submesh.BaseVertexLocation
+					);
+				}
+			}
 		}
 	}
 
 	void RuntimeEngine::OnImGuiRender()
 	{
 		ImGui::Begin("Debug");
+
+		ImGui::DragInt("Num Meshes X", &s_NumMeshesX, 0.1f, 0, 256);
+		ImGui::DragInt("Num Meshes Z", &s_NumMeshesZ, 0.1f, 0, 256);
+
 		ImGui::Text("Camera Position: [%.2f, %.2f, %.2f]", m_EditorCamera.GetPosition().X, m_EditorCamera.GetPosition().Y, m_EditorCamera.GetPosition().Z);
 		ImGui::Text("Camera Rotation: [%.2f, %.2f, %.2f]", m_EditorCamera.GetRotation().X, m_EditorCamera.GetRotation().Y, m_EditorCamera.GetRotation().Z);
+
+		ImGui::Separator();
+
+		BuildConfiguration buildConfig = Engine::GetBuildConfiguration();
+		const char* buildConfigString = Utils::BuildConfigurationToString(buildConfig);
+		ImGui::Text("%s build", buildConfigString);
+		ImGui::Separator();
+
+		ImGui::Text("Ticks per second: %d", m_TicksPerSecond);
+		ImGui::Text("Events per second: %d", m_EventsPerSecond);
+		ImGui::Separator();
+
+		ImGui::Checkbox("V-Sync", &m_VSync);
+		ImGui::Text("%d fps", m_FramesPerSecond);
+		ImGui::Text("Delta Time: %.2fms", m_DeltaTime * 1000.0f);
+		// ImGui::DragFloat("Fixed Delta Time", &m_FixedDeltaTime, 0.001f, 0.001f, 0.1f);
+		ImGui::Text("Fixed Delta Time: %.2f", m_FixedDeltaTime);
+
+		ImGui::Separator();
+		ImGui::Text("Command queues: %d", Renderer::GetQueueCount());
+
+		ImGui::BeginDisabled();
+		bool multithreaded = m_RenderThread != nullptr;
+		ImGui::Checkbox("Multithreaded", &multithreaded);
+		ImGui::EndDisabled();
+
+		if (m_RenderThread)
+		{
+			ImGui::Separator();
+			ImGui::Text("Render Thread wait: %.2fms", m_RenderThreadWaitTime);
+		}
+
 		ImGui::End();
 	}
 

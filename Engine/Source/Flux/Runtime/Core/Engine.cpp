@@ -22,7 +22,7 @@ namespace Flux {
 	extern bool g_EngineRunning;
 
 	Engine::Engine(const EngineCreateInfo& createInfo)
-		: m_CreateInfo(createInfo)
+		: m_CreateInfo(createInfo), m_VSync(createInfo.VSync)
 	{
 		FLUX_VERIFY(!s_Instance);
 		s_Instance = this;
@@ -118,7 +118,7 @@ namespace Flux {
 			Utils::ExecuteQueue(m_EventThreadQueue, m_EventThreadMutex);
 		}
 
-		m_MainThread.reset();
+		m_MainThread->Wait();
 
 		if (m_RenderThread)
 		{
@@ -127,9 +127,10 @@ namespace Flux {
 		}
 		else
 		{
-			// TODO
 			m_MainThread->Submit(FLUX_BIND_CALLBACK(DestroyRendererContext, this));
 		}
+
+		m_MainThread.reset();
 	}
 
 	void Engine::CreateRendererContext()

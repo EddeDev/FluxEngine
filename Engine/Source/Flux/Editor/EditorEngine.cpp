@@ -155,7 +155,6 @@ namespace Flux {
 		{
 			ImGui::Separator();
 			ImGui::Text("Render Thread wait: %.2fms", m_RenderThreadWaitTime);
-			ImGui::Text("CPU: %.2fms", m_DeltaTime * 1000.0f - m_RenderThreadWaitTime);
 		}
 
 		ImGui::End();

@@ -4,6 +4,7 @@
 
 #include "Flux/Runtime/Renderer/Shader.h"
 #include "Flux/Runtime/Renderer/GraphicsPipeline.h"
+#include "Flux/Runtime/Renderer/Framebuffer.h"
 
 #include "Flux/Runtime/Renderer/Mesh.h"
 
@@ -28,6 +29,7 @@ namespace Flux {
 	private:
 		Ref<Shader> m_Shader;
 		Ref<GraphicsPipeline> m_Pipeline;
+		Ref<Framebuffer> m_Framebuffer;
 
 		Ref<Mesh> m_Mesh;
 

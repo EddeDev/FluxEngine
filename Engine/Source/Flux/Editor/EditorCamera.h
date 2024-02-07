@@ -24,15 +24,17 @@ namespace Flux {
 
 		Vector3 m_TargetPosition = Vector3(0.0f);
 		Vector3 m_Position = Vector3(0.0f);
+		float m_PositionLerpTime = 0.2f;
 
 		Vector3 m_TargetRotation = Vector3(0.0f);
 		Vector3 m_Rotation = Vector3(0.0f);
+		float m_RotationLerpTime = 0.01f;
 
 		float m_Boost = 3.5f;
 
 		float m_VerticalFOV = 60.0f;
 		float m_NearClip = 0.1f;
-		float m_FarClip = 100.0f;
+		float m_FarClip = 1000.0f;
 	};
 
 }

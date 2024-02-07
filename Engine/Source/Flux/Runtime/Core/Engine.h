@@ -21,6 +21,7 @@ namespace Flux {
 		bool ShowSplashScreen = true;
 		bool MaximizeOnStart = false;
 		bool Multithreaded = true;
+		bool VSync = true;
 	};
 
 	class Engine

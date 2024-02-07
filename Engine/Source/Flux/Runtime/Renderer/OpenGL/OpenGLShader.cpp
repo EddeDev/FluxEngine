@@ -215,7 +215,7 @@ namespace Flux {
 		{
 			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
 			FLUX_VERIFY(location != -1);
-			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
+			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetPointer());
 		});
 	}
 
@@ -225,7 +225,7 @@ namespace Flux {
 		{
 			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
 			FLUX_VERIFY(location != -1);
-			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
+			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetPointer());
 		});
 	}
 
@@ -235,7 +235,7 @@ namespace Flux {
 		{
 			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
 			FLUX_VERIFY(location != -1);
-			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetFloatPointer());
+			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetPointer());
 		});
 	}
 

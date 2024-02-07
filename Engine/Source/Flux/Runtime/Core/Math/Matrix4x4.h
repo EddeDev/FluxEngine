@@ -14,12 +14,6 @@ namespace Flux {
 		Vector4 V3;
 
 		Matrix4x4()
-#if 0
-			: V0(0.0f), 
-			  V1(0.0f), 
-			  V2(0.0f), 
-			  V3(0.0f)
-#endif
 		{
 		}
 
@@ -364,7 +358,7 @@ namespace Flux {
 		Matrix4x4 operator*(const Matrix4x4& m) const
 		{
 			Matrix4x4 result;
-
+			
 			result.V0.X = V0.X * m.V0.X + V1.X * m.V0.Y + V2.X * m.V0.Z + V3.X * m.V0.W;
 			result.V1.X = V0.X * m.V1.X + V1.X * m.V1.Y + V2.X * m.V1.Z + V3.X * m.V1.W;
 			result.V2.X = V0.X * m.V2.X + V1.X * m.V2.Y + V2.X * m.V2.Z + V3.X * m.V2.W;
@@ -424,7 +418,7 @@ namespace Flux {
 			return V0;
 		}
 
-		const float* GetFloatPointer() const { return &V0.X; }
+		const float* GetPointer() const { return &V0.X; }
 	};
 
 }

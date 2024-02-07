@@ -26,6 +26,8 @@ namespace Flux {
 		static Ref<Texture2D> Create(uint32 width, uint32 height, TextureFormat format = TextureFormat::RGBA32);
 	};
 
+	// TODO: RenderTexture?
+
 	namespace Utils {
 
 		inline static uint32 GetTextureFormatBPP(TextureFormat format)
@@ -36,6 +38,12 @@ namespace Flux {
 			}
 			FLUX_VERIFY(false, "Unknown texture format!");
 			return 0;
+		}
+
+		inline static bool IsDepthFormat(TextureFormat format)
+		{
+			// TODO
+			return false;
 		}
 
 	}
