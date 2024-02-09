@@ -166,8 +166,7 @@ namespace Flux {
 			m_SwapInterval = swapInterval;
 		}
 
-		if (!::SwapBuffers(m_HDC))
-			FLUX_VERIFY(false, "SwapBuffers failed. ({0})", Platform::GetErrorMessage());
+		wglSwapLayerBuffers(m_HDC, WGL_SWAP_MAIN_PLANE);
 	}
 
 }

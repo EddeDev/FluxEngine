@@ -11,6 +11,9 @@ namespace Flux {
 	{
 		Vector3 Position;
 		Vector3 Normal;
+		Vector3 Tangent;
+		Vector3 Binormal;
+		Vector2 TexCoord;
 	};
 
 	struct SubmeshDescriptor
@@ -25,6 +28,8 @@ namespace Flux {
 
 		Matrix4x4 WorldTransform;
 		Matrix4x4 LocalTransform;
+
+		std::string Name;
 	};
 
 	struct MeshProperties

@@ -10,6 +10,9 @@ namespace Flux {
 		OpenGLFramebuffer(const FramebufferCreateInfo& createInfo);
 		virtual ~OpenGLFramebuffer();
 
+		virtual void Invalidate() override;
+		virtual void Resize(uint32 width, uint32 height) override;
+
 		virtual void Bind() const override;
 		virtual void Unbind() const override;
 

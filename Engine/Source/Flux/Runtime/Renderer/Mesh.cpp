@@ -8,10 +8,17 @@
 
 namespace Flux {
 
-	static const uint32 s_AssimpImportFlags = 
+	static const uint32 s_AssimpImportFlags =
+		aiProcess_CalcTangentSpace |
+		aiProcess_Triangulate |
+		aiProcess_SortByPType |
+		aiProcess_GenNormals |
+		aiProcess_GenUVCoords |
+		aiProcess_OptimizeMeshes | /*Optional?*/
+		aiProcess_JoinIdenticalVertices |
 		aiProcess_GlobalScale |
-		aiProcessPreset_TargetRealtime_MaxQuality | 
-		aiProcess_ConvertToLeftHanded;
+		aiProcess_ConvertToLeftHanded |
+		aiProcess_ValidateDataStructure;
 
 	Mesh::Mesh(const MeshProperties& properties)
 		: m_Properties(properties)
@@ -34,11 +41,12 @@ namespace Flux {
 				continue;
 
 			SubmeshDescriptor& submesh = properties.Submeshes.emplace_back();
+			submesh.Name = mesh->mName.C_Str();
 
 			uint32 maxIndexValue = 0;
-			for (uint32 j = 0; j < mesh->mNumFaces; j++)
+			for (uint32 faceIndex = 0; faceIndex < mesh->mNumFaces; faceIndex++)
 			{
-				const aiFace& face = mesh->mFaces[j];
+				const aiFace& face = mesh->mFaces[faceIndex];
 
 				maxIndexValue = Math::Max(face.mIndices[0], maxIndexValue);
 				maxIndexValue = Math::Max(face.mIndices[1], maxIndexValue);
@@ -61,19 +69,36 @@ namespace Flux {
 			submesh.LocalTransform = localTransform;
 			submesh.WorldTransform = worldTransform;
 
-			for (uint32 j = 0; j < mesh->mNumVertices; j++)
+			for (uint32 vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++)
 			{
 				Vertex& vertex = properties.Vertices.emplace_back();
 
-				vertex.Position.X = mesh->mVertices[j].x;
-				vertex.Position.Y = mesh->mVertices[j].y;
-				vertex.Position.Z = mesh->mVertices[j].z;
+				vertex.Position.X = mesh->mVertices[vertexIndex].x;
+				vertex.Position.Y = mesh->mVertices[vertexIndex].y;
+				vertex.Position.Z = mesh->mVertices[vertexIndex].z;
 
 				if (mesh->HasNormals())
 				{
-					vertex.Normal.X = mesh->mNormals[j].x;
-					vertex.Normal.Y = mesh->mNormals[j].y;
-					vertex.Normal.Z = mesh->mNormals[j].z;
+					vertex.Normal.X = mesh->mNormals[vertexIndex].x;
+					vertex.Normal.Y = mesh->mNormals[vertexIndex].y;
+					vertex.Normal.Z = mesh->mNormals[vertexIndex].z;
+				}
+
+				if (mesh->HasTangentsAndBitangents())
+				{
+					vertex.Tangent.X = mesh->mTangents[vertexIndex].x;
+					vertex.Tangent.Y = mesh->mTangents[vertexIndex].y;
+					vertex.Tangent.Z = mesh->mTangents[vertexIndex].z;
+
+					vertex.Binormal.X = mesh->mBitangents[vertexIndex].x;
+					vertex.Binormal.Y = mesh->mBitangents[vertexIndex].y;
+					vertex.Binormal.Z = mesh->mBitangents[vertexIndex].z;
+				}
+
+				if (mesh->HasTextureCoords(0))
+				{
+					vertex.TexCoord.X = mesh->mTextureCoords[0][vertexIndex].x;
+					vertex.TexCoord.Y = mesh->mTextureCoords[0][vertexIndex].y;
 				}
 			}
 
@@ -81,23 +106,23 @@ namespace Flux {
 			{
 			case IndexFormat::UInt8:
 			{
-				for (uint32 j = 0; j < mesh->mNumFaces; j++)
+				for (uint32 faceIndex = 0; faceIndex < mesh->mNumFaces; faceIndex++)
 				{
-					const aiFace& face = mesh->mFaces[j];
-					for (uint32 k = 0; k < face.mNumIndices; k++)
-						properties.Indices.push_back((uint8)face.mIndices[k]);
+					const aiFace& face = mesh->mFaces[faceIndex];
+					for (uint32 j = 0; j < face.mNumIndices; j++)
+						properties.Indices.push_back((uint8)face.mIndices[j]);
 				}
 				break;
 			}
 			case IndexFormat::UInt16:
 			{
-				for (uint32 j = 0; j < mesh->mNumFaces; j++)
+				for (uint32 faceIndex = 0; faceIndex < mesh->mNumFaces; faceIndex++)
 				{
-					const aiFace& face = mesh->mFaces[j];
-					for (uint32 k = 0; k < face.mNumIndices; k++)
+					const aiFace& face = mesh->mFaces[faceIndex];
+					for (uint32 j = 0; j < face.mNumIndices; j++)
 					{
 						uint8 index[2];
-						*(uint16*)&index = (uint16)face.mIndices[k];
+						*(uint16*)&index = (uint16)face.mIndices[j];
 
 						properties.Indices.push_back(index[0]);
 						properties.Indices.push_back(index[1]);
@@ -107,13 +132,13 @@ namespace Flux {
 			}
 			case IndexFormat::UInt32:
 			{
-				for (uint32 j = 0; j < mesh->mNumFaces; j++)
+				for (uint32 faceIndex = 0; faceIndex < mesh->mNumFaces; faceIndex++)
 				{
-					const aiFace& face = mesh->mFaces[j];
-					for (uint32 k = 0; k < face.mNumIndices; k++)
+					const aiFace& face = mesh->mFaces[faceIndex];
+					for (uint32 j = 0; j < face.mNumIndices; j++)
 					{
 						uint8 index[4];
-						*(uint32*)&index = (uint16)face.mIndices[k];
+						*(uint32*)&index = (uint32)face.mIndices[j];
 
 						properties.Indices.push_back(index[0]);
 						properties.Indices.push_back(index[1]);

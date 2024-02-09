@@ -34,10 +34,7 @@ namespace Flux {
 				m_ColorAttachments.emplace_back(texture);
 		}
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]() mutable
-		{
-			glCreateFramebuffers(1, &data->FramebufferID);
-		});
+		Invalidate();
 	}
 
 	OpenGLFramebuffer::~OpenGLFramebuffer()
@@ -52,7 +49,30 @@ namespace Flux {
 		});
 	}
 
-	// Resize
+	void OpenGLFramebuffer::Invalidate()
+	{
+		if (m_Data->CreateInfo.SwapchainTarget)
+			return;
+
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]() mutable
+		{
+			if (data->FramebufferID)
+				glDeleteFramebuffers(1, &data->FramebufferID);
+
+			glCreateFramebuffers(1, &data->FramebufferID);
+		});
+	}
+
+	void OpenGLFramebuffer::Resize(uint32 width, uint32 height)
+	{
+		if (m_Data->Width == width && m_Data->Height == height)
+			return;
+
+		m_Data->Width = width;
+		m_Data->Height = height;
+
+		Invalidate();
+	}
 
 	void OpenGLFramebuffer::Bind() const
 	{
@@ -83,7 +103,11 @@ namespace Flux {
 			}
 
 			if (clearFlags)
+			{
+				glDisable(GL_SCISSOR_TEST);
 				glClear(clearFlags);
+				glEnable(GL_SCISSOR_TEST);
+			}
 
 			glViewport(0, 0, data->Width, data->Height);
 		});

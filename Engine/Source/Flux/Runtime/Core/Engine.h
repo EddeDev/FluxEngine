@@ -8,6 +8,7 @@
 
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
+#include "Flux/Runtime/Renderer/Framebuffer.h"
 #include "Flux/Runtime/Renderer/ImGuiRenderer.h"
 
 namespace Flux {
@@ -18,6 +19,7 @@ namespace Flux {
 		uint32 WindowWidth = 1280;
 		uint32 WindowHeight = 720;
 		bool EnableImGui = true;
+		bool ClearImGuiPass = false;
 		bool ShowSplashScreen = true;
 		bool MaximizeOnStart = false;
 		bool Multithreaded = true;
@@ -69,6 +71,8 @@ namespace Flux {
 		Ref<EventQueue> m_EventQueue;
 
 		Ref<GraphicsContext> m_Context;
+		Ref<Framebuffer> m_SwapchainFramebuffer;
+		Ref<Framebuffer> m_ImGuiFramebuffer;
 		Ref<ImGuiRenderer> m_ImGuiRenderer;
 
 		GraphicsAPI m_GraphicsAPI = GraphicsAPI::OpenGL;

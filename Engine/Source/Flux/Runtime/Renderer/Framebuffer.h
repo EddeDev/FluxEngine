@@ -19,19 +19,25 @@ namespace Flux {
 		uint32 Height = 0;
 
 		Vector4 ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		float DepthClearValue = 0.0f;
 		bool ClearColorBuffer = true;
+
+		float DepthClearValue = 0.0f;
 		bool ClearDepthBuffer = true;
+
+		bool SwapchainTarget = false;
 
 		std::vector<FramebufferAttachment> Attachments;
 
-		bool SwapchainTarget = false;
+		std::string DebugLabel;
 	};
 
 	class Framebuffer : public ReferenceCounted
 	{
 	public:
 		virtual ~Framebuffer() {}
+
+		virtual void Invalidate() = 0;
+		virtual void Resize(uint32 width, uint32 height) = 0;
 
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;

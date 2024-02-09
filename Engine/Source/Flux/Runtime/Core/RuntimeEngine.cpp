@@ -32,18 +32,18 @@ namespace Flux {
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		pipelineCreateInfo.VertexDeclaration = {
 			{ "a_Position", VertexElementFormat::Float3 },
-			{ "a_Normal", VertexElementFormat::Float3 }
+			{ "a_Normal", VertexElementFormat::Float3 },
+			{ "a_Tangent", VertexElementFormat::Float3 },
+			{ "a_Binormal", VertexElementFormat::Float3 },
+			{ "a_TexCoord", VertexElementFormat::Float2 }
 		};
 		pipelineCreateInfo.DepthTest = true;
 		pipelineCreateInfo.DepthWrite = true;
 		pipelineCreateInfo.BackfaceCulling = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 
-		FramebufferCreateInfo framebufferCreateInfo;
-		framebufferCreateInfo.Attachments = { TextureFormat::RGBA32 };
-		m_Framebuffer = Framebuffer::Create(framebufferCreateInfo);
-
-		m_Mesh = Mesh::LoadFromFile("Resources/Meshes/test.fbx");
+		m_Mesh = Mesh::LoadFromFile("Resources/Meshes/low-poly-city/source/city.fbx");
+		m_NumVisibleSubmeshes = 0;
 	}
 
 	void RuntimeEngine::OnShutdown()
@@ -52,28 +52,18 @@ namespace Flux {
 
 		m_Shader = nullptr;
 		m_Pipeline = nullptr;
-		m_Framebuffer = nullptr;
 		m_Mesh = nullptr;
 	}
 
-	static int32 s_NumMeshesX = 32;
-	static int32 s_NumMeshesZ = 32;
+	static int32 s_NumMeshesX = 1;
+	static int32 s_NumMeshesZ = 1;
+	static float s_MeshSpacing = 0.0f;
 
 	void RuntimeEngine::OnUpdate()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		// Clear color (TODO: remove)
-		FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_MainWindow->GetWidth(), windowHeight = m_MainWindow->GetHeight()]() mutable
-		{
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-			glDisable(GL_SCISSOR_TEST);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glEnable(GL_SCISSOR_TEST);
-
-			glViewport(0, 0, windowWidth, windowHeight);
-		});
+		m_SwapchainFramebuffer->Bind();
 
 		// TODO
 		float deltaTime = m_DeltaTime;
@@ -93,9 +83,9 @@ namespace Flux {
 		{
 			for (int32 z = 0; z < s_NumMeshesZ; z++)
 			{
-				Matrix4x4 meshTransform = Math::BuildTransformationMatrix({ (x - s_NumMeshesX / 2) * 12.0f, 0.0f, (z - s_NumMeshesZ / 2) * 12.0f }, Vector3(0.0f), Vector3(1.0f));
+				Matrix4x4 meshTransform = Math::BuildTransformationMatrix({ (x - s_NumMeshesX / 2) * s_MeshSpacing, 0.0f, (z - s_NumMeshesZ / 2) * s_MeshSpacing }, Vector3(0.0f), Vector3(1.0f));
 				
-				for (uint32 i = 0; i < (uint32)properties.Submeshes.size(); i++)
+				for (uint32 i = 0; i < m_NumVisibleSubmeshes; i++)
 				{
 					auto& submesh = properties.Submeshes[i];
 
@@ -109,14 +99,36 @@ namespace Flux {
 				}
 			}
 		}
+
+		m_SwapchainFramebuffer->Unbind();
 	}
 
 	void RuntimeEngine::OnImGuiRender()
 	{
 		ImGui::Begin("Debug");
 
+		ImGui::Text("Submesh Count: %d", m_Mesh->GetProperties().Submeshes.size());
+		ImGui::DragInt("Submeshes", &m_NumVisibleSubmeshes, 0.1f, 0, m_Mesh->GetProperties().Submeshes.size());
+
+		int32 lastVisibleIndex = (int32)m_NumVisibleSubmeshes - 1;
+		if (lastVisibleIndex >= 0)
+		{
+			auto& submesh = m_Mesh->GetProperties().Submeshes.at(lastVisibleIndex);
+			ImGui::Text("Last Visible Index (%d):", lastVisibleIndex);
+			ImGui::Text("  Base Vertex Location: %d", submesh.BaseVertexLocation);
+			ImGui::Text("  Start Index Location: %d", submesh.StartIndexLocation);
+			ImGui::Text("  Vertex Count: %d", submesh.VertexCount);
+			ImGui::Text("  Index Count: %d", submesh.IndexCount);
+			ImGui::Text("  Material Index: %d", submesh.MaterialIndex);
+			ImGui::Text("  Index Format: %s", Utils::IndexFormatToString(submesh.IndexFormat));
+			ImGui::Text("  Mesh Name: %s", submesh.Name.c_str());
+		}
+
+		ImGui::Separator();
+
 		ImGui::DragInt("Num Meshes X", &s_NumMeshesX, 0.1f, 0, 256);
 		ImGui::DragInt("Num Meshes Z", &s_NumMeshesZ, 0.1f, 0, 256);
+		ImGui::DragFloat("Spacing", &s_MeshSpacing, 0.1f, 0.0f, 1024.0f);
 
 		ImGui::Text("Camera Position: [%.2f, %.2f, %.2f]", m_EditorCamera.GetPosition().X, m_EditorCamera.GetPosition().Y, m_EditorCamera.GetPosition().Z);
 		ImGui::Text("Camera Rotation: [%.2f, %.2f, %.2f]", m_EditorCamera.GetRotation().X, m_EditorCamera.GetRotation().Y, m_EditorCamera.GetRotation().Z);

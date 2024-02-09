@@ -255,37 +255,70 @@ namespace Flux {
 			return result;
 		}
 
+#define LEFT_HANDED 1
+#define DEPTH_ZERO_TO_ONE 1
+
 		inline static Matrix4x4 Perspective(float fov, float aspectRatio, float nearClip, float farClip)
 		{
 			Matrix4x4 result(0.0f);
 
-#define LEFT_HANDED 1
-#define DEPTH_ZERO_TO_ONE 1
-
 			float tanHalfFov = Math::Tan(fov * Math::DegToRad * 0.5f);
 
-			result.V0.X = 1.0f / (aspectRatio * tanHalfFov);
-			result.V1.Y = 1.0f / tanHalfFov;
+			result[0][0] = 1.0f / (aspectRatio * tanHalfFov);
+			result[1][1] = 1.0f / tanHalfFov;
 
 #if LEFT_HANDED
 	#if DEPTH_ZERO_TO_ONE
-			result.V2.Z = farClip / (farClip - nearClip);
+			result[2][2] = farClip / (farClip - nearClip);
 	#else
-			result.V2.Z = (farClip + nearClip) / (farClip - nearClip);
+			result[2][2] = (farClip + nearClip) / (farClip - nearClip);
 	#endif
-			result.V2.W = 1.0f;
 #else
-			result.V2.Z = -(farClip + nearClip) / (farClip - nearClip);
-			result.V2.W = -1.0f;
+	#if DEPTH_ZERO_TO_ONE
+			result[2][2] = farClip / (nearClip - farClip);
+	#else
+			result[2][2] = -(farClip + nearClip) / (farClip - nearClip);
+	#endif
+#endif
+
+#if LEFT_HANDED
+			result[2][3] = 1.0f;
+#else
+			result[2][3] = -1.0f;
 #endif
 
 #if DEPTH_ZERO_TO_ONE
-			result.V3.Z = -(farClip * nearClip) / (farClip - nearClip);
+			result[3][2] = -(farClip * nearClip) / (farClip - nearClip);
 #else
-			result.V3.Z = -(2.0f * farClip * nearClip) / (farClip - nearClip);
+			result[3][2] = -(2.0f * farClip * nearClip) / (farClip - nearClip);
 #endif
 
 			return result;
+		}
+
+		inline static void DecomposePerspectiveMatrix(const Matrix4x4& m, float& outFov, float& outAspectRatio, float& outNearClip, float& outFarClip)
+		{
+			float tanHalfFov = 1.0f / m[1][1];
+			outAspectRatio = 1.0f / m[0][0] / tanHalfFov;
+			outFov = Math::Atan(tanHalfFov) / Math::DegToRad * 2.0f;
+
+#if LEFT_HANDED
+	#if DEPTH_ZERO_TO_ONE
+			outNearClip = -(m[3][2] / m[2][2]);
+			outFarClip = -(m[3][2] / (m[2][2] - 1.0f));
+	#else
+			outNearClip = -(m[3][2] / (m[2][2] + 1.0f));
+			outFarClip = -(m[3][2] / (m[2][2] - 1.0f));
+	#endif
+#else
+	#if DEPTH_ZERO_TO_ONE
+			outNearClip = m[3][2] / m[2][2];
+			outFarClip = m[3][2] / (m[2][2] + 1.0f);
+	#else
+			outNearClip = m[3][2] / (m[2][2] - 1.0f); 
+			outFarClip = m[3][2] / (m[2][2] + 1.0f);
+	#endif
+#endif
 		}
 
 		Matrix4x4& SetIdentity()

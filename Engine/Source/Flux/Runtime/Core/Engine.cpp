@@ -59,6 +59,12 @@ namespace Flux {
 				}
 
 				m_Minimized = false;
+
+				// Resize viewport
+				if (m_SwapchainFramebuffer)
+					m_SwapchainFramebuffer->Resize(event.GetWidth(), event.GetHeight());
+				if (m_ImGuiFramebuffer)
+					m_ImGuiFramebuffer->Resize(event.GetWidth(), event.GetHeight());
 			});
 
 			OnEvent(event);
@@ -177,11 +183,27 @@ namespace Flux {
 		Renderer::Init(m_RenderThread ? 2 : 1);
 		Input::Init();
 
+		const TextureFormat swapchainTextureFormat = TextureFormat::RGBA32;
+
 		if (m_CreateInfo.EnableImGui)
 		{
 			// Initialize ImGui
 			m_ImGuiRenderer = Ref<ImGuiRenderer>::Create();
+
+			FramebufferCreateInfo framebufferCreateInfo;
+			framebufferCreateInfo.Attachments = { swapchainTextureFormat };
+			framebufferCreateInfo.ClearColorBuffer = m_CreateInfo.ClearImGuiPass;
+			framebufferCreateInfo.ClearDepthBuffer = m_CreateInfo.ClearImGuiPass;
+			framebufferCreateInfo.DepthClearValue = 1.0f;
+			framebufferCreateInfo.SwapchainTarget = true;
+			m_ImGuiFramebuffer = Framebuffer::Create(framebufferCreateInfo);
 		}
+
+		FramebufferCreateInfo framebufferCreateInfo;
+		framebufferCreateInfo.Attachments = { swapchainTextureFormat };
+		framebufferCreateInfo.DepthClearValue = 1.0f;
+		framebufferCreateInfo.SwapchainTarget = true;
+		m_SwapchainFramebuffer = Framebuffer::Create(framebufferCreateInfo);
 
 		OnInit();
 
@@ -232,7 +254,10 @@ namespace Flux {
 				{
 					m_ImGuiRenderer->NewFrame();
 					OnImGuiRender();
+				
+					m_ImGuiFramebuffer->Bind();
 					m_ImGuiRenderer->Render();
+					m_ImGuiFramebuffer->Unbind();
 				}
 			}
 			else
@@ -287,12 +312,24 @@ namespace Flux {
 
 		OnShutdown();
 
+		if (m_SwapchainFramebuffer)
+		{
+			FLUX_VERIFY(m_SwapchainFramebuffer->GetReferenceCount() == 1);
+			m_SwapchainFramebuffer = nullptr;
+		}
+
+		if (m_ImGuiFramebuffer)
+		{
+			FLUX_VERIFY(m_ImGuiFramebuffer->GetReferenceCount() == 1);
+			m_ImGuiFramebuffer = nullptr;
+		}
+
 		if (m_ImGuiRenderer)
 		{
 			FLUX_VERIFY(m_ImGuiRenderer->GetReferenceCount() == 1);
 			m_ImGuiRenderer = nullptr;
 		}
-
+	
 		uint32 queueIndex = Renderer::GetCurrentQueueIndex();
 		if (m_RenderThread)
 		{

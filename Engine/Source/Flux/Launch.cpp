@@ -24,6 +24,7 @@ namespace Flux {
 #ifdef FLUX_EDITOR
 		createInfo.Title = "Flux Editor";
 		createInfo.EnableImGui = true;
+		createInfo.ClearImGuiPass = true;
 		createInfo.ShowSplashScreen = true;
 		createInfo.MaximizeOnStart = true;
 		createInfo.Multithreaded = true;
@@ -34,6 +35,7 @@ namespace Flux {
 #ifdef FLUX_RUNTIME
 		createInfo.Title = "Flux Runtime";
 		createInfo.EnableImGui = true;
+		createInfo.ClearImGuiPass = false;
 		createInfo.ShowSplashScreen = false;
 		createInfo.MaximizeOnStart = false;
 		createInfo.Multithreaded = true;
