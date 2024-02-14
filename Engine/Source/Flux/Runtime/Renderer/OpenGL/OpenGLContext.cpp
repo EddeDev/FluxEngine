@@ -143,7 +143,7 @@ namespace Flux {
 				FLUX_ERROR("[OpenGL] {0}", message);
 				break;
 			case GL_DEBUG_SEVERITY_LOW:
-				FLUX_WARNING("[OpenGL] {0}", message);
+				// FLUX_WARNING("[OpenGL] {0}", message);
 				break;
 			case GL_DEBUG_SEVERITY_NOTIFICATION:
 				// FLUX_INFO("[OpenGL] {0}", message);

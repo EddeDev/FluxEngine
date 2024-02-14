@@ -209,13 +209,43 @@ namespace Flux {
 		});
 	}
 
+	void OpenGLShader::SetUniform(const std::string& name, float value) const
+	{
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
+		{
+			glUniform1f(GetUniformLocation(data, name), value);
+		});
+	}
+
+	void OpenGLShader::SetUniform(const std::string& name, int32 value) const
+	{
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
+		{
+			glUniform1i(GetUniformLocation(data, name), value);
+		});
+	}
+
+	void OpenGLShader::SetUniform(const std::string& name, uint32 value) const
+	{
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
+		{
+			glUniform1ui(GetUniformLocation(data, name), value);
+		});
+	}
+
+	void OpenGLShader::SetUniform(const std::string& name, const Vector2& value) const
+	{
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
+		{
+			glUniform2fv(GetUniformLocation(data, name), 1, value.GetPointer());
+		});
+	}
+
 	void OpenGLShader::SetUniform(const std::string& name, const Vector3& value) const
 	{
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
 		{
-			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
-			FLUX_VERIFY(location != -1);
-			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetPointer());
+			glUniform3fv(GetUniformLocation(data, name), 1, value.GetPointer());
 		});
 	}
 
@@ -223,9 +253,7 @@ namespace Flux {
 	{
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
 		{
-			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
-			FLUX_VERIFY(location != -1);
-			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetPointer());
+			glUniform4fv(GetUniformLocation(data, name), 1, value.GetPointer());
 		});
 	}
 
@@ -233,10 +261,26 @@ namespace Flux {
 	{
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, name, value]()
 		{
-			int32 location = glGetUniformLocation(data->ProgramID, name.c_str());
-			FLUX_VERIFY(location != -1);
-			glUniformMatrix4fv(location, 1, GL_FALSE, value.GetPointer());
+			glUniformMatrix4fv(GetUniformLocation(data, name), 1, GL_FALSE, value.GetPointer());
 		});
+	}
+
+	uint32 OpenGLShader::GetUniformLocation(OpenGLShaderData* data, const std::string& name)
+	{
+		FLUX_CHECK_IS_IN_RENDER_THREAD();
+
+		auto it = data->UniformLocations.find(name);
+		if (it != data->UniformLocations.end())
+			return it->second;
+
+		uint32 location = glGetUniformLocation(data->ProgramID, name.c_str());
+		if (location == -1)
+		{
+			// FLUX_VERIFY(false);
+		}
+
+		data->UniformLocations[name] = location;
+		return location;
 	}
 
 }

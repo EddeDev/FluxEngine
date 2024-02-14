@@ -44,7 +44,7 @@ namespace Flux {
 			float y = 2.0f * (Y * Z + W * X);
 			float x = (W * W) - (X * X) - (Y * Y) + (Z * Z);
 
-			if (Math::Abs(x) < std::numeric_limits<float>::epsilon() && Math::Abs(y) < std::numeric_limits<float>::epsilon())
+			if (Vector2::EpsilonEqual({ x, y }, Vector2(0.0f)))
 				return 2.0f * Math::Atan2 (X, W);
 
 			return Math::Atan2(y, x);
@@ -60,7 +60,7 @@ namespace Flux {
 			float y = 2.0f * (X * Y + W * Z);
 			float x = (W * W) - (X * X) - (Y * Y) + (Z * Z);
 
-			if (Math::Abs(x) < std::numeric_limits<float>::epsilon() && Math::Abs(y) < std::numeric_limits<float>::epsilon())
+			if (Vector2::EpsilonEqual({ x, y }, Vector2(0.0f)))
 				return 0.0f;
 
 			return Math::Atan2(y, x);
@@ -141,6 +141,7 @@ namespace Flux {
 			return X;
 		}
 
+		float* GetPointer() { return &X; }
 		const float* GetPointer() const { return &X; }
 	};
 

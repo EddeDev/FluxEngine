@@ -46,7 +46,7 @@ namespace Flux {
 		m_Position = Vector3::Lerp(m_Position, m_TargetPosition, positionLerpFactor);
 		m_Rotation = Vector3::Lerp(m_Rotation, m_TargetRotation, rotationLerpFactor);
 
-		m_ViewMatrix = Matrix4x4::Inverse(Math::BuildTransformationMatrix(m_Position, m_Rotation * Math::DegToRad));
+		m_ViewMatrix = Matrix4x4::Inverse(Math::BuildTransformationMatrix(m_Position, m_Rotation));
 	}
 
 	void EditorCamera::SetViewportSize(uint32 width, uint32 height)

@@ -119,7 +119,12 @@ namespace Flux {
 		void SetBufferAvailable(uint32 bufferIndex)
 		{
 			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
-			m_BufferPool[bufferIndex].IsAvailable = true;
+
+			auto& buffer = m_BufferPool[bufferIndex];
+#if TODO
+			buffer.Buffer.Release();
+#endif
+			buffer.IsAvailable = true;
 		}
 
 		const Buffer& GetBuffer(uint32 bufferIndex) const

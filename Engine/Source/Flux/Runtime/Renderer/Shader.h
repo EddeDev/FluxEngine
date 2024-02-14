@@ -21,6 +21,10 @@ namespace Flux {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
+		virtual void SetUniform(const std::string& name, float value) const = 0;
+		virtual void SetUniform(const std::string& name, int32 value) const = 0;
+		virtual void SetUniform(const std::string& name, uint32 value) const = 0;
+		virtual void SetUniform(const std::string& name, const Vector2& value) const = 0;
 		virtual void SetUniform(const std::string& name, const Vector3& value) const = 0;
 		virtual void SetUniform(const std::string& name, const Vector4& value) const = 0;
 		virtual void SetUniform(const std::string& name, const Matrix4x4& value) const = 0;

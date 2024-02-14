@@ -39,6 +39,7 @@ namespace Flux {
 		createInfo.ShowSplashScreen = false;
 		createInfo.MaximizeOnStart = false;
 		createInfo.Multithreaded = true;
+		createInfo.VSync = false;
 
 		return new RuntimeEngine(createInfo);
 #endif

@@ -230,12 +230,12 @@ namespace Flux {
 		{
 			Matrix4x4 result(1.0f);
 
-			result.V0.X = 2.0f / (right - left);
-			result.V1.Y = 2.0f / (top - bottom);
-			result.V2.Z = -1.0f;
+			result[0][0] = 2.0f / (right - left);
+			result[1][1] = 2.0f / (top - bottom);
+			result[2][2] = -1.0f;
 
-			result.V3.X = -(right + left) / (right - left);
-			result.V3.Y = -(top + bottom) / (top - bottom);
+			result[3][0] = -(right + left) / (right - left);
+			result[3][1] = -(top + bottom) / (top - bottom);
 
 			return result;
 		}
@@ -244,13 +244,13 @@ namespace Flux {
 		{
 			Matrix4x4 result(1.0f);
 
-			result.V0.X = 2.0f / (right - left);
-			result.V1.Y = 2.0f / (top - bottom);
-			result.V2.Z = -2.0f / (farClip - nearClip);
+			result[0][0] = 2.0f / (right - left);
+			result[1][1] = 2.0f / (top - bottom);
+			result[2][2] = -2.0f / (farClip - nearClip);
 
-			result.V3.X = -(right + left) / (right - left);
-			result.V3.Y = -(top + bottom) / (top - bottom);
-			result.V3.Z = -(farClip + nearClip) / (farClip - nearClip);
+			result[3][0] = -(right + left) / (right - left);
+			result[3][1] = -(top + bottom) / (top - bottom);
+			result[3][2] = -(farClip + nearClip) / (farClip - nearClip);
 
 			return result;
 		}
@@ -294,6 +294,42 @@ namespace Flux {
 #endif
 
 			return result;
+		}
+
+		inline static void DecomposeOrthoMatrix(const Matrix4x4& m, float& outLeft, float& outRight, float& outBottom, float& outTop)
+		{
+			float rsl = 2.0f / m[0][0];
+			float ral = -(m[3][0] * rsl);
+
+			float tsb = 2.0f / m[1][1];
+			float tab = -(m[3][1] * tsb);
+
+			outRight = (rsl + ral) / 2.0f;
+			outLeft = ral - outRight;
+
+			outTop = (tsb + tab) / 2.0f;
+			outBottom = tab - outTop;
+		}
+
+		inline static void DecomposeOrthoMatrix(const Matrix4x4& m, float& outLeft, float& outRight, float& outBottom, float& outTop, float& outNearClip, float& outFarClip)
+		{
+			float rsl = 2.0f / m[0][0];
+			float ral = -(m[3][0] * rsl);
+
+			float tsb = 2.0f / m[1][1];
+			float tab = -(m[3][1] * tsb);
+
+			float fsn = -2.0f / m[2][2];
+			float fan = -(m[3][2] * fsn);
+
+			outRight = (rsl + ral) / 2.0f;
+			outLeft = ral - outRight;
+
+			outTop = (tsb + tab) / 2.0f;
+			outBottom = tab - outTop;
+
+			outFarClip = (fsn + fan) / 2.0f;
+			outNearClip = -(fsn - outFarClip);
 		}
 
 		inline static void DecomposePerspectiveMatrix(const Matrix4x4& m, float& outFov, float& outAspectRatio, float& outNearClip, float& outFarClip)
@@ -451,6 +487,7 @@ namespace Flux {
 			return V0;
 		}
 
+		float* GetPointer() { return &V0.X; }
 		const float* GetPointer() const { return &V0.X; }
 	};
 

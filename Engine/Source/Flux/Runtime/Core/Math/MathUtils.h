@@ -105,6 +105,18 @@ namespace Flux {
 		}
 
 		template<typename T>
+		inline static bool EpsilonEqual(T a, T b, T epsilon = std::numeric_limits<T>::epsilon())
+		{
+			return Abs(a - b) < epsilon;
+		}
+
+		template<typename T>
+		inline static bool EpsilonNotEqual(T a, T b, T epsilon = std::numeric_limits<T>::epsilon())
+		{
+			return Abs(a - b) >= epsilon;
+		}
+
+		template<typename T>
 		inline constexpr T Min(T a, T b)
 		{
 			return a < b ? a : b;

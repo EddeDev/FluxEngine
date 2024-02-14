@@ -6,6 +6,8 @@
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
 
+#include <stb_image.h>
+
 namespace Flux {
 
 	static const uint32 s_AssimpImportFlags =
@@ -14,11 +16,11 @@ namespace Flux {
 		aiProcess_SortByPType |
 		aiProcess_GenNormals |
 		aiProcess_GenUVCoords |
-		aiProcess_OptimizeMeshes | /*Optional?*/
+		aiProcess_OptimizeMeshes |
 		aiProcess_JoinIdenticalVertices |
 		aiProcess_GlobalScale |
-		aiProcess_ConvertToLeftHanded |
-		aiProcess_ValidateDataStructure;
+		aiProcess_ValidateDataStructure |
+		aiProcess_ConvertToLeftHanded;
 
 	Mesh::Mesh(const MeshProperties& properties)
 		: m_Properties(properties)
@@ -43,31 +45,19 @@ namespace Flux {
 			SubmeshDescriptor& submesh = properties.Submeshes.emplace_back();
 			submesh.Name = mesh->mName.C_Str();
 
-			uint32 maxIndexValue = 0;
-			for (uint32 faceIndex = 0; faceIndex < mesh->mNumFaces; faceIndex++)
-			{
-				const aiFace& face = mesh->mFaces[faceIndex];
-
-				maxIndexValue = Math::Max(face.mIndices[0], maxIndexValue);
-				maxIndexValue = Math::Max(face.mIndices[1], maxIndexValue);
-				maxIndexValue = Math::Max(face.mIndices[2], maxIndexValue);
-			}
-
-			if (maxIndexValue <= std::numeric_limits<uint8>::max())
-				submesh.IndexFormat = IndexFormat::UInt8;
-			else if (maxIndexValue <= std::numeric_limits<uint16>::max())
-				submesh.IndexFormat = IndexFormat::UInt16;
-			else
-				submesh.IndexFormat = IndexFormat::UInt32;
-
-			submesh.BaseVertexLocation = (uint32)properties.Vertices.size();
-			submesh.StartIndexLocation = (uint32)properties.Indices.size();
+			submesh.BaseVertexLocation = properties.Vertices.size();
+			submesh.StartIndexLocation = properties.Indices.size();
 			submesh.VertexCount = mesh->mNumVertices;
 			submesh.IndexCount = mesh->mNumFaces * 3;
 			submesh.MaterialIndex = mesh->mMaterialIndex;
 
 			submesh.LocalTransform = localTransform;
 			submesh.WorldTransform = worldTransform;
+
+			if (submesh.VertexCount <= std::numeric_limits<uint16>::max() + 1)
+				submesh.IndexFormat = IndexFormat::UInt16;
+			else
+				submesh.IndexFormat = IndexFormat::UInt32;
 
 			for (uint32 vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++)
 			{
@@ -169,6 +159,63 @@ namespace Flux {
 		}
 
 		LoadMeshNode(scene, scene->mRootNode, properties);
+
+		if (scene->HasMaterials())
+		{
+			for (uint32 i = 0; i < scene->mNumMaterials; i++)
+			{
+				MaterialDescriptor& material = properties.Materials.emplace_back();
+
+				auto aiMaterial = scene->mMaterials[i];
+
+				aiString name;
+				aiMaterial->Get(AI_MATKEY_NAME, name);
+				material.Name = name.C_Str();
+
+				aiColor4D diffuseColor;
+				if (aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+					material.AlbedoColor = *(Vector4*)&diffuseColor;
+				else
+					material.AlbedoColor = { Vector3(0.8f), 1.0f };
+
+				if (aiMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, material.Roughness) != AI_SUCCESS)
+					material.Roughness = 0.4f;
+
+				if (aiMaterial->Get(AI_MATKEY_METALLIC_FACTOR, material.Metalness) != AI_SUCCESS)
+					material.Metalness = 0.0f;
+
+				if (aiMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, material.Emission) != AI_SUCCESS)
+					material.Emission = 0.0f;
+
+				aiString aiTexturePath;
+
+				if (aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexturePath) == AI_SUCCESS)
+				{
+					std::filesystem::path texturePath = path.parent_path() / aiTexturePath.C_Str();
+
+					int32 width;
+					int32 height;
+					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+
+					material.AlbedoMap = Texture2D::Create(width, height);
+					material.AlbedoMap->SetPixelData(data, width * height);
+				}
+
+				if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexturePath) == AI_SUCCESS)
+				{
+					std::filesystem::path texturePath = path.parent_path() / aiTexturePath.C_Str();
+
+					int32 width;
+					int32 height;
+					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+
+					material.NormalMap = Texture2D::Create(width, height);
+					material.NormalMap->SetPixelData(data, width * height);
+				}
+			}
+		}
 
 		return Ref<Mesh>::Create(properties);
 	}

@@ -44,8 +44,11 @@ namespace Flux {
 		{
 			glCreateTextures(GL_TEXTURE_2D, 1, &data->TextureID);
 
-			glTextureParameteri(data->TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTextureParameteri(data->TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTextureParameteri(data->TextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 			// TODO: optional
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -96,6 +99,8 @@ namespace Flux {
 			auto& buffer = data->Storage.GetBuffer(bufferIndex);
 			glTextureSubImage2D(data->TextureID, 0, 0, 0, width, height, Utils::OpenGLTextureFormat(format), GL_UNSIGNED_BYTE, buffer.Data);
 			data->Storage.SetBufferAvailable(bufferIndex);
+
+			glGenerateTextureMipmap(data->TextureID);
 		});
 	}
 

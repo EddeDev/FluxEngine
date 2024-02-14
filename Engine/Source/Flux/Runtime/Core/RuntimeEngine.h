@@ -29,8 +29,16 @@ namespace Flux {
 		Ref<Shader> m_Shader;
 		Ref<GraphicsPipeline> m_Pipeline;
 
-		Ref<Mesh> m_Mesh;
+		Ref<Mesh> m_ActiveMesh;
+		Ref<Mesh> m_GunMesh;
+		Ref<Mesh> m_CityMesh;
+		Ref<Mesh> m_BackpackMesh;
 		int32 m_NumVisibleSubmeshes = 0;
+		bool m_UseNormalMaps = true;
+
+		Vector3 m_LightColor = Vector3(0.9f, 0.87f, 0.96f);
+		Vector3 m_LightPosition = Vector3(2000.0f, 2000.0f, 2000.0f);
+		float m_AmbientMultiplier = 0.0f;
 
 		EditorCamera m_EditorCamera;
 	};

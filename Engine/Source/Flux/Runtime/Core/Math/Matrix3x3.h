@@ -156,6 +156,7 @@ namespace Flux {
 			return V0;
 		}
 
+		float* GetPointer() { return &V0.X; }
 		const float* GetPointer() const { return &V0.X; }
 	};
 

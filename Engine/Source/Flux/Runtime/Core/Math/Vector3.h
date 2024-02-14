@@ -67,6 +67,26 @@ namespace Flux {
 			return result;
 		}
 
+		inline static float Dot(const Vector3& a, const Vector3& b)
+		{
+			Vector3 result(a * b);
+			return result.X + result.Y + result.Z;
+		}
+
+		inline static bool EpsilonEqual(const Vector3& a, const Vector3& b, float epsilon = std::numeric_limits<float>::epsilon())
+		{
+			return Math::EpsilonEqual(a.X, b.X, epsilon) &&
+				   Math::EpsilonEqual(a.Y, b.Y, epsilon) &&
+				   Math::EpsilonEqual(a.Z, b.Z, epsilon);
+		}
+
+		inline static bool EpsilonNotEqual(const Vector3& a, const Vector3& b, float epsilon = std::numeric_limits<float>::epsilon())
+		{
+			return Math::EpsilonNotEqual(a.X, b.X, epsilon) ||
+				   Math::EpsilonNotEqual(a.Y, b.Y, epsilon) ||
+				   Math::EpsilonNotEqual(a.Z, b.Z, epsilon);
+		}
+
 		float LengthSquared() const
 		{
 			return X * X + Y * Y + Z * Z;
@@ -151,7 +171,7 @@ namespace Flux {
 			return *this;
 		}
 
-		Vector3 operator/(const Vector3& v)
+		Vector3 operator/(const Vector3& v) const
 		{
 			Vector3 result;
 			result.X = X / v.X;
@@ -160,13 +180,21 @@ namespace Flux {
 			return result;
 		}
 
-		Vector3 operator/(float scalar)
+		Vector3 operator/(float scalar) const
 		{
 			Vector3 result;
 			result.X = X / scalar;
 			result.Y = Y / scalar;
 			result.Z = Z / scalar;
 			return result;
+		}
+
+		Vector3& operator/=(float scalar)
+		{
+			X /= scalar;
+			Y /= scalar;
+			Z /= scalar;
+			return *this;
 		}
 
 		float& operator[](uint32 index)
@@ -193,6 +221,7 @@ namespace Flux {
 			return X;
 		}
 
+		float* GetPointer() { return &X; }
 		const float* GetPointer() const { return &X; }
 	};
 

@@ -5,6 +5,8 @@
 
 #include "GraphicsPipeline.h"
 
+#include "Texture.h"
+
 namespace Flux {
 
 	struct Vertex
@@ -32,11 +34,27 @@ namespace Flux {
 		std::string Name;
 	};
 
+	struct MaterialDescriptor
+	{
+		Vector4 AlbedoColor;
+		float Metalness;
+		float Roughness;
+		float Emission;
+
+		Ref<Texture2D> AlbedoMap;
+		Ref<Texture2D> NormalMap;
+		Ref<Texture2D> RoughnessMap;
+		Ref<Texture2D> MetalnessMap;
+
+		std::string Name;
+	};
+
 	struct MeshProperties
 	{
 		std::vector<Vertex> Vertices;
 		std::vector<uint8> Indices;
 		std::vector<SubmeshDescriptor> Submeshes;
+		std::vector<MaterialDescriptor> Materials;
 	};
 
 	class Mesh : public ReferenceCounted

@@ -53,6 +53,18 @@ namespace Flux {
 			return result;
 		}
 
+		inline static bool EpsilonEqual(const Vector2& a, const Vector2& b, float epsilon = std::numeric_limits<float>::epsilon())
+		{
+			return Math::EpsilonEqual(a.X, b.X, epsilon) && 
+				   Math::EpsilonEqual(a.Y, b.Y, epsilon);
+		}
+
+		inline static bool EpsilonNotEqual(const Vector2& a, const Vector2& b, float epsilon = std::numeric_limits<float>::epsilon())
+		{
+			return Math::EpsilonNotEqual(a.X, b.X, epsilon) || 
+				   Math::EpsilonNotEqual(a.Y, b.Y, epsilon);
+		}
+
 		float LengthSquared() const
 		{
 			return X * X + Y * Y;
@@ -129,7 +141,7 @@ namespace Flux {
 			return *this;
 		}
 
-		Vector2 operator/(const Vector2& v)
+		Vector2 operator/(const Vector2& v) const
 		{
 			Vector2 result;
 			result.X = X / v.X;
@@ -137,7 +149,7 @@ namespace Flux {
 			return result;
 		}
 
-		Vector2 operator/(float scalar)
+		Vector2 operator/(float scalar) const
 		{
 			Vector2 result;
 			result.X = X / scalar;
@@ -167,6 +179,7 @@ namespace Flux {
 			return X;
 		}
 
+		float* GetPointer() { return &X; }
 		const float* GetPointer() const { return &X; }
 	};
 

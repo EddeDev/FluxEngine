@@ -30,6 +30,7 @@ project "FluxEngine"
         "Engine/Libraries/spdlog/include",
         "Engine/Libraries/glad/include",
         "Engine/Libraries/assimp/include",
+        "Engine/Libraries/stb_image/include",
         "Engine/Libraries/ImGui"
     }
 
@@ -40,7 +41,8 @@ project "FluxEngine"
     links
     {
         "Glad",
-        "ImGui"
+        "ImGui",
+        "stb_image"
     }
 
     filter "system:windows"
@@ -160,4 +162,5 @@ project "FluxEngine"
 group "Libraries"
     include "Engine/Libraries/Glad"
     include "Engine/Libraries/ImGui"
+    include "Engine/Libraries/stb_image"
 group ""
