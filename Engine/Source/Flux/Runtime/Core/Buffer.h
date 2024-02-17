@@ -54,6 +54,11 @@ namespace Flux {
 			memset(Data, 0, Size);
 		}
 
+		void SetData(const void* data, uint64 size, uint64 offset = 0)
+		{
+			memcpy((uint8*)Data + offset, data, size);
+		}
+
 		void* GetData(uint64 offset = 0) const
 		{
 			return (uint8*)Data + offset;
@@ -77,13 +82,7 @@ namespace Flux {
 				buffer.Buffer.Release();
 		}
 
-		void SetSize(uint64 size)
-		{
-			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
-			m_Size = size;
-		}
-
-		uint32 SetData(const void* data, uint64 size, uint64 offset = 0)
+		uint32 SetData(const void* data, uint64 size)
 		{
 			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
 
@@ -106,14 +105,16 @@ namespace Flux {
 			auto& buffer = m_BufferPool[bufferIndex];
 			buffer.IsAvailable = false;
 
-			if (buffer.Buffer.Size != m_Size)
-			{
-				buffer.Buffer.Allocate(m_Size);
-				buffer.Buffer.FillWithZeros();
-			}
+			buffer.Buffer.Release();
+			// TODO: optimize
+			buffer.Buffer = Buffer::Copy(data, size);
 
-			memcpy(buffer.Buffer.Data, (uint8*)data + offset, size);
 			return bufferIndex;
+		}
+
+		uint32 SetData(const Buffer& buffer)
+		{
+			return SetData(buffer.Data, buffer.Size);
 		}
 
 		void SetBufferAvailable(uint32 bufferIndex)
@@ -132,20 +133,12 @@ namespace Flux {
 			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
 			return m_BufferPool[bufferIndex].Buffer;
 		}
-
-		uint64 GetSize() const
-		{
-			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
-			return m_Size;
-		}
 	private:
 		struct BufferData
 		{
 			Flux::Buffer Buffer;
 			bool IsAvailable = true;
 		};
-
-		uint64 m_Size = 0;
 
 		std::vector<BufferData> m_BufferPool;
 		mutable std::mutex m_BufferPoolMutex;

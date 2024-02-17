@@ -41,10 +41,10 @@ namespace Flux {
 		float Roughness;
 		float Emission;
 
-		Ref<Texture2D> AlbedoMap;
-		Ref<Texture2D> NormalMap;
-		Ref<Texture2D> RoughnessMap;
-		Ref<Texture2D> MetalnessMap;
+		Ref<Texture> AlbedoMap;
+		Ref<Texture> NormalMap;
+		Ref<Texture> RoughnessMap;
+		Ref<Texture> MetalnessMap;
 
 		std::string Name;
 	};

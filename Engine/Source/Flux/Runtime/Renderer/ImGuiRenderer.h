@@ -23,7 +23,7 @@ namespace Flux {
 		void NewFrame();
 		void Render();
 
-		void Image(Ref<Texture2D> texture, const ImVec2& size);
+		void Image(Ref<Texture> texture, const ImVec2& size);
 
 		void OnEvent(Event& event) const;
 	private:
@@ -43,9 +43,9 @@ namespace Flux {
 		Ref<GraphicsPipeline> m_Pipeline;
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
-		Ref<Texture2D> m_FontTexture;
+		Ref<Texture> m_FontTexture;
 
-		std::unordered_map<ImTextureID, Ref<Texture2D>> m_TextureMap;
+		std::unordered_map<ImTextureID, Ref<Texture>> m_TextureMap;
 	};
 
 }

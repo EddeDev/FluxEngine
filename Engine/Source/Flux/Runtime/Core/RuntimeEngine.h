@@ -24,20 +24,32 @@ namespace Flux {
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
 	private:
+		struct Material
+		{
+			Vector3 AlbedoColor = Vector3(1.0f);
+			float Roughness = 0.5f;
+			float Metalness = 0.0f;
+			float Emission = 0.0f;
+		};
+
+		void RenderMesh(Ref<Mesh> mesh, const Matrix4x4& transform);
+		void RenderMeshWithMaterial(Ref<Mesh> mesh, const MaterialDescriptor& material, const Matrix4x4& transform);
+
 		void OnWindowResizeEvent(WindowResizeEvent& event);
 	private:
 		Ref<Shader> m_Shader;
 		Ref<GraphicsPipeline> m_Pipeline;
 
-		Ref<Mesh> m_ActiveMesh;
-		Ref<Mesh> m_GunMesh;
-		Ref<Mesh> m_CityMesh;
-		Ref<Mesh> m_BackpackMesh;
-		int32 m_NumVisibleSubmeshes = 0;
-		bool m_UseNormalMaps = true;
+		MaterialDescriptor m_Material;
+		Ref<Mesh> m_SphereMesh;
+
+		Ref<Texture> m_CubemapTexture;
+
+		Ref<Texture> m_WhiteTexture;
+		Ref<Texture> m_CheckerboardTexture;
 
 		Vector3 m_LightColor = Vector3(0.9f, 0.87f, 0.96f);
-		Vector3 m_LightPosition = Vector3(2000.0f, 2000.0f, 2000.0f);
+		Vector3 m_LightRotation = Vector3(50.0f, -30.0f, 0.0f);
 		float m_AmbientMultiplier = 0.0f;
 
 		EditorCamera m_EditorCamera;

@@ -22,6 +22,7 @@
 #include <memory>
 #include <array>
 #include <vector>
+#include <initializer_list>
 #include <queue>
 #include <unordered_map>
 #include <map>

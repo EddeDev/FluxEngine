@@ -73,6 +73,17 @@ namespace Flux {
 				m_ImGuiRenderer->OnEvent(event);
 		});
 
+		if (false && createInfo.ShowSplashScreen)
+		{
+			WindowCreateInfo windowCreateInfo;
+			windowCreateInfo.Width = 720;
+			windowCreateInfo.Height = 460;
+			// windowCreateInfo.ShowInTaskbar = false;
+			m_SplashScreenWindow = Window::Create(windowCreateInfo);
+			m_SplashScreenWindow->SetEventQueue(m_EventQueue);
+			m_SplashScreenWindow->SetVisible(true);
+		}
+
 		WindowCreateInfo windowCreateInfo;
 		windowCreateInfo.Width = createInfo.WindowWidth;
 		windowCreateInfo.Height = createInfo.WindowHeight;
@@ -143,16 +154,22 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
-		m_Context = GraphicsContext::Create(m_MainWindow->GetNativeHandle());
-		m_Context->Init();
+		if (m_MainWindow)
+		{
+			m_Context = GraphicsContext::Create(m_MainWindow->GetNativeHandle());
+			m_Context->Init();
+		}
 	}
 
 	void Engine::DestroyRendererContext()
 	{
 		FLUX_CHECK_IS_IN_RENDER_THREAD();
 
-		FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
-		m_Context = nullptr;
+		if (m_Context)
+		{
+			FLUX_VERIFY(m_Context->GetReferenceCount() == 1);
+			m_Context = nullptr;
+		}
 	}
 
 	void Engine::Close(bool restart)
@@ -208,7 +225,13 @@ namespace Flux {
 		OnInit();
 
 		// Show window
-		SubmitToEventThread([this]() { m_MainWindow->SetVisible(true); });
+		SubmitToEventThread([this]()
+		{
+			if (m_SplashScreenWindow)
+				m_SplashScreenWindow->SetVisible(false);
+			if (m_MainWindow)
+				m_MainWindow->SetVisible(true); 
+		});
 
 		m_LastTime = Platform::GetTime();
 
@@ -275,7 +298,7 @@ namespace Flux {
 				m_RenderThreadWaitTime = float(end - start) * 0.001f * 0.001f;
 			}
 
-			if (!m_Minimized)
+			if (!m_Minimized && m_Context)
 			{
 				// Swap buffers
 				FLUX_SUBMIT_RENDER_COMMAND([context = m_Context, vsync = m_VSync]() mutable

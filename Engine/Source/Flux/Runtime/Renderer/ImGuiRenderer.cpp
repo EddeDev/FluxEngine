@@ -384,14 +384,17 @@ namespace Flux {
 			io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytesPerPixel);
 			io.Fonts->SetTexID(nullptr);
 
-			TextureFormat format = TextureFormat::None;
+			TextureCreateInfo textureCreateInfo;
+			textureCreateInfo.Width = width;
+			textureCreateInfo.Height = height;
+			textureCreateInfo.InitialData = pixels;
+
 			if (bytesPerPixel == 4)
-				format = TextureFormat::RGBA32;
+				textureCreateInfo.Format = TextureFormat::RGBA32;
 			else
 				FLUX_VERIFY(false);
 
-			m_FontTexture = Texture2D::Create(width, height, format);
-			m_FontTexture->SetPixelData(pixels, width * height);
+			m_FontTexture = Texture::Create(textureCreateInfo);
 		}
 
 		m_Shader = Shader::Create("Resources/Shaders/ImGui.glsl");
@@ -557,7 +560,7 @@ namespace Flux {
 		}
 	}
 
-	void ImGuiRenderer::Image(Ref<Texture2D> texture, const ImVec2& size)
+	void ImGuiRenderer::Image(Ref<Texture> texture, const ImVec2& size)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 

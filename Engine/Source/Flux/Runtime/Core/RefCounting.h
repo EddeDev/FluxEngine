@@ -129,7 +129,7 @@ namespace Flux {
 		T* Get() { return m_Reference; }
 		const T* Get() const { return m_Reference; }
 
-		bool Equals(const Ref<T>& other)
+		bool Equals(const Ref<T>& other) const
 		{
 			if (!m_Reference || !other.m_Reference)
 				return false;

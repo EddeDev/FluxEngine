@@ -9,24 +9,27 @@
 namespace Flux {
 
 	OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferCreateInfo& createInfo)
+		: m_Width(createInfo.Width), m_Height(createInfo.Height)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		if (m_Width == 0 || m_Height == 0)
+		{
+			m_Width = Engine::Get().GetMainWindow()->GetWidth();
+			m_Height = Engine::Get().GetMainWindow()->GetHeight();
+		}
 
 		m_Data = new OpenGLFramebufferData();
 		m_Data->CreateInfo = createInfo;
 
-		m_Data->Width = createInfo.Width;
-		m_Data->Height = createInfo.Height;
-
-		if (m_Data->Width == 0 || m_Data->Height == 0)
-		{
-			m_Data->Width = Engine::Get().GetMainWindow()->GetWidth();
-			m_Data->Height = Engine::Get().GetMainWindow()->GetHeight();
-		}
-
 		for (const auto& attachment : createInfo.Attachments)
 		{
-			Ref<Texture2D> texture = Texture2D::Create(m_Data->Width, m_Data->Height, attachment.Format);
+			TextureCreateInfo textureCreateInfo;
+			textureCreateInfo.Width = m_Width;
+			textureCreateInfo.Height = m_Height;
+			textureCreateInfo.Format = TextureFormat::RGBA32;
+
+			Ref<Texture> texture = Texture::Create(textureCreateInfo);
 
 			if (Utils::IsDepthFormat(attachment.Format))
 				m_DepthAttachment = texture;
@@ -65,11 +68,11 @@ namespace Flux {
 
 	void OpenGLFramebuffer::Resize(uint32 width, uint32 height)
 	{
-		if (m_Data->Width == width && m_Data->Height == height)
+		if (m_Width == width && m_Height == height)
 			return;
 
-		m_Data->Width = width;
-		m_Data->Height = height;
+		m_Width = width;
+		m_Height = height;
 
 		Invalidate();
 	}
@@ -78,7 +81,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, hasColorAttachment = !m_ColorAttachments.empty(), hasDepthAttachment = (bool)m_DepthAttachment]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, width = m_Width, height = m_Height, hasColorAttachment = !m_ColorAttachments.empty(), hasDepthAttachment = (bool)m_DepthAttachment]()
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, data->FramebufferID);
 
@@ -109,7 +112,7 @@ namespace Flux {
 				glEnable(GL_SCISSOR_TEST);
 			}
 
-			glViewport(0, 0, data->Width, data->Height);
+			glViewport(0, 0, width, height);
 		});
 	}
 

@@ -42,8 +42,8 @@ namespace Flux {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
-		virtual Ref<Texture2D> GetColorAttachment(uint32 index = 0) const = 0;
-		virtual Ref<Texture2D> GetDepthAttachment() const = 0;
+		virtual Ref<Texture> GetColorAttachment(uint32 index = 0) const = 0;
+		virtual Ref<Texture> GetDepthAttachment() const = 0;
 
 		static Ref<Framebuffer> Create(const FramebufferCreateInfo& createInfo);
 	};

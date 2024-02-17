@@ -2,9 +2,6 @@
 
 #include "Flux/Runtime/Core/BaseTypes.h"
 
-#include <vector>
-#include <initializer_list>
-
 namespace Flux {
 
 	enum class VertexElementFormat : uint8

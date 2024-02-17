@@ -179,7 +179,7 @@ namespace Flux {
 					material.AlbedoColor = { Vector3(0.8f), 1.0f };
 
 				if (aiMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, material.Roughness) != AI_SUCCESS)
-					material.Roughness = 0.4f;
+					material.Roughness = 0.5f;
 
 				if (aiMaterial->Get(AI_MATKEY_METALLIC_FACTOR, material.Metalness) != AI_SUCCESS)
 					material.Metalness = 0.0f;
@@ -187,6 +187,7 @@ namespace Flux {
 				if (aiMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, material.Emission) != AI_SUCCESS)
 					material.Emission = 0.0f;
 
+#if 0
 				aiString aiTexturePath;
 
 				if (aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexturePath) == AI_SUCCESS)
@@ -198,8 +199,10 @@ namespace Flux {
 					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
 
-					material.AlbedoMap = Texture2D::Create(width, height);
+					material.AlbedoMap = Texture::Create(width, height);
 					material.AlbedoMap->SetPixelData(data, width * height);
+
+					stbi_image_free(data);
 				}
 
 				if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexturePath) == AI_SUCCESS)
@@ -211,9 +214,70 @@ namespace Flux {
 					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
 					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
 
-					material.NormalMap = Texture2D::Create(width, height);
+					material.NormalMap = Texture::Create(width, height);
 					material.NormalMap->SetPixelData(data, width * height);
+
+					stbi_image_free(data);
 				}
+
+				if (aiMaterial->GetTexture(aiTextureType_METALNESS, 0, &aiTexturePath) == AI_SUCCESS)
+				{
+					std::filesystem::path texturePath = path.parent_path() / aiTexturePath.C_Str();
+
+					int32 width;
+					int32 height;
+					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+
+					material.MetalnessMap = Texture::Create(width, height);
+					material.MetalnessMap->SetPixelData(data, width * height);
+
+					stbi_image_free(data);
+				}
+				else if (aiMaterial->GetTexture(aiTextureType_REFLECTION, 0, &aiTexturePath) == AI_SUCCESS)
+				{
+					std::filesystem::path texturePath = path.parent_path() / aiTexturePath.C_Str();
+
+					int32 width;
+					int32 height;
+					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+
+					material.MetalnessMap = Texture::Create(width, height);
+					material.MetalnessMap->SetPixelData(data, width * height);
+
+					stbi_image_free(data);
+				}
+
+				if (aiMaterial->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &aiTexturePath) == AI_SUCCESS)
+				{
+					std::filesystem::path texturePath = path.parent_path() / aiTexturePath.C_Str();
+
+					int32 width;
+					int32 height;
+					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+
+					material.RoughnessMap = Texture::Create(width, height);
+					material.RoughnessMap->SetPixelData(data, width * height);
+
+					stbi_image_free(data);
+				}
+				else if (aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexturePath) == AI_SUCCESS)
+				{
+					std::filesystem::path texturePath = path.parent_path() / aiTexturePath.C_Str();
+
+					int32 width;
+					int32 height;
+					uint8* data = stbi_load(texturePath.string().c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+					FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+
+					material.RoughnessMap = Texture::Create(width, height);
+					material.RoughnessMap->SetPixelData(data, width * height);
+
+					stbi_image_free(data);
+				}
+#endif
 			}
 		}
 

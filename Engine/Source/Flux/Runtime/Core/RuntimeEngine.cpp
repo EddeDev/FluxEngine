@@ -5,7 +5,46 @@
 
 #include <glad/glad.h>
 
+#include <stb_image.h>
+
 namespace Flux {
+
+	namespace TextureLoader	{
+
+		static Ref<Texture> LoadTextureFromFile(const std::filesystem::path& path)
+		{
+			std::string pathString = path.string();
+
+			int32 width;
+			int32 height;
+			void* data;
+
+			TextureFormat format;
+			if (stbi_is_hdr(pathString.c_str()))
+			{
+				data = stbi_loadf(pathString.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+				FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+				format = TextureFormat::RGBAFloat;
+			}
+			else
+			{
+				data = stbi_load(pathString.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
+				FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+				format = TextureFormat::RGBA32;
+			}
+
+			TextureCreateInfo createInfo;
+			createInfo.Width = width;
+			createInfo.Height = height;
+			createInfo.InitialData = data;
+			createInfo.Format = format;
+
+			Ref<Texture> texture = Texture::Create(createInfo);
+
+			stbi_image_free(data);
+			return texture;
+		}
+	}
 
 	RuntimeEngine::RuntimeEngine(const EngineCreateInfo& createInfo)
 		: Engine(createInfo)
@@ -24,8 +63,6 @@ namespace Flux {
 		uint32 width = m_MainWindow->GetWidth();
 		uint32 height = m_MainWindow->GetHeight();
 		m_EditorCamera.SetViewportSize(width, height);
-		m_EditorCamera.SetPosition({ 5.0f, 4.0f, -8.0f });
-		m_EditorCamera.SetRotation({ 20.0f, -25.0f, 0.0f });
 
 		m_Shader = Shader::Create("Resources/Shaders/Shader.glsl");
 
@@ -42,12 +79,59 @@ namespace Flux {
 		pipelineCreateInfo.BackfaceCulling = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 
-		m_GunMesh = Mesh::LoadFromFile("Resources/Meshes/makarov_pm/scene.gltf");
-		m_CityMesh = Mesh::LoadFromFile("Resources/Meshes/low_poly_city/scene.gltf");
-		m_BackpackMesh = Mesh::LoadFromFile("Resources/Meshes/backpack/backpack.obj");
+		m_SphereMesh = Mesh::LoadFromFile("Resources/Meshes/Sphere.glb");
+	
+		// m_CubemapTexture = TextureLoader::LoadTextureFromFile("Resources/Textures/newport_loft.hdr");
 
-		m_ActiveMesh = m_GunMesh;
-		m_NumVisibleSubmeshes = m_ActiveMesh->GetProperties().Submeshes.size();
+		{
+			uint32 whiteTextureData = 0xFFFFFFFF;
+
+			TextureCreateInfo textureCreateInfo;
+			textureCreateInfo.Width = 1;
+			textureCreateInfo.Height = 1;
+			textureCreateInfo.InitialData = &whiteTextureData;
+			textureCreateInfo.Format = TextureFormat::RGBA32;
+			m_WhiteTexture = Texture::Create(textureCreateInfo);
+		}
+
+		{
+			TextureCreateInfo textureCreateInfo;
+			textureCreateInfo.Width = 16;
+			textureCreateInfo.Height = 16;
+			textureCreateInfo.Format = TextureFormat::RGBA32;
+			m_CheckerboardTexture = Texture::Create(textureCreateInfo);
+
+			for (uint32 y = 0; y < m_CheckerboardTexture->GetHeight(); y++)
+			{
+				for (uint32 x = 0; x < m_CheckerboardTexture->GetWidth(); x++)
+				{
+					uint32 color = (x + y % 2 == 0) ? 0xFFFFFFFF : 0xFF808080;
+					m_CheckerboardTexture->SetPixel(x, y, color);
+				}
+			}
+			m_CheckerboardTexture->Apply();
+		}
+
+		// Default material
+		{
+#if 0
+			m_Material.AlbedoMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_basecolor.png");
+			m_Material.NormalMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_normal.png");
+			m_Material.RoughnessMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_roughness.png");
+			m_Material.MetalnessMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_metallic.png");
+#else
+			m_Material.AlbedoMap = m_WhiteTexture;
+			m_Material.NormalMap = m_WhiteTexture;
+			m_Material.RoughnessMap = m_WhiteTexture;
+			m_Material.MetalnessMap = m_WhiteTexture;
+#endif
+
+			m_Material.AlbedoColor = Vector4(1.0f);
+			m_Material.Metalness = 0.0f;
+			m_Material.Roughness = 0.5f;
+			m_Material.Emission = 0.0f;
+			m_Material.Name = "Default Material";
+		}
 	}
 
 	void RuntimeEngine::OnShutdown()
@@ -57,16 +141,11 @@ namespace Flux {
 		m_Shader = nullptr;
 		m_Pipeline = nullptr;
 
-		m_GunMesh = nullptr;
-		m_CityMesh = nullptr;
-		m_BackpackMesh = nullptr;
+		m_SphereMesh = nullptr;
 
-		m_ActiveMesh = nullptr;
+		m_Material = {};
+		m_CubemapTexture = nullptr;
 	}
-
-	static int32 s_NumMeshesX = 1;
-	static int32 s_NumMeshesZ = 1;
-	static float s_MeshSpacing = 0.0f;
 
 	void RuntimeEngine::OnUpdate()
 	{
@@ -78,134 +157,190 @@ namespace Flux {
 		float deltaTime = m_DeltaTime;
 		m_EditorCamera.OnUpdate(deltaTime);
 
-		if (m_ActiveMesh)
+		m_SphereMesh->GetVertexBuffer()->Bind();
+		m_Pipeline->Bind();
+		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
+		m_SphereMesh->GetIndexBuffer()->Bind();
+
+		Quaternion lightRotation = Quaternion(m_LightRotation * Math::DegToRad);
+		Vector3 lightDirection = lightRotation * Vector3(0.0f, 0.0f, 1.0f);
+
+		m_Shader->Bind();
+		m_Shader->SetUniform("u_LightColor", m_LightColor);
+		m_Shader->SetUniform("u_AmbientMultiplier", m_AmbientMultiplier);
+		m_Shader->SetUniform("u_ViewMatrix", m_EditorCamera.GetViewMatrix());
+		m_Shader->SetUniform("u_ViewProjectionMatrix", m_EditorCamera.GetProjectionMatrix() * m_EditorCamera.GetViewMatrix());
+		m_Shader->SetUniform("u_CameraPosition", m_EditorCamera.GetPosition());
+		m_Shader->SetUniform("u_LightDirection", lightDirection);
+
+		uint32 numSpheresX = 7;
+		uint32 numSpheresY = 7;
+		float spacing = 2.5f;
+
+		for (uint32 x = 0; x < numSpheresX; x++)
 		{
-			m_ActiveMesh->GetVertexBuffer()->Bind();
-			m_Pipeline->Bind();
-			m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
-			m_ActiveMesh->GetIndexBuffer()->Bind();
+			MaterialDescriptor material = m_Material;
+			material.Roughness = Math::Clamp((float)x / (float)numSpheresX, 0.05f, 1.0f);
 
-			m_Shader->Bind();
-			m_Shader->SetUniform("u_LightColor", m_LightColor);
-			m_Shader->SetUniform("u_LightPosition", m_LightPosition);
-			m_Shader->SetUniform("u_AmbientMultiplier", m_AmbientMultiplier);
-			m_Shader->SetUniform("u_ViewProjectionMatrix", m_EditorCamera.GetProjectionMatrix() * m_EditorCamera.GetViewMatrix());
-
-			auto& properties = m_ActiveMesh->GetProperties();
-
-			for (int32 x = 0; x < s_NumMeshesX; x++)
+			for (uint32 y = 0; y < numSpheresY; y++)
 			{
-				for (int32 z = 0; z < s_NumMeshesZ; z++)
-				{
-					Matrix4x4 meshTransform = Math::BuildTransformationMatrix({ (x - s_NumMeshesX / 2) * s_MeshSpacing, 0.0f, (z - s_NumMeshesZ / 2) * s_MeshSpacing }, Vector3(0.0f), Vector3(1.0f));
-
-					for (uint32 i = 0; i < m_NumVisibleSubmeshes; i++)
-					{
-						auto& submesh = properties.Submeshes[i];
-						m_Shader->SetUniform("u_Transform", meshTransform * submesh.WorldTransform);
-
-						auto& material = properties.Materials[submesh.MaterialIndex];
-						m_Shader->SetUniform("u_AlbedoColor", material.AlbedoColor);
-						m_Shader->SetUniform("u_Roughness", material.Roughness);
-						m_Shader->SetUniform("u_Metalness", material.Metalness);
-						m_Shader->SetUniform("u_Emission", material.Emission);
-
-						m_Shader->SetUniform("u_HasNormalMap", uint32((material.NormalMap && m_UseNormalMaps) ? 1 : 0));
-
-						if (material.AlbedoMap)
-						{
-							material.AlbedoMap->Bind(0);
-							m_Shader->SetUniform("u_AlbedoMap", 0);
-						}
-
-						if (material.NormalMap)
-						{
-							material.NormalMap->Bind(1);
-							m_Shader->SetUniform("u_NormalMap", 1);
-						}
-
-						m_Pipeline->DrawIndexed(
-							submesh.IndexFormat,
-							submesh.IndexCount,
-							submesh.StartIndexLocation,
-							submesh.BaseVertexLocation
-						);
-
-						if (material.AlbedoMap)
-							material.AlbedoMap->Unbind(0);
-						if (material.NormalMap)
-							material.NormalMap->Unbind(1);
-					}
-				}
+				material.Metalness = (float)y / (float)numSpheresY;
+			
+				Matrix4x4 transform = Math::BuildTransformationMatrix({ 
+					(float)(x - ((float)numSpheresX * 0.5f)) * spacing,
+					(float)(y - ((float)numSpheresY * 0.5f)) * spacing, 0.0f
+				}, Vector3(0.0f));
+				RenderMeshWithMaterial(m_SphereMesh, material, transform);
 			}
 		}
 
 		m_SwapchainFramebuffer->Unbind();
 	}
 
+	void RuntimeEngine::RenderMesh(Ref<Mesh> mesh, const Matrix4x4& transform)
+	{
+		mesh->GetVertexBuffer()->Bind();
+		m_Pipeline->Bind();
+		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
+		mesh->GetIndexBuffer()->Bind();
+
+		m_Shader->Bind();
+
+		auto& properties = m_SphereMesh->GetProperties();
+		for (size_t i = 0; i < properties.Submeshes.size(); i++)
+		{
+			auto& submesh = properties.Submeshes[i];
+			m_Shader->SetUniform("u_Transform", transform * submesh.WorldTransform);
+
+			auto& material = properties.Materials[submesh.MaterialIndex];
+			m_Shader->SetUniform("u_AlbedoColor", material.AlbedoColor);
+			m_Shader->SetUniform("u_Roughness", material.Roughness);
+			m_Shader->SetUniform("u_Metalness", material.Metalness);
+			m_Shader->SetUniform("u_Emission", material.Emission);
+
+			bool hasNormalMap = !material.NormalMap.Equals(m_WhiteTexture);
+			m_Shader->SetUniform("u_HasNormalMap", uint32(hasNormalMap ? 1 : 0));
+
+			if (material.AlbedoMap)
+			{
+				material.AlbedoMap->Bind(0);
+				m_Shader->SetUniform("u_AlbedoMap", 0);
+			}
+
+			if (material.NormalMap)
+			{
+				material.NormalMap->Bind(1);
+				m_Shader->SetUniform("u_NormalMap", 1);
+			}
+
+			if (material.RoughnessMap)
+			{
+				material.RoughnessMap->Bind(2);
+				m_Shader->SetUniform("u_RoughnessMap", 2);
+			}
+
+			if (material.MetalnessMap)
+			{
+				material.MetalnessMap->Bind(3);
+				m_Shader->SetUniform("u_MetalnessMap", 3);
+			}
+
+			m_Pipeline->DrawIndexed(
+				submesh.IndexFormat,
+				submesh.IndexCount,
+				submesh.StartIndexLocation,
+				submesh.BaseVertexLocation
+			);
+
+			if (material.AlbedoMap)
+				material.AlbedoMap->Unbind(0);
+			if (material.NormalMap)
+				material.NormalMap->Unbind(1);
+			if (material.RoughnessMap)
+				material.RoughnessMap->Unbind(2);
+			if (material.MetalnessMap)
+				material.MetalnessMap->Unbind(3);
+		}
+	}
+
+	void RuntimeEngine::RenderMeshWithMaterial(Ref<Mesh> mesh, const MaterialDescriptor& material, const Matrix4x4& transform)
+	{
+		mesh->GetVertexBuffer()->Bind();
+		m_Pipeline->Bind();
+		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
+		mesh->GetIndexBuffer()->Bind();
+
+		m_Shader->Bind();
+
+		auto& properties = m_SphereMesh->GetProperties();
+		for (size_t i = 0; i < properties.Submeshes.size(); i++)
+		{
+			auto& submesh = properties.Submeshes[i];
+			m_Shader->SetUniform("u_Transform", transform * submesh.WorldTransform);
+
+			m_Shader->SetUniform("u_AlbedoColor", material.AlbedoColor);
+			m_Shader->SetUniform("u_Roughness", material.Roughness);
+			m_Shader->SetUniform("u_Metalness", material.Metalness);
+			m_Shader->SetUniform("u_Emission", material.Emission);
+
+			bool hasNormalMap = !material.NormalMap.Equals(m_WhiteTexture);
+			m_Shader->SetUniform("u_HasNormalMap", uint32(hasNormalMap ? 1 : 0));
+
+			if (material.AlbedoMap)
+			{
+				material.AlbedoMap->Bind(0);
+				m_Shader->SetUniform("u_AlbedoMap", 0);
+			}
+
+			if (material.NormalMap)
+			{
+				material.NormalMap->Bind(1);
+				m_Shader->SetUniform("u_NormalMap", 1);
+			}
+
+			if (material.RoughnessMap)
+			{
+				material.RoughnessMap->Bind(2);
+				m_Shader->SetUniform("u_RoughnessMap", 2);
+			}
+
+			if (material.MetalnessMap)
+			{
+				material.MetalnessMap->Bind(3);
+				m_Shader->SetUniform("u_MetalnessMap", 3);
+			}
+
+			m_Pipeline->DrawIndexed(
+				submesh.IndexFormat,
+				submesh.IndexCount,
+				submesh.StartIndexLocation,
+				submesh.BaseVertexLocation
+			);
+
+			if (material.AlbedoMap)
+				material.AlbedoMap->Unbind(0);
+			if (material.NormalMap)
+				material.NormalMap->Unbind(1);
+			if (material.RoughnessMap)
+				material.RoughnessMap->Unbind(2);
+			if (material.MetalnessMap)
+				material.MetalnessMap->Unbind(3);
+		}
+	}
+
 	void RuntimeEngine::OnImGuiRender()
 	{
 		ImGui::Begin("Debug");
 
-		static const char* s_MeshStrings[]{
-			"Gun",
-			"City",
-			"Backpack"
-		};
+		ImGui::ColorEdit4("Albedo Color", m_Material.AlbedoColor.GetPointer());
 
-		int32 selectedMeshIndex;
-		if (m_ActiveMesh == m_GunMesh)
-			selectedMeshIndex = 0;
-		else if (m_ActiveMesh == m_CityMesh)
-			selectedMeshIndex = 1;
-		else if (m_ActiveMesh == m_BackpackMesh)
-			selectedMeshIndex = 2;
-		else
-			FLUX_VERIFY(false);
-
-		if (ImGui::Combo("Active Mesh", &selectedMeshIndex, s_MeshStrings, IM_ARRAYSIZE(s_MeshStrings)))
-		{
-			if (selectedMeshIndex == 0)
-				m_ActiveMesh = m_GunMesh;
-			else if (selectedMeshIndex == 1)
-				m_ActiveMesh = m_CityMesh;
-			else if (selectedMeshIndex == 2)
-				m_ActiveMesh = m_BackpackMesh;
-			else
-				FLUX_VERIFY(false);
-
-			m_NumVisibleSubmeshes = m_ActiveMesh->GetProperties().Submeshes.size();
-		}
-
-		ImGui::Text("Submesh Count: %d", m_ActiveMesh->GetProperties().Submeshes.size());
-		ImGui::DragInt("Submeshes", &m_NumVisibleSubmeshes, 0.1f, 0, m_ActiveMesh->GetProperties().Submeshes.size());
-
-		m_NumVisibleSubmeshes = Math::Clamp(m_NumVisibleSubmeshes, 0, (int32)m_ActiveMesh->GetProperties().Submeshes.size());
-
-		int32 lastVisibleIndex = (int32)m_NumVisibleSubmeshes - 1;
-		if (lastVisibleIndex >= 0)
-		{
-			auto& submesh = m_ActiveMesh->GetProperties().Submeshes.at(lastVisibleIndex);
-			ImGui::Text("Last Visible Index (%d):", lastVisibleIndex);
-			ImGui::Text("  Base Vertex Location: %d", submesh.BaseVertexLocation);
-			ImGui::Text("  Start Index Location: %d", submesh.StartIndexLocation);
-			ImGui::Text("  Vertex Count: %d", submesh.VertexCount);
-			ImGui::Text("  Index Count: %d", submesh.IndexCount);
-			ImGui::Text("  Index Format: %s", Utils::IndexFormatToString(submesh.IndexFormat));
-			ImGui::Text("  Mesh Name: %s", submesh.Name.c_str());
-			ImGui::Text("  Material Index: %d", submesh.MaterialIndex);
-			ImGui::Text("  Has Normals: %s", m_ActiveMesh->GetProperties().Materials[submesh.MaterialIndex].NormalMap ? "true" : "false");
-		}
-
-		ImGui::Separator();
-
-		ImGui::DragInt("Num Meshes X", &s_NumMeshesX, 0.1f, 0, 256);
-		ImGui::DragInt("Num Meshes Z", &s_NumMeshesZ, 0.1f, 0, 256);
-		ImGui::DragFloat("Spacing", &s_MeshSpacing, 0.1f, 0.0f, 1024.0f);
-
-		ImGui::Checkbox("Use Normal Maps", &m_UseNormalMaps);
 		ImGui::DragFloat("Ambient Multiplier", &m_AmbientMultiplier, 0.001f, 0.0f, 1.0f);
-		ImGui::DragFloat3("Light Position", m_LightPosition.GetPointer());
+
+		ImGui::DragFloat3("Light Rotation", m_LightRotation.GetPointer());
+		Quaternion lightRotation = Quaternion(m_LightRotation * Math::DegToRad);
+		Vector3 lightDirection = lightRotation * Vector3(0.0f, 0.0f, 1.0f);
+		ImGui::Text("Light Direction: [%.2f, %.2f, %.2f]", lightDirection.X, lightDirection.Y, lightDirection.Z);
+
 		ImGui::ColorEdit3("Light Color", m_LightColor.GetPointer());
 
 		ImGui::Text("Camera Position: [%.2f, %.2f, %.2f]", m_EditorCamera.GetPosition().X, m_EditorCamera.GetPosition().Y, m_EditorCamera.GetPosition().Z);

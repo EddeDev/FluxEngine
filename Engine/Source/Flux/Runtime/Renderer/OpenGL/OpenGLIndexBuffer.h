@@ -16,10 +16,11 @@ namespace Flux {
 
 		virtual void SetData(const void* data, uint64 size, uint64 offset = 0) override;
 
-		virtual uint64 GetSize() const override { return m_Data->Storage.GetSize(); }
+		virtual uint64 GetSize() const override { return m_Size; }
 
 		virtual IndexBufferUsage GetUsage() const override { return m_Usage; }
 	private:
+		uint64 m_Size;
 		IndexBufferUsage m_Usage;
 
 		struct OpenGLIndexBufferData

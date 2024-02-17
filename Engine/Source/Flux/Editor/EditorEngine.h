@@ -31,7 +31,7 @@ namespace Flux {
 	private:
 		Ref<Project> m_Project;
 
-		Ref<Texture2D> m_ViewportPlaceholderTexture;
+		Ref<Texture> m_ViewportPlaceholderTexture;
 		uint8* m_ViewportPlaceholderTextureData = nullptr;
 		uint32 m_ViewportWidth = 0;
 		uint32 m_ViewportHeight = 0;

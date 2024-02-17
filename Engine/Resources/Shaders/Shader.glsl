@@ -46,6 +46,11 @@ void main()
 #stage fragment
 #version 450 core
 
+const float PI = 3.1415926535897932;
+const float Epsilon = 0.00001;
+
+const vec3 Fdielectric = vec3(0.04);
+
 layout(location = 0) out vec4 o_Color;
 
 struct VertexOutput
@@ -71,10 +76,23 @@ uniform float u_Metalness;
 uniform float u_Emission;
 
 uniform vec3 u_LightColor;
-uniform vec3 u_LightPosition;
+uniform vec3 u_LightDirection;
+uniform vec3 u_CameraPosition;
 uniform float u_AmbientMultiplier;
 
 uniform uint u_HasNormalMap;
+
+struct
+{
+    vec3 AlbedoColor;
+    float Roughness;
+    float Metalness;
+    vec3 Normal;
+
+    vec3 ViewDirection;
+    vec3 F0;
+    float NdotV;
+} m_Params;
 
 vec3 CalculateNormal()
 {
@@ -90,28 +108,91 @@ vec3 CalculateNormal()
     return normal;
 }
 
+float DistributionGGX(float cosLh, float roughness)
+{
+    float alpha = roughness * roughness;
+    float alphaSq = alpha * alpha;
+
+    float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
+    return alphaSq / (PI * denom * denom);
+}
+
+float GeometrySchlickGGX(float cosTheta, float k)
+{
+    return cosTheta / (cosTheta * (1.0 - k) + k);
+}
+
+float GeometrySmith(float cosLi, float cosLo, float roughness)
+{
+    float r = roughness + 1.0;
+    float k = (r * r) / 8.0;
+    return GeometrySchlickGGX(cosLi, k) * GeometrySchlickGGX(cosLo, k);
+}
+
+vec3 FresnelSchlick(vec3 F0, float cosTheta, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 DirectionalLight(vec3 direction, vec3 color)
+{
+    vec3 Li = -direction;
+    vec3 Lh = normalize(Li + m_Params.ViewDirection);
+
+    float cosLi = max(dot(m_Params.Normal, Li), 0.0);
+    float cosLh = max(dot(m_Params.Normal, Lh), 0.0);
+
+    vec3 F = FresnelSchlick(m_Params.F0, max(dot(Lh, m_Params.ViewDirection), 0.0), m_Params.Roughness);
+    float D = DistributionGGX(cosLh, m_Params.Roughness);
+    float G = GeometrySmith(cosLi, m_Params.NdotV, m_Params.Roughness);
+
+    vec3 kd = (1.0 - F) * (1.0 - m_Params.Metalness);
+    vec3 diffuseBRDF = kd * m_Params.AlbedoColor;
+
+    vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * m_Params.NdotV);
+    specularBRDF = clamp(specularBRDF, vec3(0.0), vec3(10.0));
+
+    return (diffuseBRDF + specularBRDF) * color * cosLi;
+}
+
+const vec3 SkyColor = vec3(0.0);
+
+vec3 AmbientLighting()
+{
+    vec3 F = FresnelSchlick(m_Params.F0, m_Params.NdotV, m_Params.Roughness);
+    vec3 kd = (1.0 - F) * (1.0 - m_Params.Metalness);
+    vec3 diffuseIBL = m_Params.AlbedoColor * SkyColor;
+    return kd * diffuseIBL;
+}
+
 void main()
 {
-    vec3 normal = CalculateNormal();
+    // Parameters
+    m_Params.AlbedoColor = texture(u_AlbedoMap, Input.TexCoord).rgb * u_AlbedoColor.rgb;
+    m_Params.Metalness = texture(u_MetalnessMap, Input.TexCoord).r * u_Metalness;
+    m_Params.Roughness = texture(u_RoughnessMap, Input.TexCoord).r * u_Roughness;
+    m_Params.Normal = CalculateNormal();
+
+    m_Params.ViewDirection = normalize(u_CameraPosition - Input.WorldPosition);
+    m_Params.NdotV = max(dot(m_Params.Normal, m_Params.ViewDirection), 0.0);
+
+    m_Params.F0 = mix(Fdielectric, m_Params.AlbedoColor, m_Params.Metalness);
+
+    vec3 color = vec3(0.0);
+    color += DirectionalLight(u_LightDirection, u_LightColor);
+    color += AmbientLighting() * u_AmbientMultiplier;
     
-    vec3 objectColor = texture(u_AlbedoMap, Input.TexCoord).rgb * u_AlbedoColor.rgb;
+	{
+		float d = length(Input.ViewPosition);
+		float density = 0.015;
+		float gradient = 1.5;
+		float v = exp(-pow(d * density, gradient));
+		v = clamp(v, 0.0, 1.0);
 
-    vec3 lightDirection = normalize(u_LightPosition - Input.WorldPosition);
+		color = mix(SkyColor * u_AmbientMultiplier, color, v);
+	}
 
-    vec3 ambient = u_AmbientMultiplier * u_LightColor;
-    vec3 diffuse = max(dot(normal, lightDirection), 0.0) * u_LightColor;
+    color = pow(color, vec3(1.0 / 2.2));
 
-    vec3 finalColor = (ambient + diffuse) * objectColor;
-
-    if (false)
-    {
-        float frequency = 0.02;
-        float gray = 0.9;
-        
-        vec2 v1 = step(0.5, fract(frequency * gl_FragCoord.xy));
-        vec2 v2 = step(0.5, vec2(1.0) - fract(frequency * gl_FragCoord.xy));
-        finalColor *= gray + v1.x * v1.y + v2.x * v2.y;
-    }
-
-    o_Color = vec4(finalColor, 1.0);
+    o_Color = vec4(color, 1.0);
 }

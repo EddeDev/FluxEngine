@@ -16,17 +16,18 @@ namespace Flux {
 		virtual void Bind() const override;
 		virtual void Unbind() const override;
 
-		virtual Ref<Texture2D> GetColorAttachment(uint32 index = 0) const override { return m_ColorAttachments[index]; }
-		virtual Ref<Texture2D> GetDepthAttachment() const { return m_DepthAttachment; }
+		virtual Ref<Texture> GetColorAttachment(uint32 index = 0) const override { return m_ColorAttachments[index]; }
+		virtual Ref<Texture> GetDepthAttachment() const { return m_DepthAttachment; }
 	private:
-		std::vector<Ref<Texture2D>> m_ColorAttachments;
-		Ref<Texture2D> m_DepthAttachment;
+		std::vector<Ref<Texture>> m_ColorAttachments;
+		Ref<Texture> m_DepthAttachment;
+
+		uint32 m_Width = 0;
+		uint32 m_Height = 0;
 
 		struct OpenGLFramebufferData
 		{
 			FramebufferCreateInfo CreateInfo;
-			uint32 Width;
-			uint32 Height;
 			uint32 FramebufferID;
 		};
 

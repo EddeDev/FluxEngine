@@ -66,6 +66,7 @@ namespace Flux {
 
 		EngineCreateInfo m_CreateInfo;
 
+		Ref<Window> m_SplashScreenWindow;
 		Ref<Window> m_MainWindow;
 
 		Ref<EventQueue> m_EventQueue;

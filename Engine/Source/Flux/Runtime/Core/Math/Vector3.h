@@ -6,6 +6,7 @@ namespace Flux {
 
 	struct Vector3
 	{
+	public:
 		union
 		{
 			struct
@@ -104,6 +105,16 @@ namespace Flux {
 			Y *= invLength;
 			Z *= invLength;
 			return *this;
+		}
+
+		Vector3 Normalized() const
+		{
+			Vector3 result;
+			float invLength = 1.0f / Length();
+			result.X = X * invLength;
+			result.Y = Y * invLength;
+			result.Z = Z * invLength;
+			return result;
 		}
 
 		Vector3 operator-() const

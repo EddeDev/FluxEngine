@@ -7,11 +7,11 @@
 
 namespace Flux {
 
-	Ref<Texture2D> Texture2D::Create(uint32 width, uint32 height, TextureFormat format)
+	Ref<Texture> Texture::Create(const TextureCreateInfo& createInfo)
 	{
 		switch (Engine::Get().GetGraphicsAPI())
 		{
-		case GraphicsAPI::OpenGL: return Ref<OpenGLTexture2D>::Create(width, height, format);
+		case GraphicsAPI::OpenGL: return Ref<OpenGLTexture>::Create(createInfo);
 		}
 		FLUX_ASSERT(false, "Unknown Graphics API.");
 		return nullptr;

@@ -96,7 +96,7 @@ namespace Flux {
 		if (viewportHeight < 0)
 			viewportHeight = 0;
 
-		if (m_ViewportWidth != viewportWidth || m_ViewportHeight != m_ViewportHeight)
+		if (m_ViewportWidth != viewportWidth || m_ViewportHeight != viewportHeight)
 		{
 			m_ViewportWidth = viewportWidth;
 			m_ViewportHeight = viewportHeight;
@@ -107,8 +107,6 @@ namespace Flux {
 				uint32 size = m_ViewportWidth * m_ViewportHeight * 4;
 				m_ViewportPlaceholderTextureData = new uint8[size];
 
-				m_ViewportPlaceholderTexture = Texture2D::Create(m_ViewportWidth, m_ViewportHeight, TextureFormat::RGBA32);
-
 				for (uint32 i = 0; i < size; i += 4)
 				{
 					m_ViewportPlaceholderTextureData[i + 0] = (uint8)(((float)i / (float)size) * 86);
@@ -117,7 +115,21 @@ namespace Flux {
 					m_ViewportPlaceholderTextureData[i + 3] = 0xFF;
 				}
 
-				m_ViewportPlaceholderTexture->SetPixelData(m_ViewportPlaceholderTextureData, m_ViewportWidth * m_ViewportHeight);
+				if (m_ViewportPlaceholderTexture)
+				{
+					m_ViewportPlaceholderTexture->Reinitialize(m_ViewportWidth, m_ViewportHeight, TextureFormat::RGBA32);
+					m_ViewportPlaceholderTexture->SetData(m_ViewportPlaceholderTextureData, m_ViewportWidth * m_ViewportHeight);
+					m_ViewportPlaceholderTexture->Apply();
+				}
+				else
+				{
+					TextureCreateInfo textureCreateInfo;
+					textureCreateInfo.Width = m_ViewportWidth;
+					textureCreateInfo.Height = m_ViewportHeight;
+					textureCreateInfo.InitialData = m_ViewportPlaceholderTextureData;
+					textureCreateInfo.Format = TextureFormat::RGBA32;
+					m_ViewportPlaceholderTexture = Texture::Create(textureCreateInfo);
+				}
 			}
 		}
 

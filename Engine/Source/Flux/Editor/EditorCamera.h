@@ -33,7 +33,7 @@ namespace Flux {
 		float m_Boost = 3.5f;
 
 		float m_VerticalFOV = 60.0f;
-		float m_NearClip = 0.1f;
+		float m_NearClip = 0.01f;
 		float m_FarClip = 1000.0f;
 	};
 
