@@ -24,12 +24,12 @@ namespace Flux {
 
 		for (const auto& attachment : createInfo.Attachments)
 		{
-			TextureCreateInfo textureCreateInfo;
-			textureCreateInfo.Width = m_Width;
-			textureCreateInfo.Height = m_Height;
-			textureCreateInfo.Format = TextureFormat::RGBA32;
+			TextureProperties properties;
+			properties.Width = m_Width;
+			properties.Height = m_Height;
+			properties.Format = TextureFormat::RGBA32;
 
-			Ref<Texture> texture = Texture::Create(textureCreateInfo);
+			Ref<Texture> texture = Texture::Create(properties);
 
 			if (Utils::IsDepthFormat(attachment.Format))
 				m_DepthAttachment = texture;

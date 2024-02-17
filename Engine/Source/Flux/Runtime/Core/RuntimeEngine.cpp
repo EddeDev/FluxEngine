@@ -33,14 +33,13 @@ namespace Flux {
 				format = TextureFormat::RGBA32;
 			}
 
-			TextureCreateInfo createInfo;
-			createInfo.Width = width;
-			createInfo.Height = height;
-			createInfo.InitialData = data;
-			createInfo.Format = format;
+			TextureProperties properties;
+			properties.Width = width;
+			properties.Height = height;
+			properties.Format = format;
+			properties.MipCount = Utils::ComputeTextureMipCount(width, height);
 
-			Ref<Texture> texture = Texture::Create(createInfo);
-
+			Ref<Texture> texture = Texture::Create(properties, data);
 			stbi_image_free(data);
 			return texture;
 		}
@@ -86,24 +85,23 @@ namespace Flux {
 		{
 			uint32 whiteTextureData = 0xFFFFFFFF;
 
-			TextureCreateInfo textureCreateInfo;
-			textureCreateInfo.Width = 1;
-			textureCreateInfo.Height = 1;
-			textureCreateInfo.InitialData = &whiteTextureData;
-			textureCreateInfo.Format = TextureFormat::RGBA32;
-			m_WhiteTexture = Texture::Create(textureCreateInfo);
+			TextureProperties properties;
+			properties.Width = 1;
+			properties.Height = 1;
+			properties.Format = TextureFormat::RGBA32;
+			m_WhiteTexture = Texture::Create(properties, &whiteTextureData);
 		}
 
 		{
-			TextureCreateInfo textureCreateInfo;
-			textureCreateInfo.Width = 16;
-			textureCreateInfo.Height = 16;
-			textureCreateInfo.Format = TextureFormat::RGBA32;
-			m_CheckerboardTexture = Texture::Create(textureCreateInfo);
+			TextureProperties properties;
+			properties.Width = 16;
+			properties.Height = 16;
+			properties.Format = TextureFormat::RGBA32;
+			m_CheckerboardTexture = Texture::Create(properties);
 
-			for (uint32 y = 0; y < m_CheckerboardTexture->GetHeight(); y++)
+			for (uint32 y = 0; y < m_CheckerboardTexture->GetProperties().Height; y++)
 			{
-				for (uint32 x = 0; x < m_CheckerboardTexture->GetWidth(); x++)
+				for (uint32 x = 0; x < m_CheckerboardTexture->GetProperties().Width; x++)
 				{
 					uint32 color = (x + y % 2 == 0) ? 0xFFFFFFFF : 0xFF808080;
 					m_CheckerboardTexture->SetPixel(x, y, color);
@@ -114,7 +112,7 @@ namespace Flux {
 
 		// Default material
 		{
-#if 0
+#if 1
 			m_Material.AlbedoMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_basecolor.png");
 			m_Material.NormalMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_normal.png");
 			m_Material.RoughnessMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_roughness.png");
@@ -144,6 +142,8 @@ namespace Flux {
 		m_SphereMesh = nullptr;
 
 		m_Material = {};
+		m_WhiteTexture = nullptr;
+		m_CheckerboardTexture = nullptr;
 		m_CubemapTexture = nullptr;
 	}
 

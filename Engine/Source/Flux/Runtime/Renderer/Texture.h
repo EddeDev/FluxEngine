@@ -17,16 +17,14 @@ namespace Flux {
 		RGBAFloat
 	};
 
-	struct TextureCreateInfo
+	struct TextureProperties
 	{
-		const void* InitialData = nullptr;
-
 		TextureFormat Format = TextureFormat::RGBA32;
 
 		uint32 Width = 1;
 		uint32 Height = 1;
 		uint32 Layers = 1;
-		uint32 Mips = 1;
+		uint32 MipCount = 1;
 		uint32 Samples = 1;
 	};
 
@@ -35,7 +33,7 @@ namespace Flux {
 	public:
 		virtual ~Texture() {}
 
-		virtual void Reinitialize(uint32 width, uint32 height, TextureFormat format) = 0;
+		virtual void Reinitialize(const TextureProperties& properties) = 0;
 		virtual void Apply() = 0;
 
 		virtual void Bind(uint32 slot = 0) const = 0;
@@ -44,10 +42,9 @@ namespace Flux {
 		virtual void SetPixel(uint32 x, uint32 y, uint32 value) = 0;
 		virtual void SetData(const void* data, uint32 count) = 0;
 
-		virtual uint32 GetWidth() const = 0;
-		virtual uint32 GetHeight() const = 0;
+		virtual const TextureProperties& GetProperties() const = 0;
 
-		static Ref<Texture> Create(const TextureCreateInfo& createInfo);
+		static Ref<Texture> Create(const TextureProperties& properties, const void* data = nullptr);
 	};
 
 	namespace Utils {
@@ -73,6 +70,22 @@ namespace Flux {
 		{
 			// TODO
 			return false;
+		}
+
+		inline static uint32 ComputeTextureMipCount(uint32 width, uint32 height)
+		{
+			return (uint32)Math::Floor(Math::Log2(Math::Max((float)width, (float)height))) + 1;
+		}
+
+		inline static std::pair<uint32, uint32> ComputeTextureMipSize(uint32 width, uint32 height, uint32 mip)
+		{
+			while (mip > 0)
+			{
+				width /= 2;
+				height /= 2;
+				mip--;
+			}
+			return { width, height };
 		}
 
 	}

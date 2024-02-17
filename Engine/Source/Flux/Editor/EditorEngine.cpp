@@ -117,18 +117,21 @@ namespace Flux {
 
 				if (m_ViewportPlaceholderTexture)
 				{
-					m_ViewportPlaceholderTexture->Reinitialize(m_ViewportWidth, m_ViewportHeight, TextureFormat::RGBA32);
+					TextureProperties properties = m_ViewportPlaceholderTexture->GetProperties();
+					properties.Width = m_ViewportWidth;
+					properties.Height = m_ViewportHeight;
+					m_ViewportPlaceholderTexture->Reinitialize(properties);
+
 					m_ViewportPlaceholderTexture->SetData(m_ViewportPlaceholderTextureData, m_ViewportWidth * m_ViewportHeight);
 					m_ViewportPlaceholderTexture->Apply();
 				}
 				else
 				{
-					TextureCreateInfo textureCreateInfo;
-					textureCreateInfo.Width = m_ViewportWidth;
-					textureCreateInfo.Height = m_ViewportHeight;
-					textureCreateInfo.InitialData = m_ViewportPlaceholderTextureData;
-					textureCreateInfo.Format = TextureFormat::RGBA32;
-					m_ViewportPlaceholderTexture = Texture::Create(textureCreateInfo);
+					TextureProperties properties;
+					properties.Width = m_ViewportWidth;
+					properties.Height = m_ViewportHeight;
+					properties.Format = TextureFormat::RGBA32;
+					m_ViewportPlaceholderTexture = Texture::Create(properties, m_ViewportPlaceholderTextureData);
 				}
 			}
 		}

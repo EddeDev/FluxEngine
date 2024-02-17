@@ -69,6 +69,12 @@ namespace Flux {
 		}
 
 		template<typename T>
+		inline T Log2(T value)
+		{
+			return log2(value);
+		}
+
+		template<typename T>
 		inline T Log10(T value)
 		{
 			return log10(value);
