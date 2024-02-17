@@ -61,19 +61,40 @@ namespace Flux {
 			return 0;
 		}
 
+		static uint32 GetTextureTarget(const TextureProperties& properties)
+		{
+			if (properties.Samples > 1)
+			{
+				if (properties.Layers > 1)
+					return GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+				else
+					return GL_TEXTURE_2D_MULTISAMPLE;
+			}
+			else
+			{
+				if (properties.Layers > 1)
+					return GL_TEXTURE_2D_ARRAY;
+				else
+					return GL_TEXTURE_2D;
+			}
+
+			FLUX_VERIFY(false);
+			return 0;
+		}
+
 	}
 
-	OpenGLTexture::OpenGLTexture(const TextureCreateInfo& createInfo)
+	OpenGLTexture::OpenGLTexture(const TextureProperties& properties, const void* data)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		m_Data = new OpenGLTextureData();
 
-		Reinitialize(createInfo.Width, createInfo.Height, createInfo.Format);
+		Reinitialize(properties);
 
-		if (createInfo.InitialData)
+		if (data)
 		{
-			SetData(createInfo.InitialData, createInfo.Width * createInfo.Height);
+			SetData(data, properties.Width * properties.Height);
 			Apply();
 		}
 	}
@@ -92,30 +113,46 @@ namespace Flux {
 		m_LocalStorage.Release();
 	}
 
-	void OpenGLTexture::Reinitialize(uint32 width, uint32 height, TextureFormat format)
+	void OpenGLTexture::Reinitialize(const TextureProperties& properties)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 		
-		m_Width = width;
-		m_Height = height;
-		m_Format = format;
+		m_Properties = properties;
 
-		m_LocalStorage.Allocate(width * height * Utils::GetTextureFormatBPP(format));
+		m_LocalStorage.Allocate(properties.Width * properties.Height * Utils::GetTextureFormatBPP(properties.Format));
 		m_LocalStorage.FillWithZeros();
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, width = m_Width, height = m_Height, format = m_Format]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, properties = m_Properties]() mutable
 		{
 			if (data->TextureID)
 				glDeleteTextures(1, &data->TextureID);
 
-			glCreateTextures(GL_TEXTURE_2D, 1, &data->TextureID);
+			data->TextureTarget = Utils::GetTextureTarget(properties);
+			data->Format = Utils::OpenGLTextureFormat(properties.Format);
+			data->InternalFormat = Utils::OpenGLInternalTextureFormat(properties.Format);
+			data->DataType = Utils::OpenGLTextureDataType(properties.Format);
+
+			glCreateTextures(data->TextureTarget, 1, &data->TextureID);
+
+			if (properties.Layers > 1)
+			{
+				if (properties.Samples > 1)
+					glTextureStorage3DMultisample(data->TextureID, properties.Samples, data->InternalFormat, properties.Width, properties.Height, properties.Layers, GL_FALSE);
+				else
+					glTextureStorage3D(data->TextureID, properties.MipCount, data->InternalFormat, properties.Width, properties.Height, properties.Layers);
+			}
+			else
+			{
+				if (properties.Samples > 1)
+					glTextureStorage2DMultisample(data->TextureID, properties.MipCount, data->InternalFormat, properties.Width, properties.Height, GL_FALSE);
+				else
+					glTextureStorage2D(data->TextureID, properties.MipCount, data->InternalFormat, properties.Width, properties.Height);
+			}
 
 			glTextureParameteri(data->TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTextureParameteri(data->TextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTextureParameteri(data->TextureID, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTextureParameteri(data->TextureID, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-			glTextureStorage2D(data->TextureID, 1, Utils::OpenGLInternalTextureFormat(format), width, height);
 		});
 	}
 
@@ -125,12 +162,34 @@ namespace Flux {
 
 		uint32 bufferIndex = m_Data->Storage.SetData(m_LocalStorage);
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, width = m_Width, height = m_Height, format = m_Format]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, properties = m_Properties]() mutable
 		{
 			auto& buffer = data->Storage.GetBuffer(bufferIndex);
-			glTextureSubImage2D(data->TextureID, 0, 0, 0, width, height, Utils::OpenGLTextureFormat(format), Utils::OpenGLTextureDataType(format), buffer.Data);
+
+			if (properties.Layers > 1)
+			{
+				uint32 bytesPerPixel = Utils::GetTextureFormatBPP(properties.Format);
+
+				uint32 offset = 0;
+				for (uint32 layer = 0; layer < properties.Layers; layer++)
+				{
+					for (uint32 mip = 0; mip < properties.MipCount; mip++)
+					{
+						auto [width, height] = Utils::ComputeTextureMipSize(properties.Width, properties.Height, mip);
+						glTextureSubImage3D(data->TextureID, mip, 0, 0, 0, width, height, layer, data->Format, data->DataType, buffer.GetData(offset));
+						offset += width * height * bytesPerPixel;
+					}
+				}
+			}
+			else
+			{
+				glTextureSubImage2D(data->TextureID, 0, 0, 0, properties.Width, properties.Height, data->Format, data->DataType, buffer.Data);
+			}
+
 			data->Storage.SetBufferAvailable(bufferIndex);
-			glGenerateTextureMipmap(data->TextureID);
+
+			if (properties.MipCount > 1)
+				glGenerateTextureMipmap(data->TextureID);
 		});
 	}
 
@@ -158,15 +217,17 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		uint32 bytesPerPixel = Utils::GetTextureFormatBPP(m_Format);
-		m_LocalStorage.SetData(&value, bytesPerPixel, (y * m_Width + x) * bytesPerPixel);
+		uint32 index = (y * m_Properties.Width + x);
+		FLUX_VERIFY(index < m_Properties.Width * m_Properties.Height);
+		uint32 bytesPerPixel = Utils::GetTextureFormatBPP(m_Properties.Format);
+		m_LocalStorage.SetData(&value, bytesPerPixel, index * bytesPerPixel);
 	}
 
 	void OpenGLTexture::SetData(const void* data, uint32 count)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		uint32 bytesPerPixel = Utils::GetTextureFormatBPP(m_Format);
+		uint32 bytesPerPixel = Utils::GetTextureFormatBPP(m_Properties.Format);
 		m_LocalStorage.SetData(data, count * bytesPerPixel);
 	}
 
