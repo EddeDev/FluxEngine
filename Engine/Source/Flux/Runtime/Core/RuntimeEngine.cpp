@@ -78,6 +78,10 @@ namespace Flux {
 		pipelineCreateInfo.BackfaceCulling = true;
 		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
 
+		FramebufferCreateInfo framebufferCreateInfo;
+		framebufferCreateInfo.Attachments = { TextureFormat::RGBA32, TextureFormat::Depth24Stencil8 };
+		m_Framebuffer = Framebuffer::Create(framebufferCreateInfo);
+
 		m_SphereMesh = Mesh::LoadFromFile("Resources/Meshes/Sphere.glb");
 	
 		// m_CubemapTexture = TextureLoader::LoadTextureFromFile("Resources/Textures/newport_loft.hdr");
@@ -151,49 +155,49 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		m_SwapchainFramebuffer->Bind();
-
 		// TODO
 		float deltaTime = m_DeltaTime;
 		m_EditorCamera.OnUpdate(deltaTime);
 
-		m_SphereMesh->GetVertexBuffer()->Bind();
-		m_Pipeline->Bind();
-		m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
-		m_SphereMesh->GetIndexBuffer()->Bind();
-
-		Quaternion lightRotation = Quaternion(m_LightRotation * Math::DegToRad);
-		Vector3 lightDirection = lightRotation * Vector3(0.0f, 0.0f, 1.0f);
-
-		m_Shader->Bind();
-		m_Shader->SetUniform("u_LightColor", m_LightColor);
-		m_Shader->SetUniform("u_AmbientMultiplier", m_AmbientMultiplier);
-		m_Shader->SetUniform("u_ViewMatrix", m_EditorCamera.GetViewMatrix());
-		m_Shader->SetUniform("u_ViewProjectionMatrix", m_EditorCamera.GetProjectionMatrix() * m_EditorCamera.GetViewMatrix());
-		m_Shader->SetUniform("u_CameraPosition", m_EditorCamera.GetPosition());
-		m_Shader->SetUniform("u_LightDirection", lightDirection);
-
-		uint32 numSpheresX = 7;
-		uint32 numSpheresY = 7;
-		float spacing = 2.5f;
-
-		for (uint32 x = 0; x < numSpheresX; x++)
+		m_SwapchainFramebuffer->Bind();
 		{
-			MaterialDescriptor material = m_Material;
-			material.Roughness = Math::Clamp((float)x / (float)numSpheresX, 0.05f, 1.0f);
+			m_SphereMesh->GetVertexBuffer()->Bind();
+			m_Pipeline->Bind();
+			m_Pipeline->Scissor(0, 0, m_MainWindow->GetWidth(), m_MainWindow->GetHeight());
+			m_SphereMesh->GetIndexBuffer()->Bind();
 
-			for (uint32 y = 0; y < numSpheresY; y++)
+			Quaternion lightRotation = Quaternion(m_LightRotation * Math::DegToRad);
+			Vector3 lightDirection = lightRotation * Vector3(0.0f, 0.0f, 1.0f);
+
+			m_Shader->Bind();
+			m_Shader->SetUniform("u_LightColor", m_LightColor);
+			m_Shader->SetUniform("u_AmbientMultiplier", m_AmbientMultiplier);
+			m_Shader->SetUniform("u_ViewMatrix", m_EditorCamera.GetViewMatrix());
+			m_Shader->SetUniform("u_ViewProjectionMatrix", m_EditorCamera.GetProjectionMatrix() * m_EditorCamera.GetViewMatrix());
+			m_Shader->SetUniform("u_CameraPosition", m_EditorCamera.GetPosition());
+			m_Shader->SetUniform("u_LightDirection", lightDirection);
+
+			uint32 numSpheresX = 7;
+			uint32 numSpheresY = 7;
+			float spacing = 2.5f;
+
+			for (uint32 x = 0; x < numSpheresX; x++)
 			{
-				material.Metalness = (float)y / (float)numSpheresY;
-			
-				Matrix4x4 transform = Math::BuildTransformationMatrix({ 
-					(float)(x - ((float)numSpheresX * 0.5f)) * spacing,
-					(float)(y - ((float)numSpheresY * 0.5f)) * spacing, 0.0f
-				}, Vector3(0.0f));
-				RenderMeshWithMaterial(m_SphereMesh, material, transform);
+				MaterialDescriptor material = m_Material;
+				material.Roughness = Math::Clamp((float)x / (float)numSpheresX, 0.05f, 1.0f);
+
+				for (uint32 y = 0; y < numSpheresY; y++)
+				{
+					material.Metalness = (float)y / (float)numSpheresY;
+
+					Matrix4x4 transform = Math::BuildTransformationMatrix({
+						(float)(x - ((float)numSpheresX * 0.5f)) * spacing,
+						(float)(y - ((float)numSpheresY * 0.5f)) * spacing, 0.0f
+						}, Vector3(0.0f));
+					RenderMeshWithMaterial(m_SphereMesh, material, transform);
+				}
 			}
 		}
-
 		m_SwapchainFramebuffer->Unbind();
 	}
 

@@ -12,6 +12,8 @@ namespace Flux {
 
 		virtual void Reinitialize(const TextureProperties& properties) override;
 		virtual void Apply() override;
+		virtual void AttachToFramebuffer(uint32 attachmentIndex) override;
+		virtual void AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer) override;
 
 		virtual void Bind(uint32 slot) const override;
 		virtual void Unbind(uint32 slot) const override;

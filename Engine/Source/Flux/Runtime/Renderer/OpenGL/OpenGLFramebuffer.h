@@ -19,15 +19,15 @@ namespace Flux {
 		virtual Ref<Texture> GetColorAttachment(uint32 index = 0) const override { return m_ColorAttachments[index]; }
 		virtual Ref<Texture> GetDepthAttachment() const { return m_DepthAttachment; }
 	private:
-		std::vector<Ref<Texture>> m_ColorAttachments;
-		Ref<Texture> m_DepthAttachment;
-
+		FramebufferCreateInfo m_CreateInfo;
 		uint32 m_Width = 0;
 		uint32 m_Height = 0;
 
+		std::vector<Ref<Texture>> m_ColorAttachments;
+		Ref<Texture> m_DepthAttachment;
+
 		struct OpenGLFramebufferData
 		{
-			FramebufferCreateInfo CreateInfo;
 			uint32 FramebufferID;
 		};
 

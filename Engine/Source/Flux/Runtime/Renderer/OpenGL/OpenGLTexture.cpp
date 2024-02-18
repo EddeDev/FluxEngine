@@ -14,14 +14,15 @@ namespace Flux {
 		{
 			switch (format)
 			{
-			case TextureFormat::R8:        return GL_R;
-			case TextureFormat::RG16:      return GL_RG;
-			case TextureFormat::RGB24:     return GL_RGB;
-			case TextureFormat::RGBA32:    return GL_RGBA;
-			case TextureFormat::RFloat:    return GL_R;
-			case TextureFormat::RGFloat:   return GL_RG;
-			case TextureFormat::RGBFloat:  return GL_RGB;
-			case TextureFormat::RGBAFloat: return GL_RGBA;
+			case TextureFormat::R8:              return GL_R;
+			case TextureFormat::RG16:            return GL_RG;
+			case TextureFormat::RGB24:           return GL_RGB;
+			case TextureFormat::RGBA32:          return GL_RGBA;
+			case TextureFormat::RFloat:          return GL_R;
+			case TextureFormat::RGFloat:         return GL_RG;
+			case TextureFormat::RGBFloat:        return GL_RGB;
+			case TextureFormat::RGBAFloat:       return GL_RGBA;
+			case TextureFormat::Depth24Stencil8: return GL_DEPTH_STENCIL;
 			}
 			FLUX_VERIFY(false, "Unknown texture format!");
 			return 0;
@@ -31,14 +32,15 @@ namespace Flux {
 		{
 			switch (format)
 			{
-			case TextureFormat::R8:        return GL_R8;
-			case TextureFormat::RG16:      return GL_RG8;
-			case TextureFormat::RGB24:     return GL_RGB8;
-			case TextureFormat::RGBA32:    return GL_RGBA8;
-			case TextureFormat::RFloat:    return GL_R32F;
-			case TextureFormat::RGFloat:   return GL_RG32F;
-			case TextureFormat::RGBFloat:  return GL_RGB32F;
-			case TextureFormat::RGBAFloat: return GL_RGBA32F;
+			case TextureFormat::R8:              return GL_R8;
+			case TextureFormat::RG16:            return GL_RG8;
+			case TextureFormat::RGB24:           return GL_RGB8;
+			case TextureFormat::RGBA32:          return GL_RGBA8;
+			case TextureFormat::RFloat:          return GL_R32F;
+			case TextureFormat::RGFloat:         return GL_RG32F;
+			case TextureFormat::RGBFloat:        return GL_RGB32F;
+			case TextureFormat::RGBAFloat:       return GL_RGBA32F;
+			case TextureFormat::Depth24Stencil8: return GL_DEPTH24_STENCIL8;
 			}
 			FLUX_VERIFY(false, "Unknown texture format!");
 			return 0;
@@ -48,14 +50,15 @@ namespace Flux {
 		{
 			switch (format)
 			{
-			case TextureFormat::R8:        return GL_UNSIGNED_BYTE;
-			case TextureFormat::RG16:      return GL_UNSIGNED_BYTE;
-			case TextureFormat::RGB24:     return GL_UNSIGNED_BYTE;
-			case TextureFormat::RGBA32:    return GL_UNSIGNED_BYTE;
-			case TextureFormat::RFloat:    return GL_FLOAT;
-			case TextureFormat::RGFloat:   return GL_FLOAT;
-			case TextureFormat::RGBFloat:  return GL_FLOAT;
-			case TextureFormat::RGBAFloat: return GL_FLOAT;
+			case TextureFormat::R8:              return GL_UNSIGNED_BYTE;
+			case TextureFormat::RG16:            return GL_UNSIGNED_BYTE;
+			case TextureFormat::RGB24:           return GL_UNSIGNED_BYTE;
+			case TextureFormat::RGBA32:          return GL_UNSIGNED_BYTE;
+			case TextureFormat::RFloat:          return GL_FLOAT;
+			case TextureFormat::RGFloat:         return GL_FLOAT;
+			case TextureFormat::RGBFloat:        return GL_FLOAT;
+			case TextureFormat::RGBAFloat:       return GL_FLOAT;
+			case TextureFormat::Depth24Stencil8: return GL_UNSIGNED_INT_24_8;
 			}
 			FLUX_VERIFY(false, "Unknown texture format!");
 			return 0;
@@ -119,8 +122,11 @@ namespace Flux {
 		
 		m_Properties = properties;
 
-		m_LocalStorage.Allocate(properties.Width * properties.Height * Utils::GetTextureFormatBPP(properties.Format));
-		m_LocalStorage.FillWithZeros();
+		if (properties.Usage == TextureUsage::Texture)
+		{
+			m_LocalStorage.Allocate(properties.Width * properties.Height * Utils::GetTextureFormatBPP(properties.Format));
+			m_LocalStorage.FillWithZeros();
+		}
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, properties = m_Properties]() mutable
 		{
@@ -149,10 +155,13 @@ namespace Flux {
 					glTextureStorage2D(data->TextureID, properties.MipCount, data->InternalFormat, properties.Width, properties.Height);
 			}
 
-			glTextureParameteri(data->TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTextureParameteri(data->TextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTextureParameteri(data->TextureID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTextureParameteri(data->TextureID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			if (properties.Usage == TextureUsage::Texture)
+			{
+				glTextureParameteri(data->TextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				glTextureParameteri(data->TextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTextureParameteri(data->TextureID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTextureParameteri(data->TextureID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			}
 		});
 	}
 
@@ -193,6 +202,28 @@ namespace Flux {
 		});
 	}
 
+	void OpenGLTexture::AttachToFramebuffer(uint32 attachmentIndex)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, attachmentIndex, format = m_Properties.Format]()
+		{
+			uint32 attachment = Utils::IsDepthFormat(format) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0 + attachmentIndex;
+			glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, data->TextureTarget, data->TextureID, 0);
+		});
+	}
+
+	void OpenGLTexture::AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, attachmentIndex, layer, format = m_Properties.Format]()
+		{
+			uint32 attachment = Utils::IsDepthFormat(format) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0 + attachmentIndex;
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, attachment, data->TextureID, 0, layer);
+		});
+	}
+
 	void OpenGLTexture::Bind(uint32 slot) const
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
@@ -217,6 +248,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
+		FLUX_VERIFY(m_Properties.Usage == TextureUsage::Texture);
 		uint32 index = (y * m_Properties.Width + x);
 		FLUX_VERIFY(index < m_Properties.Width * m_Properties.Height);
 		uint32 bytesPerPixel = Utils::GetTextureFormatBPP(m_Properties.Format);
@@ -227,6 +259,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
+		FLUX_VERIFY(m_Properties.Usage == TextureUsage::Texture);
 		uint32 bytesPerPixel = Utils::GetTextureFormatBPP(m_Properties.Format);
 		m_LocalStorage.SetData(data, count * bytesPerPixel);
 	}

@@ -14,12 +14,21 @@ namespace Flux {
 		RFloat,
 		RGFloat,
 		RGBFloat,
-		RGBAFloat
+		RGBAFloat,
+
+		Depth24Stencil8
+	};
+
+	enum class TextureUsage : uint8
+	{
+		Texture = 0,
+		Attachment
 	};
 
 	struct TextureProperties
 	{
 		TextureFormat Format = TextureFormat::RGBA32;
+		TextureUsage Usage = TextureUsage::Texture;
 
 		uint32 Width = 1;
 		uint32 Height = 1;
@@ -35,6 +44,8 @@ namespace Flux {
 
 		virtual void Reinitialize(const TextureProperties& properties) = 0;
 		virtual void Apply() = 0;
+		virtual void AttachToFramebuffer(uint32 attachmentIndex) = 0;
+		virtual void AttachToFramebufferLayer(uint32 attachmentIndex, uint32 layer) = 0;
 
 		virtual void Bind(uint32 slot = 0) const = 0;
 		virtual void Unbind(uint32 slot = 0) const = 0;
@@ -68,8 +79,7 @@ namespace Flux {
 
 		inline static bool IsDepthFormat(TextureFormat format)
 		{
-			// TODO
-			return false;
+			return format == TextureFormat::Depth24Stencil8;
 		}
 
 		inline static uint32 ComputeTextureMipCount(uint32 width, uint32 height)

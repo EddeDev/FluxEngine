@@ -8,8 +8,28 @@
 
 namespace Flux {
 
+	namespace Utils {
+
+		static const char* OpenGLFramebufferStatusToString(uint32 status)
+		{
+			switch (status)
+			{
+			case GL_FRAMEBUFFER_COMPLETE:                       return "GL_FRAMEBUFFER_COMPLETE";
+			case GL_FRAMEBUFFER_UNDEFINED:                      return "GL_FRAMEBUFFER_UNDEFINED";
+			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:          return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:  return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+			case GL_FRAMEBUFFER_UNSUPPORTED:                    return "GL_FRAMEBUFFER_UNSUPPORTED";
+			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:         return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+			case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:      return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT";
+			}
+			FLUX_VERIFY(false);
+			return "";
+		}
+
+	}
+
 	OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferCreateInfo& createInfo)
-		: m_Width(createInfo.Width), m_Height(createInfo.Height)
+		: m_CreateInfo(createInfo), m_Width(createInfo.Width), m_Height(createInfo.Height)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
@@ -20,7 +40,6 @@ namespace Flux {
 		}
 
 		m_Data = new OpenGLFramebufferData();
-		m_Data->CreateInfo = createInfo;
 
 		for (const auto& attachment : createInfo.Attachments)
 		{
@@ -28,6 +47,7 @@ namespace Flux {
 			properties.Width = m_Width;
 			properties.Height = m_Height;
 			properties.Format = TextureFormat::RGBA32;
+			properties.Usage = TextureUsage::Attachment;
 
 			Ref<Texture> texture = Texture::Create(properties);
 
@@ -54,15 +74,75 @@ namespace Flux {
 
 	void OpenGLFramebuffer::Invalidate()
 	{
-		if (m_Data->CreateInfo.SwapchainTarget)
+		if (m_CreateInfo.SwapchainTarget)
 			return;
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data]() mutable
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, createInfo = m_CreateInfo]() mutable
 		{
 			if (data->FramebufferID)
 				glDeleteFramebuffers(1, &data->FramebufferID);
 
 			glCreateFramebuffers(1, &data->FramebufferID);
+			glObjectLabel(GL_FRAMEBUFFER, data->FramebufferID, createInfo.DebugLabel.size(), createInfo.DebugLabel.c_str());
+		
+			glBindFramebuffer(GL_FRAMEBUFFER, data->FramebufferID);
+		});
+
+		uint32 attachmentIndex = 0;
+		for (const auto& attachment : m_CreateInfo.Attachments)
+		{
+			if (Utils::IsDepthFormat(attachment.Format))
+			{
+				TextureProperties properties = m_DepthAttachment->GetProperties();
+				if (properties.Width != m_Width || properties.Height != m_Height)
+				{
+					properties.Width = m_Width;
+					properties.Height = m_Height;
+
+					m_DepthAttachment->Reinitialize(properties);
+				}
+
+				m_DepthAttachment->AttachToFramebuffer(attachmentIndex);
+			}
+			else
+			{
+				TextureProperties properties = m_ColorAttachments[attachmentIndex]->GetProperties();
+				if (properties.Width != m_Width || properties.Height != m_Height)
+				{
+					properties.Width = m_Width;
+					properties.Height = m_Height;
+
+					m_ColorAttachments[attachmentIndex]->Reinitialize(properties);
+				}
+
+				m_ColorAttachments[attachmentIndex]->AttachToFramebuffer(attachmentIndex);
+			}
+
+			attachmentIndex++;
+		}
+
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, numColorAttachments = (uint32)m_ColorAttachments.size()]() mutable
+		{
+			if (numColorAttachments > 0)
+			{
+				std::vector<uint32> buffers(numColorAttachments);
+				for (uint32 i = 0; i < numColorAttachments; i++)
+					buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+				glDrawBuffers(buffers.size(), buffers.data());
+			}
+			else
+			{
+				glDrawBuffer(GL_NONE);
+			}
+
+			uint32 status = glCheckNamedFramebufferStatus(data->FramebufferID, GL_FRAMEBUFFER);
+			if (status != GL_FRAMEBUFFER_COMPLETE)
+			{
+				FLUX_ERROR_CATEGORY("OpenGL", "{0}", Utils::OpenGLFramebufferStatusToString(status));
+				FLUX_VERIFY(false);
+			}
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		});
 	}
 
@@ -81,11 +161,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, width = m_Width, height = m_Height, hasColorAttachment = !m_ColorAttachments.empty(), hasDepthAttachment = (bool)m_DepthAttachment]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, width = m_Width, height = m_Height, createInfo = m_CreateInfo, hasColorAttachment = !m_ColorAttachments.empty(), hasDepthAttachment = (bool)m_DepthAttachment]()
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, data->FramebufferID);
-
-			const auto& createInfo = data->CreateInfo;
 
 			uint32 clearFlags = 0;
 
@@ -120,11 +198,10 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, hasDepthAttachment = (bool)m_DepthAttachment]()
+		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, createInfo = m_CreateInfo, hasDepthAttachment = (bool)m_DepthAttachment]()
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-			const auto& createInfo = data->CreateInfo;
 			if ((hasDepthAttachment || createInfo.SwapchainTarget) && createInfo.ClearDepthBuffer)
 				glDepthMask(GL_FALSE);
 		});
