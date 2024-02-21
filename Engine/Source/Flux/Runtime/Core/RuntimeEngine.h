@@ -24,14 +24,6 @@ namespace Flux {
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
 	private:
-		struct Material
-		{
-			Vector3 AlbedoColor = Vector3(1.0f);
-			float Roughness = 0.5f;
-			float Metalness = 0.0f;
-			float Emission = 0.0f;
-		};
-
 		void RenderMesh(Ref<Mesh> mesh, const Matrix4x4& transform);
 		void RenderMeshWithMaterial(Ref<Mesh> mesh, const MaterialDescriptor& material, const Matrix4x4& transform);
 
@@ -39,6 +31,7 @@ namespace Flux {
 	private:
 		Ref<Shader> m_Shader;
 		Ref<GraphicsPipeline> m_Pipeline;
+		Ref<Framebuffer> m_Framebuffer;
 
 		MaterialDescriptor m_Material;
 		Ref<Mesh> m_SphereMesh;

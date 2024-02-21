@@ -1,8 +1,13 @@
 #pragma once
 
 #include "Flux/Runtime/Core/Engine.h"
+#include "Flux/Runtime/Renderer/Mesh.h"
 
 #include "Project/Project.h"
+#include "EditorCamera.h"
+
+#include "Flux/Runtime/Scene/Scene.h"
+#include "Flux/Runtime/Scene/Entity.h"
 
 namespace Flux {
 
@@ -18,6 +23,11 @@ namespace Flux {
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
 	private:
+		void DrawEntityHierarchy(Entity entity);
+
+		void RenderMesh(Ref<Mesh> mesh, const Matrix4x4& transform);
+		void RenderMeshWithMaterial(Ref<Mesh> mesh, const MaterialDescriptor& material, const Matrix4x4& transform);
+
 		void CreateWindowMenus();
 
 		void OnWindowMenuEvent(WindowMenuEvent& event);
@@ -29,10 +39,23 @@ namespace Flux {
 		void SaveProject();
 		void CloseProject();
 	private:
+		Ref<Shader> m_Shader;
+		Ref<GraphicsPipeline> m_Pipeline;
+		Ref<Framebuffer> m_Framebuffer;
+		Ref<Mesh> m_SphereMesh;
+		Ref<Texture> m_CubemapTexture;
+		Ref<Texture> m_WhiteTexture;
+		Ref<Texture> m_CheckerboardTexture;
+		MaterialDescriptor m_Material;
+		EditorCamera m_EditorCamera;
+		Vector3 m_LightColor = Vector3(0.9f, 0.87f, 0.96f);
+		Vector3 m_LightRotation = Vector3(50.0f, -30.0f, 0.0f);
+		float m_AmbientMultiplier = 0.0f;
+
 		Ref<Project> m_Project;
 
-		Ref<Texture> m_ViewportPlaceholderTexture;
-		uint8* m_ViewportPlaceholderTextureData = nullptr;
+		Scene m_Scene;
+
 		uint32 m_ViewportWidth = 0;
 		uint32 m_ViewportHeight = 0;
 

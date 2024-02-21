@@ -23,7 +23,7 @@ namespace Flux {
 		void NewFrame();
 		void Render();
 
-		void Image(Ref<Texture> texture, const ImVec2& size);
+		void Image(Ref<Texture> texture, const ImVec2& size, const ImVec2& uv0 = ImVec2(0.0f, 0.0f), const ImVec2& uv1 = ImVec2(1.0f, 1.0f));
 
 		void OnEvent(Event& event) const;
 	private:

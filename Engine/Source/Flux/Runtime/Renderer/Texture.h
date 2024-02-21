@@ -35,6 +35,11 @@ namespace Flux {
 		uint32 Layers = 1;
 		uint32 MipCount = 1;
 		uint32 Samples = 1;
+
+		bool IsValid() const
+		{
+			return Format != TextureFormat::None && Width > 0 && Height > 0 && Layers > 0 && MipCount > 0 && Samples > 0;
+		}
 	};
 
 	class Texture : public ReferenceCounted

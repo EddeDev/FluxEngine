@@ -23,13 +23,21 @@ namespace Flux {
 			if (stbi_is_hdr(pathString.c_str()))
 			{
 				data = stbi_loadf(pathString.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-				FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+				if (!data)
+				{
+					FLUX_ERROR("Failed to load texture: {0} ({1})", pathString, stbi_failure_reason());
+					return nullptr;
+				}
 				format = TextureFormat::RGBAFloat;
 			}
 			else
 			{
 				data = stbi_load(pathString.c_str(), &width, &height, nullptr, STBI_rgb_alpha);
-				FLUX_VERIFY(data, "{0}", stbi_failure_reason());
+				if (!data)
+				{
+					FLUX_ERROR("Failed to load texture: {0} ({1})", pathString, stbi_failure_reason());
+					return nullptr;
+				}
 				format = TextureFormat::RGBA32;
 			}
 

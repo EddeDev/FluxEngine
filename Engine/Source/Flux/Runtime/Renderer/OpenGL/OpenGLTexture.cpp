@@ -120,6 +120,7 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 		
+		FLUX_VERIFY(properties.IsValid());
 		m_Properties = properties;
 
 		if (properties.Usage == TextureUsage::Texture)

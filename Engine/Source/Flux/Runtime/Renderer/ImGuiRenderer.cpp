@@ -559,13 +559,13 @@ namespace Flux {
 		}
 	}
 
-	void ImGuiRenderer::Image(Ref<Texture> texture, const ImVec2& size)
+	void ImGuiRenderer::Image(Ref<Texture> texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		ImTextureID textureID = (ImTextureID)(uintptr)(m_TextureMap.size() + 1);
 		m_TextureMap[textureID] = texture;
-		ImGui::Image(textureID, size);
+		ImGui::Image(textureID, size, uv0, uv1);
 	}
 
 	void ImGuiRenderer::OnEvent(Event& event) const
