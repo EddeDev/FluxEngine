@@ -22,11 +22,11 @@ namespace Flux {
 			auto it = m_Components.find(entityID);
 			FLUX_VERIFY(it != m_Components.end(), "Entity does not exist!");
 
-			size_t hash = typeid(T).hash_code();
-			FLUX_VERIFY(it->second.find(hash) == it->second.end(), "Component already exists!");
+			size_t hashCode = typeid(T).hash_code();
+			FLUX_VERIFY(it->second.find(hashCode) == it->second.end(), "Component already exists!");
 
 			T* component = new T(std::forward<TArgs>(args)...);
-			it->second[hash] = component;
+			it->second[hashCode] = component;
 			return *component;
 		}
 
@@ -36,9 +36,9 @@ namespace Flux {
 			auto it = m_Components.find(entityID);
 			FLUX_VERIFY(it != m_Components.end(), "Entity does not exist!");
 
-			size_t hash = typeid(T).hash_code();
+			size_t hashCode = typeid(T).hash_code();
 
-			auto mapIt = it->second.find(hash);
+			auto mapIt = it->second.find(hashCode);
 			FLUX_VERIFY(mapIt != it->second.end(), "Component does not exist!");
 			return *(T*)mapIt->second;
 		}
@@ -49,9 +49,9 @@ namespace Flux {
 			auto it = m_Components.find(entityID);
 			FLUX_VERIFY(it != m_Components.end(), "Entity does not exist!");
 
-			size_t hash = typeid(T).hash_code();
+			size_t hashCode = typeid(T).hash_code();
 
-			auto mapIt = it->second.find(hash);
+			auto mapIt = it->second.find(hashCode);
 			if (mapIt != it->second.end())
 				return (T*)mapIt->second;
 
@@ -64,9 +64,9 @@ namespace Flux {
 			auto it = m_Components.find(entityID);
 			FLUX_VERIFY(it != m_Components.end(), "Entity does not exist!");
 
-			size_t hash = typeid(T).hash_code();
+			size_t hashCode = typeid(T).hash_code();
 
-			auto mapIt = it->second.find(hash);
+			auto mapIt = it->second.find(hashCode);
 			if (mapIt != it->second.end())
 			{
 				delete mapIt->second;
@@ -83,8 +83,8 @@ namespace Flux {
 			auto it = m_Components.find(entityID);
 			FLUX_VERIFY(it != m_Components.end(), "Entity does not exist!");
 
-			size_t hash = typeid(T).hash_code();
-			return it->second.find(hash) != it->second.end();
+			size_t hashCode = typeid(T).hash_code();
+			return it->second.find(hashCode) != it->second.end();
 		}
 
 		template<typename TComponent>
@@ -94,7 +94,7 @@ namespace Flux {
 			FLUX_VERIFY(it != m_Components.end(), "Entity does not exist!");
 
 			std::vector<TComponent*> result;
-			for (auto& [hash, component] : it->second)
+			for (auto& [hashCode, component] : it->second)
 				result.push_back((TComponent*)component);
 			return result;
 		}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Texture.h"
+#include "CompareFunction.h"
 
 namespace Flux {
 
@@ -22,6 +23,7 @@ namespace Flux {
 		bool ClearColorBuffer = true;
 
 		float DepthClearValue = 0.0f;
+		CompareFunction DepthCompareFunction = CompareFunction::GreaterOrEqual;
 		bool ClearDepthBuffer = true;
 
 		bool SwapchainTarget = false;

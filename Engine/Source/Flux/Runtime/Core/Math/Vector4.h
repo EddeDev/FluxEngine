@@ -98,6 +98,12 @@ namespace Flux {
 			return *this;
 		}
 
+		// TODO: constructor
+		Vector3 ToVector3() const
+		{
+			return { X, Y, Z };
+		}
+
 		Vector4 operator-() const
 		{
 			return { -X, -Y, -Z, -W };

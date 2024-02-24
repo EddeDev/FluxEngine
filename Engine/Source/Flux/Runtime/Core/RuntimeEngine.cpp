@@ -3,8 +3,6 @@
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
-#include <glad/glad.h>
-
 #include <stb_image.h>
 
 namespace Flux {

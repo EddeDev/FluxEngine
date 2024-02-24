@@ -29,6 +29,9 @@ namespace Flux {
 		createInfo.MaximizeOnStart = true;
 		createInfo.Multithreaded = true;
 
+		// Disable V-Sync
+		createInfo.VSync = false;
+
 		return new EditorEngine(createInfo);
 #endif
 

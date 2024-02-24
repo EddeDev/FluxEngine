@@ -145,6 +145,7 @@ namespace Flux {
 				glDisable(GL_SCISSOR_TEST);
 
 			glDepthMask(createInfo.DepthWrite);
+			// glDepthRange(1.0f, 0.0f);
 
 			glFrontFace(GL_CW);
 			glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);

@@ -37,9 +37,11 @@ namespace Flux {
 		void SubmitToEventThread(std::function<void()> function);
 		void SubmitToMainThread(std::function<void()> function);
 
+		float GetTime() const { return m_CurrentTime; }
 		float GetDeltaTime() const { return m_DeltaTime; }
 
 		Ref<Window> GetMainWindow() const { return m_MainWindow; }
+		Ref<ImGuiRenderer> GetImGuiRenderer() const { return m_ImGuiRenderer; }
 
 		GraphicsAPI GetGraphicsAPI() const { return m_GraphicsAPI; }
 

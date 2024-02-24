@@ -1,9 +1,12 @@
 #include "FluxPCH.h"
 #include "EditorEngine.h"
 
-#include "Flux/Runtime/Renderer/Renderer.h"
+#include "EditorWindow.h"
+#include "HierarchyWindow.h"
+#include "InspectorWindow.h"
+#include "ViewportWindow.h"
 
-#include <glad/glad.h>
+#include "Flux/Runtime/Renderer/Renderer.h"
 
 namespace Flux {
 
@@ -22,81 +25,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		uint32 width = m_MainWindow->GetWidth();
-		uint32 height = m_MainWindow->GetHeight();
-		m_EditorCamera.SetViewportSize(width, height);
+		EditorWindowManager::Init();
+		EditorWindowManager::AddWindow<HierarchyWindow>("Hierarchy");
+		EditorWindowManager::AddWindow<InspectorWindow>("Inspector");
+		EditorWindowManager::AddWindow<ViewportWindow>("Viewport");
 
-		m_Shader = Shader::Create("Resources/Shaders/Shader.glsl");
-
-		GraphicsPipelineCreateInfo pipelineCreateInfo;
-		pipelineCreateInfo.VertexDeclaration = {
-			{ "a_Position", VertexElementFormat::Float3 },
-			{ "a_Normal", VertexElementFormat::Float3 },
-			{ "a_Tangent", VertexElementFormat::Float3 },
-			{ "a_Binormal", VertexElementFormat::Float3 },
-			{ "a_TexCoord", VertexElementFormat::Float2 }
-		};
-		pipelineCreateInfo.DepthTest = true;
-		pipelineCreateInfo.DepthWrite = true;
-		pipelineCreateInfo.BackfaceCulling = true;
-		m_Pipeline = GraphicsPipeline::Create(pipelineCreateInfo);
-
-		FramebufferCreateInfo framebufferCreateInfo;
-		framebufferCreateInfo.Attachments = { TextureFormat::RGBA32, TextureFormat::Depth24Stencil8 };
-		m_Framebuffer = Framebuffer::Create(framebufferCreateInfo);
-
-		m_SphereMesh = Mesh::LoadFromFile("Resources/Meshes/Sphere.glb");
-
-		// m_CubemapTexture = TextureLoader::LoadTextureFromFile("Resources/Textures/newport_loft.hdr");
-
-		{
-			uint32 whiteTextureData = 0xFFFFFFFF;
-
-			TextureProperties properties;
-			properties.Width = 1;
-			properties.Height = 1;
-			properties.Format = TextureFormat::RGBA32;
-			m_WhiteTexture = Texture::Create(properties, &whiteTextureData);
-		}
-
-		{
-			TextureProperties properties;
-			properties.Width = 16;
-			properties.Height = 16;
-			properties.Format = TextureFormat::RGBA32;
-			m_CheckerboardTexture = Texture::Create(properties);
-
-			for (uint32 y = 0; y < m_CheckerboardTexture->GetProperties().Height; y++)
-			{
-				for (uint32 x = 0; x < m_CheckerboardTexture->GetProperties().Width; x++)
-				{
-					uint32 color = (x + y % 2 == 0) ? 0xFFFFFFFF : 0xFF808080;
-					m_CheckerboardTexture->SetPixel(x, y, color);
-				}
-			}
-			m_CheckerboardTexture->Apply();
-		}
-
-		// Default material
-		{
-#if 0
-			m_Material.AlbedoMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_basecolor.png");
-			m_Material.NormalMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_normal.png");
-			m_Material.RoughnessMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_roughness.png");
-			m_Material.MetalnessMap = TextureLoader::LoadTextureFromFile("Resources/Textures/rustediron2/rustediron2_metallic.png");
-#else
-			m_Material.AlbedoMap = m_WhiteTexture;
-			m_Material.NormalMap = m_WhiteTexture;
-			m_Material.RoughnessMap = m_WhiteTexture;
-			m_Material.MetalnessMap = m_WhiteTexture;
-#endif
-
-			m_Material.AlbedoColor = Vector4(1.0f);
-			m_Material.Metalness = 0.0f;
-			m_Material.Roughness = 0.5f;
-			m_Material.Emission = 0.0f;
-			m_Material.Name = "Default Material";
-		}
+		m_EditorScene = Ref<Scene>::Create();
+		EditorWindowManager::SetActiveScene(m_EditorScene);
 
 		OpenProject();
 	}
@@ -105,6 +40,8 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
+		EditorWindowManager::Shutdown();
+
 		CloseProject();
 	}
 
@@ -112,243 +49,9 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-#if 0
-		// Clear color (TODO: remove)
-		FLUX_SUBMIT_RENDER_COMMAND([windowWidth = m_MainWindow->GetWidth(), windowHeight = m_MainWindow->GetHeight()]() mutable
-		{
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-			glDisable(GL_SCISSOR_TEST);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glEnable(GL_SCISSOR_TEST);
-
-			glViewport(0, 0, windowWidth, windowHeight);
-		});
-#endif
-
-		// TODO
-		float deltaTime = m_DeltaTime;
-		m_EditorCamera.OnUpdate(deltaTime);
-
-		if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
-		{
-			m_EditorCamera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-			m_Framebuffer->Resize(m_ViewportWidth, m_ViewportHeight);
-
-			m_Framebuffer->Bind();
-			{
-				Quaternion lightRotation = Quaternion(m_LightRotation * Math::DegToRad);
-				Vector3 lightDirection = lightRotation * Vector3(0.0f, 0.0f, 1.0f);
-
-				m_Shader->Bind();
-				m_Shader->SetUniform("u_LightColor", m_LightColor);
-				m_Shader->SetUniform("u_AmbientMultiplier", m_AmbientMultiplier);
-				m_Shader->SetUniform("u_ViewMatrix", m_EditorCamera.GetViewMatrix());
-				m_Shader->SetUniform("u_ViewProjectionMatrix", m_EditorCamera.GetProjectionMatrix() * m_EditorCamera.GetViewMatrix());
-				m_Shader->SetUniform("u_CameraPosition", m_EditorCamera.GetPosition());
-				m_Shader->SetUniform("u_LightDirection", lightDirection);
-
-				uint32 numSpheresX = 7;
-				uint32 numSpheresY = 7;
-				float spacing = 2.5f;
-
-				for (uint32 x = 0; x < numSpheresX; x++)
-				{
-					MaterialDescriptor material = m_Material;
-					material.Roughness = Math::Clamp((float)x / (float)numSpheresX, 0.05f, 1.0f);
-
-					for (uint32 y = 0; y < numSpheresY; y++)
-					{
-						material.Metalness = (float)y / (float)numSpheresY;
-
-						Matrix4x4 transform = Math::BuildTransformationMatrix({
-							(float)(x - ((float)numSpheresX * 0.5f)) * spacing,
-							(float)(y - ((float)numSpheresY * 0.5f)) * spacing, 0.0f
-							}, Vector3(0.0f));
-						RenderMeshWithMaterial(m_SphereMesh, material, transform);
-					}
-				}
-			}
-			m_Framebuffer->Unbind();
-		}
+		EditorWindowManager::OnUpdate();
 	}
-
-	static Entity s_SelectedEntity;
-
-	void EditorEngine::DrawEntityHierarchy(Entity entity)
-	{
-		ImGuiTreeNodeFlags flags = 0;
-		flags |= ImGuiTreeNodeFlags_OpenOnArrow;
-		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-		if (s_SelectedEntity == entity)
-			flags |= ImGuiTreeNodeFlags_Selected;
-		if (!entity.HasChildren())
-			flags |= ImGuiTreeNodeFlags_Leaf;
-
-		bool open = ImGui::TreeNodeEx(entity.GetName().c_str(), flags);
-
-		if (ImGui::BeginDragDropSource())
-		{
-			EntityID entityID = entity;
-			ImGui::SetDragDropPayload("Hierarchy_Entity", &entityID, sizeof(EntityID));
-			ImGui::EndDragDropSource();
-		}
-
-		if (ImGui::BeginDragDropTarget())
-		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Hierarchy_Entity"))
-			{
-				EntityID entityID = *(EntityID*)payload->Data;
-
-				Entity childEntity = { entityID, &m_Scene };
-				childEntity.SetParent(entity);
-			}
-			ImGui::EndDragDropTarget();
-		}
-
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-			s_SelectedEntity = entity;
-
-		if (open)
-		{
-			for (Entity childEntity : entity.GetChildren())
-				DrawEntityHierarchy(childEntity);
-
-			ImGui::TreePop();
-		}
-	}
-
-	void EditorEngine::RenderMesh(Ref<Mesh> mesh, const Matrix4x4& transform)
-	{
-		mesh->GetVertexBuffer()->Bind();
-		m_Pipeline->Bind();
-		m_Pipeline->Scissor(0, 0, m_ViewportWidth, m_ViewportHeight);
-		mesh->GetIndexBuffer()->Bind();
-
-		m_Shader->Bind();
-
-		auto& properties = m_SphereMesh->GetProperties();
-		for (size_t i = 0; i < properties.Submeshes.size(); i++)
-		{
-			auto& submesh = properties.Submeshes[i];
-			m_Shader->SetUniform("u_Transform", transform * submesh.WorldTransform);
-
-			auto& material = properties.Materials[submesh.MaterialIndex];
-			m_Shader->SetUniform("u_AlbedoColor", material.AlbedoColor);
-			m_Shader->SetUniform("u_Roughness", material.Roughness);
-			m_Shader->SetUniform("u_Metalness", material.Metalness);
-			m_Shader->SetUniform("u_Emission", material.Emission);
-
-			bool hasNormalMap = !material.NormalMap.Equals(m_WhiteTexture);
-			m_Shader->SetUniform("u_HasNormalMap", uint32(hasNormalMap ? 1 : 0));
-
-			if (material.AlbedoMap)
-			{
-				material.AlbedoMap->Bind(0);
-				m_Shader->SetUniform("u_AlbedoMap", 0);
-			}
-
-			if (material.NormalMap)
-			{
-				material.NormalMap->Bind(1);
-				m_Shader->SetUniform("u_NormalMap", 1);
-			}
-
-			if (material.RoughnessMap)
-			{
-				material.RoughnessMap->Bind(2);
-				m_Shader->SetUniform("u_RoughnessMap", 2);
-			}
-
-			if (material.MetalnessMap)
-			{
-				material.MetalnessMap->Bind(3);
-				m_Shader->SetUniform("u_MetalnessMap", 3);
-			}
-
-			m_Pipeline->DrawIndexed(
-				submesh.IndexFormat,
-				submesh.IndexCount,
-				submesh.StartIndexLocation,
-				submesh.BaseVertexLocation
-			);
-
-			if (material.AlbedoMap)
-				material.AlbedoMap->Unbind(0);
-			if (material.NormalMap)
-				material.NormalMap->Unbind(1);
-			if (material.RoughnessMap)
-				material.RoughnessMap->Unbind(2);
-			if (material.MetalnessMap)
-				material.MetalnessMap->Unbind(3);
-		}
-	}
-
-	void EditorEngine::RenderMeshWithMaterial(Ref<Mesh> mesh, const MaterialDescriptor& material, const Matrix4x4& transform)
-	{
-		mesh->GetVertexBuffer()->Bind();
-		m_Pipeline->Bind();
-		m_Pipeline->Scissor(0, 0, m_ViewportWidth, m_ViewportHeight);
-		mesh->GetIndexBuffer()->Bind();
-
-		m_Shader->Bind();
-
-		auto& properties = m_SphereMesh->GetProperties();
-		for (size_t i = 0; i < properties.Submeshes.size(); i++)
-		{
-			auto& submesh = properties.Submeshes[i];
-			m_Shader->SetUniform("u_Transform", transform * submesh.WorldTransform);
-
-			m_Shader->SetUniform("u_AlbedoColor", material.AlbedoColor);
-			m_Shader->SetUniform("u_Roughness", material.Roughness);
-			m_Shader->SetUniform("u_Metalness", material.Metalness);
-			m_Shader->SetUniform("u_Emission", material.Emission);
-
-			bool hasNormalMap = !material.NormalMap.Equals(m_WhiteTexture);
-			m_Shader->SetUniform("u_HasNormalMap", uint32(hasNormalMap ? 1 : 0));
-
-			if (material.AlbedoMap)
-			{
-				material.AlbedoMap->Bind(0);
-				m_Shader->SetUniform("u_AlbedoMap", 0);
-			}
-
-			if (material.NormalMap)
-			{
-				material.NormalMap->Bind(1);
-				m_Shader->SetUniform("u_NormalMap", 1);
-			}
-
-			if (material.RoughnessMap)
-			{
-				material.RoughnessMap->Bind(2);
-				m_Shader->SetUniform("u_RoughnessMap", 2);
-			}
-
-			if (material.MetalnessMap)
-			{
-				material.MetalnessMap->Bind(3);
-				m_Shader->SetUniform("u_MetalnessMap", 3);
-			}
-
-			m_Pipeline->DrawIndexed(
-				submesh.IndexFormat,
-				submesh.IndexCount,
-				submesh.StartIndexLocation,
-				submesh.BaseVertexLocation
-			);
-
-			if (material.AlbedoMap)
-				material.AlbedoMap->Unbind(0);
-			if (material.NormalMap)
-				material.NormalMap->Unbind(1);
-			if (material.RoughnessMap)
-				material.RoughnessMap->Unbind(2);
-			if (material.MetalnessMap)
-				material.MetalnessMap->Unbind(3);
-		}
-	}
-
+	
 	void EditorEngine::OnImGuiRender()
 	{
 		ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -378,6 +81,9 @@ namespace Flux {
 
 		ImGui::End();
 
+		EditorWindowManager::OnImGuiRender();
+
+#if 0
 		ImGui::Begin("Properties");
 
 		ImGui::ColorEdit4("Albedo Color", m_Material.AlbedoColor.GetPointer());
@@ -395,68 +101,10 @@ namespace Flux {
 		ImGui::Text("Camera Rotation: [%.2f, %.2f, %.2f]", m_EditorCamera.GetRotation().X, m_EditorCamera.GetRotation().Y, m_EditorCamera.GetRotation().Z);
 
 		ImGui::End();
+#endif
 
-		ImGui::Begin("Hierarchy");
-
-		ImVec2 minRegion = ImGui::GetWindowContentRegionMin();
-		ImVec2 maxRegion = ImGui::GetWindowContentRegionMax();
-		ImVec2 windowPos = ImGui::GetWindowPos();
-
-		ImVec2 bounds[2];
-		bounds[0] = { minRegion.x + windowPos.x, minRegion.y + windowPos.y };
-		bounds[1] = { maxRegion.x + windowPos.x, maxRegion.y + windowPos.y };
-
-		if (ImGui::Button("+"))
-		{
-			static uint32 entityIndex = 0;
-			entityIndex++;
-			m_Scene.CreateEntity(fmt::format("Entity {0}", entityIndex));
-		}
-
-		for (Entity entity : m_Scene.GetRootEntities())
-			DrawEntityHierarchy(entity);
-
-		if (ImGui::BeginDragDropTargetCustom({ bounds[0].x, bounds[0].y, bounds[1].x, bounds[1].y }, ImGui::GetCurrentWindow()->ID))
-		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Hierarchy_Entity"))
-			{
-				EntityID entityID = *(EntityID*)payload->Data;
-				Entity entity = { entityID, &m_Scene };
-				entity.Unparent();
-			}
-			
-			ImGui::EndDragDropTarget();
-		}
-
-		ImGui::End();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
-		ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
-
-		int32 viewportWidth = (int32)ImGui::GetContentRegionAvail().x;
-		int32 viewportHeight = (int32)ImGui::GetContentRegionAvail().y;
-
-		if (viewportWidth < 0)
-			viewportWidth = 0;
-		if (viewportHeight < 0)
-			viewportHeight = 0;
-
-		if (m_ViewportWidth != viewportWidth || m_ViewportHeight != viewportHeight)
-		{
-			m_ViewportWidth = viewportWidth;
-			m_ViewportHeight = viewportHeight;
-
-			if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
-			{
-				// on resize
-			}
-		}
-
-		m_ImGuiRenderer->Image(m_Framebuffer->GetColorAttachment(), { (float)m_ViewportWidth, (float)m_ViewportHeight }, { 0.0f, 1.0f }, { 1.0f, 0.0f });
-
-		ImGui::End();
-		ImGui::PopStyleVar();
-
+#define FLUX_ENGINE_WINDOW 1
+#if FLUX_ENGINE_WINDOW
 		ImGui::Begin("Flux Engine");
 
 		BuildConfiguration buildConfig = Engine::GetBuildConfiguration();
@@ -489,6 +137,7 @@ namespace Flux {
 		}
 
 		ImGui::End();
+#endif
 	}
 
 	void EditorEngine::CreateWindowMenus()
@@ -605,11 +254,17 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		std::string path;
-		// while (path.empty())
-		Platform::OpenFolderDialog(nullptr, &path, "Load Project");
+		// TODO: hack
+		SubmitToEventThread([this]()
+		{
+			std::string path;
+			Platform::OpenFolderDialog(nullptr, &path, "Load Project");
 
-		OpenProject(path);
+			SubmitToMainThread([this, path]()
+			{
+				OpenProject(path);
+			});
+		});
 	}
 
 	void EditorEngine::OpenProject(const std::filesystem::path& path)
@@ -633,15 +288,22 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		std::string path;
-		Platform::OpenFolderDialog(nullptr, &path, "Choose location for new project");
-
-		if (!path.empty())
+		// TODO: hack
+		SubmitToEventThread([this]()
 		{
-			CloseProject();
+			std::string path;
+			Platform::OpenFolderDialog(nullptr, &path, "Choose location for new project");
 
-			// m_Project = Ref<Project>::Create(path + '/' + ...)
-		}
+			SubmitToMainThread([this, path]()
+			{
+				if (!path.empty())
+				{
+					CloseProject();
+
+					// m_Project = Ref<Project>::Create(path + '/' + ...)
+				}
+			});
+		});
 	}
 
 	void EditorEngine::SaveProject()

@@ -16,7 +16,9 @@ namespace Flux {
 			static_assert(std::is_base_of<Component, T>::value);
 
 			T& component = m_Scene->GetRegistry().Emplace<T>(m_EntityID, std::forward<TArgs>(args)...);
-			component.SetEntityID(m_EntityID);
+			component.Init(m_EntityID, m_Scene);
+			// TODO
+			component.OnInit();
 			return component;
 		}
 
@@ -91,6 +93,8 @@ namespace Flux {
 		bool HasParent() const;
 		bool HasChildren() const;
 		std::vector<Entity> GetChildren() const;
+
+		Scene* GetScene() const { return m_Scene; }
 	private:
 		EntityID m_EntityID;
 		Scene* m_Scene;

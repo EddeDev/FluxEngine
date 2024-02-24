@@ -10,6 +10,23 @@ namespace Flux {
 
 	namespace Utils {
 
+		static uint32 OpenGLDepthCompareFunction(CompareFunction function)
+		{
+			switch (function)
+			{
+			case CompareFunction::Never:          return GL_NEVER;
+			case CompareFunction::Less:           return GL_LESS;
+			case CompareFunction::Equal:          return GL_EQUAL;
+			case CompareFunction::LessOrEqual:    return GL_LEQUAL;
+			case CompareFunction::Greater:        return GL_GREATER;
+			case CompareFunction::NotEqual:       return GL_NOTEQUAL;
+			case CompareFunction::GreaterOrEqual: return GL_GEQUAL;
+			case CompareFunction::Always:         return GL_ALWAYS;
+			}
+			FLUX_VERIFY(false, "Unknown compare function!");
+			return 0;
+		}
+
 		static const char* OpenGLFramebufferStatusToString(uint32 status)
 		{
 			switch (status)
@@ -46,7 +63,7 @@ namespace Flux {
 			TextureProperties properties;
 			properties.Width = m_Width;
 			properties.Height = m_Height;
-			properties.Format = TextureFormat::RGBA32;
+			properties.Format = attachment.Format;
 			properties.Usage = TextureUsage::Attachment;
 
 			Ref<Texture> texture = Texture::Create(properties);
@@ -178,6 +195,7 @@ namespace Flux {
 			if ((hasDepthAttachment || createInfo.SwapchainTarget) && createInfo.ClearDepthBuffer)
 			{
 				glDepthMask(GL_TRUE);
+				glDepthFunc(Utils::OpenGLDepthCompareFunction(createInfo.DepthCompareFunction));
 				glClearDepthf(createInfo.DepthClearValue);
 
 				clearFlags |= GL_DEPTH_BUFFER_BIT;

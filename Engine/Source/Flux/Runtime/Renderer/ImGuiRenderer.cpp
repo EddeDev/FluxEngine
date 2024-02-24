@@ -253,7 +253,7 @@ namespace Flux {
 #if 1
 		ImFontConfig fontConfig;
 		fontConfig.PixelSnapH = true;
-		// io.Fonts->AddFontFromFileTTF("Resources/Fonts/Segoe UI/SegoeUI-Regular.ttf", 16.0f, &fontConfig, io.Fonts->GetGlyphRangesCyrillic());
+		io.Fonts->AddFontFromFileTTF("Resources/Fonts/Roboto/Roboto-Regular.ttf", 16.0f, &fontConfig, io.Fonts->GetGlyphRangesCyrillic());
 
 		auto& style = ImGui::GetStyle();
 		style.Alpha = 1.0f;
@@ -333,7 +333,7 @@ namespace Flux {
 		colors[ImGuiCol_TableRowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.06f);
 		colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
-		colors[ImGuiCol_DragDropTarget] = ImVec4(1.0f, 1.0f, 0.0f, 0.9f);
+		colors[ImGuiCol_DragDropTarget] = ImVec4(0.25f, 0.58f, 0.7f, 1.0f);
 		colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
 		colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
 		colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.2f);
@@ -562,6 +562,12 @@ namespace Flux {
 	void ImGuiRenderer::Image(Ref<Texture> texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		if (!texture)
+		{
+			// FLUX_VERIFY(false, "Texture is null!");
+			return;
+		}
 
 		ImTextureID textureID = (ImTextureID)(uintptr)(m_TextureMap.size() + 1);
 		m_TextureMap[textureID] = texture;

@@ -52,7 +52,7 @@ namespace Flux {
 	void EditorCamera::SetViewportSize(uint32 width, uint32 height)
 	{
 		float aspectRatio = (float)width / (float)height;
-		m_ProjectionMatrix = Matrix4x4::Perspective(m_VerticalFOV, aspectRatio, m_NearClip, m_FarClip);
+		m_ProjectionMatrix = Matrix4x4::Perspective(m_VerticalFOV, aspectRatio, m_FarClip, m_NearClip);
 	}
 
 	void EditorCamera::SetPosition(const Vector3& position)
