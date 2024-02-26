@@ -1,15 +1,18 @@
 #pragma once
 
-#include "EntityID.h"
-
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
+
+#include <entt/entt.hpp>
 
 namespace Flux {
 
-	enum class ComponentType
+	enum class ComponentType : uint8
 	{
 		None = 0,
 
+		Name,
+		ID,
+		Relationship,
 		Transform,
 		Camera,
 		Submesh,
@@ -34,33 +37,83 @@ namespace Flux {
 		virtual void OnImGuiRender() {}
 		virtual void SetChangedCallback(const ComponentChangedCallback& callback) { m_Callback = callback; }
 
-		static ComponentType GetStaticType() { return ComponentType::None; }
-		virtual ComponentType GetType() const { return GetStaticType(); }
+		virtual ComponentType GetType() const = 0;
+	private:
+		void SetEntity(entt::entity entity, Scene* scene)
+		{
+			m_Entity = entity;
+			m_Scene = scene;
+		}
+
+		friend class Scene;
 	protected:
 		void OnChanged()
 		{
 			if (m_Callback)
 				m_Callback(this);
 		}
-	private:
-		void Init(EntityID entityID, Scene* scene)
-		{
-			m_EntityID = entityID;
-			m_Scene = scene;
-		}
-
-		friend class Entity;
 	protected:
-		EntityID m_EntityID;
+		entt::entity m_Entity;
 		Scene* m_Scene;
 
 		ComponentChangedCallback m_Callback;
 	};
 
-	class Transform : public Component
+	class IDComponent : public Component
 	{
 	public:
-		Transform(const Vector3& position = Vector3(0.0f), const Vector3& eulerAngles = Vector3(0.0f), const Vector3& scale = Vector3(1.0f));
+		void SetGUID(const Guid& guid) { m_GUID = guid; }
+		const Guid& GetGUID() const { return m_GUID; }
+
+		COMPONENT_CLASS_TYPE(ID)
+	private:
+		Guid m_GUID;
+	};
+
+	class NameComponent : public Component
+	{
+	public:
+		void SetName(const std::string& name);
+		const std::string& GetName() const { return m_Name; }
+
+		COMPONENT_CLASS_TYPE(Name)
+	private:
+		std::string m_Name;
+	};
+
+	class RelationshipComponent : public Component
+	{
+	public:
+		void SetChildCount(uint32 childCount) { m_ChildCount = childCount; }
+		void IncrementChildCount() { m_ChildCount++; }
+		void DecrementChildCount() { FLUX_ASSERT(m_ChildCount > 0); m_ChildCount--; }
+		uint32 GetChildCount() const { return m_ChildCount; }
+
+		void SetFirstChild(const Guid& guid) { m_FirstChild = guid; }
+		const Guid& GetFirstChild() const { return m_FirstChild; }
+
+		void SetPrevious(const Guid& guid) { m_Previous = guid; }
+		const Guid& GetPrevious() const { return m_Previous; }
+
+		void SetNext(const Guid& guid) { m_Next = guid; }
+		const Guid& GetNext() const { return m_Next; }
+
+		void SetParent(const Guid& guid) { m_Parent = guid; }
+		const Guid& GetParent() const { return m_Parent; }
+
+		COMPONENT_CLASS_TYPE(Relationship)
+	private:
+		uint32 m_ChildCount = 0;
+		Guid m_FirstChild;
+		Guid m_Previous;
+		Guid m_Next;
+		Guid m_Parent;
+	};
+
+	class TransformComponent : public Component
+	{
+	public:
+		TransformComponent(const Vector3& position = Vector3(0.0f), const Vector3& eulerAngles = Vector3(0.0f), const Vector3& scale = Vector3(1.0f));
 	
 		virtual void OnInit();
 
@@ -88,16 +141,16 @@ namespace Flux {
 		Matrix4x4 m_WorldTransform;
 	};
 
-	class Camera : public Component
+	class CameraComponent : public Component
 	{
 	public:
 		COMPONENT_CLASS_TYPE(Camera)
 	};
 
-	class Submesh : public Component
+	class SubmeshComponent : public Component
 	{
 	public:
-		Submesh(Ref<Mesh> mesh = nullptr, uint32 submeshIndex = 0);
+		SubmeshComponent(Ref<Mesh> mesh = nullptr, uint32 submeshIndex = 0);
 
 		void SetMesh(Ref<Mesh> mesh) { m_Mesh = mesh; }
 		Ref<Mesh> GetMesh() const { return m_Mesh; }
@@ -111,12 +164,26 @@ namespace Flux {
 		uint32 m_SubmeshIndex;
 	};
 
-	class MeshRenderer : public Component
+	class MeshRendererComponent : public Component
 	{
 	public:
 		virtual void OnRender(Ref<RenderPipeline> pipeline) override;
 
 		COMPONENT_CLASS_TYPE(MeshRenderer)
 	};
+
+	template<typename... Component>
+	class ComponentSet {};
+
+	using AllComponents = ComponentSet<
+		IDComponent,
+		NameComponent,
+		RelationshipComponent,
+		TransformComponent,
+		CameraComponent,
+		SubmeshComponent,
+		MeshRendererComponent
+	>;
+
 
 }

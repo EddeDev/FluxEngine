@@ -5,42 +5,53 @@
 
 namespace Flux {
 
+#pragma region Name
+	void NameComponent::SetName(const std::string& name)
+	{
+		if (m_Name != name)
+		{
+			m_Name = name;
+			OnChanged();
+		}
+	}
+#pragma endregion Name
+
 #pragma region Transform
-	Transform::Transform(const Vector3& position, const Vector3& eulerAngles, const Vector3& scale)
+	TransformComponent::TransformComponent(const Vector3& position, const Vector3& eulerAngles, const Vector3& scale)
 		: m_Position(position), m_Rotation(eulerAngles), m_Scale(scale)
 	{
 	}
 
-	void Transform::OnInit()
+	void TransformComponent::OnInit()
 	{
 		RecalculateTransform();
 	}
 
-	void Transform::OnImGuiRender()
+	void TransformComponent::OnImGuiRender()
 	{
 
 	}
 
-	void Transform::RecalculateTransform()
+	void TransformComponent::RecalculateTransform()
 	{
-		Entity entity = { m_EntityID, m_Scene };
+		Entity entity = { m_Entity, m_Scene };
 
 		Matrix4x4 localTransform = Math::BuildTransformationMatrix(m_Position, m_Rotation, m_Scale);
-		if (entity.HasParent())
-		{
-			Entity parent = entity.GetParent();
-			m_WorldTransform = parent.GetComponent<Transform>().GetWorldTransform() * localTransform;
-		}
+
+		Entity parent = entity.GetParent();
+		if (parent && parent.HasComponent<TransformComponent>())
+			m_WorldTransform = parent.GetComponent<TransformComponent>().GetWorldTransform() * localTransform;
 		else
-		{
 			m_WorldTransform = localTransform;
-		}
 
 		for (Entity child : entity.GetChildren())
-			child.GetComponent<Transform>().RecalculateTransform();
+		{
+			if (child.HasComponent<TransformComponent>())
+				child.GetComponent<TransformComponent>().RecalculateTransform();
+		}
 	}
 
-	void Transform::SetPosition(const Vector3& position)
+	void TransformComponent::SetPosition(const Vector3& position)
 	{
 		if (Vector3::EpsilonNotEqual(m_Position, position))
 		{
@@ -49,7 +60,7 @@ namespace Flux {
 		}
 	}
 
-	void Transform::SetRotation(const Quaternion& rotation)
+	void TransformComponent::SetRotation(const Quaternion& rotation)
 	{
 		// if (Quaternion::EpsilonNotEqual(m_Rotation, rotation))
 		{
@@ -58,7 +69,7 @@ namespace Flux {
 		}
 	}
 
-	void Transform::SetScale(const Vector3& scale)
+	void TransformComponent::SetScale(const Vector3& scale)
 	{
 		if (Vector3::EpsilonNotEqual(m_Scale, scale))
 		{
@@ -69,21 +80,21 @@ namespace Flux {
 #pragma endregion Transform
 
 #pragma region Submesh
-	Submesh::Submesh(Ref<Mesh> mesh, uint32 submeshIndex)
+	SubmeshComponent::SubmeshComponent(Ref<Mesh> mesh, uint32 submeshIndex)
 		: m_Mesh(mesh), m_SubmeshIndex(submeshIndex)
 	{
 	}
 #pragma endregion Submesh
 
 #pragma region MeshRenderer
-	void MeshRenderer::OnRender(Ref<RenderPipeline> pipeline)
+	void MeshRendererComponent::OnRender(Ref<RenderPipeline> pipeline)
 	{
-		Entity entity = { m_EntityID, m_Scene };
+		Entity entity = { m_Entity, m_Scene };
 
-		if (entity.HasComponent<Submesh>())
+		if (entity.HasComponent<SubmeshComponent>())
 		{
-			auto& submesh = entity.GetComponent<Submesh>();
-			auto& transform = entity.GetComponent<Transform>();
+			auto& submesh = entity.GetComponent<SubmeshComponent>();
+			auto& transform = entity.GetComponent<TransformComponent>();
 
 			Ref<Mesh> mesh = submesh.GetMesh();
 			if (mesh)

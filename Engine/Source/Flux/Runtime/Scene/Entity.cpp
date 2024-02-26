@@ -6,18 +6,28 @@
 namespace Flux {
 
 	Entity::Entity()
-		: m_EntityID(NullEntity), m_Scene(nullptr)
+		: m_Entity(entt::null), m_Scene(nullptr)
 	{
 	}
 
-	Entity::Entity(EntityID entityID, Scene* scene)
-		: m_EntityID(entityID), m_Scene(scene)
+	Entity::Entity(entt::entity entity, Scene* scene)
+		: m_Entity(entity), m_Scene(scene)
 	{
 	}
 
-	std::vector<Component*> Entity::GetComponents() const
+	const Guid& Entity::GetGUID() const
 	{
-		return m_Scene->GetRegistry().GetComponents<Component>(m_EntityID);
+		return GetComponent<IDComponent>().GetGUID();
+	}
+
+	const Guid& Entity::GetParentGUID() const
+	{
+		return GetComponent<RelationshipComponent>().GetParent();
+	}
+
+	void Entity::SetParentGUID(const Guid& guid)
+	{
+		GetComponent<RelationshipComponent>().SetParent(guid);
 	}
 
 	void Entity::SetParent(Entity parent)
@@ -28,45 +38,66 @@ namespace Flux {
 			return;
 		}
 
-		if (parent.IsChildOf(*this))
-		{
-			parent.Unparent();
+		Entity previousParent = GetParent();
+		if (previousParent == parent)
+			return;
 
-			Entity newParent = GetParent();
-			if (newParent)
+		auto& childRelationship = GetComponent<RelationshipComponent>();
+		auto& childGUID = GetGUID();
+
+		if (previousParent)
+		{
+			auto& previousParentRelationship = previousParent.GetComponent<RelationshipComponent>();
+			previousParentRelationship.DecrementChildCount();
+
+			auto& previousChildGUID = childRelationship.GetPrevious();
+			auto& nextChildGUID = childRelationship.GetNext();
+
+			if (previousChildGUID)
 			{
-				Unparent();
-				parent.SetParent(newParent);
+				Entity previousChild = m_Scene->GetEntityFromGUID(previousChildGUID);
+				previousChild.GetComponent<RelationshipComponent>().SetNext(nextChildGUID);
 			}
+
+			if (nextChildGUID)
+			{
+				Entity nextChild = m_Scene->GetEntityFromGUID(nextChildGUID);
+				nextChild.GetComponent<RelationshipComponent>().SetPrevious(previousChildGUID);
+			}
+
+			if (previousParentRelationship.GetFirstChild() == childGUID)
+				previousParentRelationship.SetFirstChild(childRelationship.GetNext());
+
+			childRelationship.SetParent({});
+			childRelationship.SetPrevious({});
+			childRelationship.SetNext({});
+		}
+
+		auto& newParentRelationship = parent.GetComponent<RelationshipComponent>();
+
+		childRelationship.SetParent(parent.GetGUID());
+
+		auto& firstChildGUID = newParentRelationship.GetFirstChild();
+		if (!firstChildGUID)
+		{
+			newParentRelationship.SetFirstChild(childGUID);
 		}
 		else
 		{
-			Unparent();
+			Guid lastChildGUID = firstChildGUID;
+			for (uint32 i = 0; i < newParentRelationship.GetChildCount() - 1; i++)
+				lastChildGUID = m_Scene->GetEntityFromGUID(lastChildGUID).GetComponent<RelationshipComponent>().GetNext();
+
+			if (lastChildGUID)
+			{
+				Entity lastChild = m_Scene->GetEntityFromGUID(lastChildGUID);
+				lastChild.GetComponent<RelationshipComponent>().SetNext(childGUID);
+			}
+
+			childRelationship.SetPrevious(lastChildGUID);
 		}
 
-		SetParentID(parent);
-		
-		parent.AddChild(*this);
-	}
-
-	void Entity::AddChild(Entity child)
-	{
-		auto& entityData = m_Scene->GetEntityData(m_EntityID);
-		FLUX_VERIFY(std::find(entityData.Children.begin(), entityData.Children.end(), child) == entityData.Children.end());
-		entityData.Children.push_back(child);
-	}
-
-	bool Entity::RemoveChild(Entity child)
-	{
-		auto& entityData = m_Scene->GetEntityData(m_EntityID);
-
-		if (auto it = std::find(entityData.Children.begin(), entityData.Children.end(), child); it != entityData.Children.end())
-		{
-			entityData.Children.erase(it);
-			return true;
-		}
-
-		return false;
+		newParentRelationship.IncrementChildCount();
 	}
 
 	void Entity::Unparent()
@@ -74,19 +105,24 @@ namespace Flux {
 		Entity parent = GetParent();
 		if (!parent)
 			return;
-
-		parent.RemoveChild(*this);
-
-		SetParentID(NullEntity);
 	}
 
-	void Entity::SetParentID(EntityID entityID)
+	Entity Entity::GetParent() const
 	{
-		auto& entityData = m_Scene->GetEntityData(m_EntityID);
-		entityData.Parent = entityID;
+		return m_Scene->GetEntityFromGUID(GetParentGUID());
 	}
 
-	bool Entity::IsParentOf(Entity entity) const
+	bool Entity::HasParent() const
+	{
+		return GetParentGUID().IsValid();
+	}
+
+	bool Entity::HasChildren() const
+	{
+		return GetComponent<RelationshipComponent>().GetChildCount() > 0;
+	}
+
+	bool Entity::IsParentOf(Entity entity)
 	{
 		std::vector<Entity> children = GetChildren();
 		if (children.empty())
@@ -107,52 +143,31 @@ namespace Flux {
 		return false;
 	}
 
-	bool Entity::IsChildOf(Entity entity) const
+	bool Entity::IsChildOf(Entity entity)
 	{
 		return entity.IsParentOf(*this);
 	}
 
-	void Entity::SetName(const std::string& name) const
+	std::vector<Guid> Entity::GetChildrenGUIDs() const
 	{
-		m_Scene->GetEntityData(m_EntityID).Name = name;
+		auto& relationshipComponent = GetComponent<RelationshipComponent>();
+		std::vector<Guid> result(relationshipComponent.GetChildCount());
+		Guid currentGuid = relationshipComponent.GetFirstChild();
+		for (uint32 i = 0; i < relationshipComponent.GetChildCount(); i++)
+		{
+			result[i] = currentGuid;
+			currentGuid = m_Scene->GetEntityFromGUID(currentGuid).GetComponent<RelationshipComponent>().GetNext();
+		}
+		return result;
 	}
 
-	const std::string& Entity::GetName() const
+	std::vector<Entity> Entity::GetChildren()
 	{
-		return m_Scene->GetEntityData(m_EntityID).Name;
-	}
+		std::vector<Guid> childrenGUIDs = GetChildrenGUIDs();
 
-	Entity Entity::GetParent() const
-	{
-		EntityID parentID = m_Scene->GetEntityData(m_EntityID).Parent;
-		if (parentID == NullEntity)
-			return {};
-
-		return { parentID, m_Scene };
-	}
-
-	bool Entity::HasParent() const
-	{
-		EntityID parentID = m_Scene->GetEntityData(m_EntityID).Parent;
-		if (parentID == NullEntity)
-			return false;
-
-		return true;
-	}
-
-	bool Entity::HasChildren() const
-	{
-		auto& entityData = m_Scene->GetEntityData(m_EntityID);
-		return !entityData.Children.empty();
-	}
-
-	std::vector<Entity> Entity::GetChildren() const
-	{
-		auto& entityData = m_Scene->GetEntityData(m_EntityID);
-		
-		std::vector<Entity> result(entityData.Children.size());
-		for (size_t i = 0; i < entityData.Children.size(); i++)
-			result[i] = { entityData.Children[i], m_Scene };
+		std::vector<Entity> result(childrenGUIDs.size());
+		for (size_t i = 0; i < childrenGUIDs.size(); i++)
+			result[i] = m_Scene->GetEntityFromGUID(childrenGUIDs[i]);
 		return result;
 	}
 

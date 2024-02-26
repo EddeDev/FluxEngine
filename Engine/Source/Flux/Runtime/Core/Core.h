@@ -8,6 +8,7 @@
 #include "Platform.h"
 #include "Input.h"
 #include "Buffer.h"
+#include "Guid.h"
 #include "Math/Math.h"
 
 #define FLUX_BIND_CALLBACK(func, ...) \

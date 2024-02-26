@@ -31,6 +31,8 @@ project "FluxEngine"
         "Engine/Libraries/glad/include",
         "Engine/Libraries/assimp/include",
         "Engine/Libraries/stb_image/include",
+        "Engine/Libraries/CityHash/src",
+        "Engine/Libraries/entt/include",
         "Engine/Libraries/ImGui"
     }
 
@@ -42,7 +44,9 @@ project "FluxEngine"
     {
         "Glad",
         "ImGui",
-        "stb_image"
+        "stb_image",
+        "CityHash",
+        "EnTT"
     }
 
     filter "system:windows"
@@ -163,4 +167,6 @@ group "Libraries"
     include "Engine/Libraries/Glad"
     include "Engine/Libraries/ImGui"
     include "Engine/Libraries/stb_image"
+    include "Engine/Libraries/CityHash"
+    include "Engine/Libraries/entt"
 group ""

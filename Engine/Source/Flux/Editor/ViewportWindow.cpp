@@ -30,18 +30,20 @@ namespace Flux {
 		if (!m_Scene || m_ViewportWidth == 0 || m_ViewportHeight == 0)
 			return;
 
+#if 0
 		// TODO: remove
 		if (m_Scene->GetEntities().empty())
 		{
 			Entity sphereEntity = m_Scene->CreateEntity("Sphere");
-			sphereEntity.AddComponent<Submesh>(m_SphereMesh);
-			sphereEntity.AddComponent<MeshRenderer>();
+			sphereEntity.AddComponent<SubmeshComponent>(m_SphereMesh);
+			sphereEntity.AddComponent<MeshRendererComponent>();
 		}
 
 		Entity sphereEntity = m_Scene->GetEntity(0);
 
-		auto& sphereTransform = sphereEntity.GetComponent<Transform>();
+		auto& sphereTransform = sphereEntity.GetComponent<TransformComponent>();
 		sphereTransform.SetPosition(Vector3(Math::Cos(Engine::Get().GetTime()), Math::Sin(Engine::Get().GetTime()), 0.0f));
+#endif
 
 		float deltaTime = Engine::Get().GetDeltaTime();
 		m_EditorCamera.OnUpdate(deltaTime);

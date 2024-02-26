@@ -5,13 +5,31 @@
 
 namespace Flux {
 
+	Scene::Scene()
+	{
+		// TODO: scene asset id
+		Guid rootEntityGUID = Guid::NewGuid();
+		m_SceneEntity = new Entity(m_Registry.create(), this);
+		m_EntityMap[rootEntityGUID] = *m_SceneEntity;
+
+		m_SceneEntity->AddComponent<IDComponent>().SetGUID(rootEntityGUID);
+		m_SceneEntity->AddComponent<NameComponent>().SetName("Scene");
+		m_SceneEntity->AddComponent<RelationshipComponent>();
+
+		RegisterComponentCallbacks(AllComponents{}, m_Registry);
+	}
+
+	Scene::~Scene()
+	{
+		// TODO: properly destroy scene entity
+
+		delete m_SceneEntity;
+		m_SceneEntity = nullptr;
+	}
+
 	void Scene::OnUpdate()
 	{
-		for (EntityID entityID : m_EntityIDs)
-		{
-			for (Component* component : m_Registry.GetComponents<Component>(entityID))
-				component->OnUpdate();
-		}
+		// Update all entities
 	}
 
 	void Scene::OnRender(Ref<RenderPipeline> pipeline, const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix)
@@ -23,92 +41,50 @@ namespace Flux {
 		cameraSettings.FarClip = 1000.0f;
 
 		pipeline->BeginRendering();
-
-		for (EntityID entityID : m_EntityIDs)
-		{
-			for (Component* component : m_Registry.GetComponents<Component>(entityID))
-				component->OnRender(pipeline);
-		}
-
+		// Render all entities
 		pipeline->EndRendering();
 	}
 
-	Entity Scene::CreateEntity(const std::string& name)
+	Entity Scene::CreateEmpty(const std::string& name)
 	{
-		Entity entity{ m_Registry.Create(), this };
+		return CreateEmpty(name, Guid::NewGuid());
+	}
 
-		auto& entityData = m_EntityData[entity];
-		entityData.Name = name;
-		m_EntityIDs.push_back(entity);
+	Entity Scene::CreateEmpty(const std::string& name, const Guid& guid)
+	{
+		Entity entity{ m_Registry.create(), this };
 
-		entity.AddComponent<Transform>();
+		m_EntityMap[guid] = entity;
+
+		entity.AddComponent<IDComponent>().SetGUID(guid);
+		entity.AddComponent<NameComponent>().SetName(name);
+		entity.AddComponent<RelationshipComponent>();
+		entity.AddComponent<TransformComponent>();
+
+		entity.SetParent(*m_SceneEntity);
 		return entity;
 	}
 
-	Entity Scene::GetEntity(uint32 index)
+	Entity Scene::GetEntityFromGUID(const Guid& guid)
 	{
-		if (index < m_EntityIDs.size())
-			return { m_EntityIDs[index], this };
+		auto it = m_EntityMap.find(guid);
+		if (it != m_EntityMap.end())
+			return it->second;
 		return {};
 	}
 
-	void Scene::MoveEntity(Entity entity, uint32 newIndex)
+	bool Scene::RemoveChild(Entity child)
 	{
-		auto it = std::find(m_EntityIDs.begin(), m_EntityIDs.end(), entity);
-		if (it != m_EntityIDs.end())
-		{
-			if (it - m_EntityIDs.begin() == newIndex)
-				return;
+		if (!child || !child.HasParent())
+			return false;
 
-			m_EntityIDs.erase(it);
-			m_EntityIDs.insert(m_EntityIDs.begin() + newIndex, entity);
-		}
+		return true;
 	}
 
-	uint32 Scene::GetEntityIndex(Entity entity) const
+	void Scene::OnComponentAdded(Entity entity, Component& component)
 	{
-		auto it = std::find(m_EntityIDs.begin(), m_EntityIDs.end(), entity);
-		if (it != m_EntityIDs.end())
-			return it - m_EntityIDs.begin();
-
-		FLUX_VERIFY(false);
-		return 0;
-	}
-
-	Entity Scene::GetPreviousEntity(Entity entity)
-	{
-		uint32 entityIndex = GetEntityIndex(entity);
-		if (entityIndex > 0)
-			return { m_EntityIDs[entityIndex - 1], this };
-		return {};
-	}
-
-	Entity Scene::GetNextEntity(Entity entity)
-	{
-		uint32 entityIndex = GetEntityIndex(entity);
-		if (entityIndex < m_EntityIDs.size() - 1)
-			return { m_EntityIDs[entityIndex + 1], this };
-		return {};
-	}
-
-	std::vector<Entity> Scene::GetEntities()
-	{
-		std::vector<Entity> result(m_EntityIDs.size());
-		for (size_t i = 0; i < m_EntityIDs.size(); i++)
-			result[i] = { m_EntityIDs[i], this };
-		return result;
-	}
-
-	std::vector<Entity> Scene::GetRootEntities()
-	{
-		std::vector<Entity> result;
-		for (size_t i = 0; i < m_EntityIDs.size(); i++)
-		{
-			EntityID entityID = m_EntityIDs[i];
-			if (m_EntityData[entityID].Parent == NullEntity)
-				result.push_back({ m_EntityIDs[i], this });
-		}
-		return result;
+		component.SetEntity(entity, this);
+		component.OnInit();
 	}
 
 }

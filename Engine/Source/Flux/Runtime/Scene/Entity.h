@@ -8,18 +8,14 @@ namespace Flux {
 	{
 	public:
 		Entity();
-		Entity(EntityID entityID, Scene* scene);
+		Entity(entt::entity entity, Scene* scene);
 	
 		template<typename T, typename... TArgs>
 		T& AddComponent(TArgs&&... args)
 		{
 			static_assert(std::is_base_of<Component, T>::value);
 
-			T& component = m_Scene->GetRegistry().Emplace<T>(m_EntityID, std::forward<TArgs>(args)...);
-			component.Init(m_EntityID, m_Scene);
-			// TODO
-			component.OnInit();
-			return component;
+			return m_Scene->GetRegistry().emplace<T>(m_Entity, std::forward<TArgs>(args)...);
 		}
 
 		template<typename T>
@@ -27,7 +23,15 @@ namespace Flux {
 		{
 			static_assert(std::is_base_of<Component, T>::value);
 
-			return m_Scene->GetRegistry().Get<T>(m_EntityID);
+			return m_Scene->GetRegistry().get<T>(m_Entity);
+		}
+
+		template<typename T>
+		const T& GetComponent() const
+		{
+			static_assert(std::is_base_of<Component, T>::value);
+
+			return m_Scene->GetRegistry().get<T>(m_Entity);
 		}
 
 		template<typename T>
@@ -35,7 +39,7 @@ namespace Flux {
 		{
 			static_assert(std::is_base_of<Component, T>::value);
 
-			return m_Scene->GetRegistry().TryGet<T>(m_EntityID);
+			return m_Scene->GetRegistry().try_get<T>(m_Entity);
 		}
 
 		template<typename T>
@@ -43,7 +47,7 @@ namespace Flux {
 		{
 			static_assert(std::is_base_of<Component, T>::value);
 
-			return m_Scene->GetRegistry().Remove<T>(m_EntityID);
+			return m_Scene->GetRegistry().remove<T>(m_Entity);
 		}
 
 		template<typename T>
@@ -51,52 +55,34 @@ namespace Flux {
 		{
 			static_assert(std::is_base_of<Component, T>::value);
 
-			return m_Scene->GetRegistry().Has<T>(m_EntityID);
+			return m_Scene->GetRegistry().any_of<T>(m_Entity);
 		}
 
-		std::vector<Component*> GetComponents() const;
+		operator bool() const { return m_Entity != entt::null && m_Scene != nullptr; }
+		operator entt::entity() const { return m_Entity; }
+		operator uint32() const { return (uint32)m_Entity; }
 
-		bool operator==(Entity other) const
-		{
-			if (!other)
-				return false;
+		bool operator==(Entity other) const { return m_Entity == other.m_Entity && m_Scene == other.m_Scene; }
+		bool operator!=(Entity other) const { return !(*this == other); }
 
-			return m_EntityID == other.m_EntityID && m_Scene == other.m_Scene;
-		}
-
-		bool operator==(EntityID other) const
-		{
-			if (other == NullEntity)
-				return false;
-
-			return m_EntityID == other;
-		}
-
-		operator EntityID() const { return m_EntityID; }
-		operator bool() const { return m_EntityID != NullEntity && m_Scene != nullptr; }
-
-		void SetParent(Entity parent);
-
-		void AddChild(Entity child);
-		bool RemoveChild(Entity child);
-
-		void Unparent();
-		void SetParentID(EntityID entityID);
-
-		bool IsParentOf(Entity entity) const;
-		bool IsChildOf(Entity entity) const;
-
-		void SetName(const std::string& name) const;
-		const std::string& GetName() const;
-
-		Entity GetParent() const;
+		const Guid& GetGUID() const;
+		const Guid& GetParentGUID() const;
+		void SetParentGUID(const Guid& guid);
 		bool HasParent() const;
 		bool HasChildren() const;
-		std::vector<Entity> GetChildren() const;
+		bool IsParentOf(Entity entity);
+		bool IsChildOf(Entity entity);
+		Entity GetParent() const;
+
+		void SetParent(Entity parent);
+		void Unparent();
+
+		std::vector<Guid> GetChildrenGUIDs() const;
+		std::vector<Entity> GetChildren();
 
 		Scene* GetScene() const { return m_Scene; }
 	private:
-		EntityID m_EntityID;
+		entt::entity m_Entity;
 		Scene* m_Scene;
 	};
 

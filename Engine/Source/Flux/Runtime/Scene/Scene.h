@@ -1,55 +1,61 @@
 #pragma once
 
-#include "EntityRegistry.h"
 #include "Component.h"
 
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
 
+#include <entt/entt.hpp>
+
 namespace Flux {
-
-	struct EntityData
-	{
-		std::string Name;
-
-		EntityID Parent = NullEntity;
-		std::vector<EntityID> Children;
-	};
 
 	class Entity;
 
 	class Scene : public ReferenceCounted
 	{
 	public:
-		Scene() {}
-		virtual ~Scene() {}
+		Scene();
+		virtual ~Scene();
 
 		void OnUpdate();
 		void OnRender(Ref<RenderPipeline> pipeline, const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix);
 
-		Entity CreateEntity(const std::string& name);
+		Entity CreateEmpty(const std::string& name);
+		Entity CreateEmpty(const std::string& name, const Guid& guid);
+		Entity GetEntityFromGUID(const Guid& guid);
+		const Entity& GetRootEntity() const { return *m_SceneEntity; }
 
-		Entity GetEntity(uint32 index);
-		void MoveEntity(Entity entity, uint32 newIndex);
-		uint32 GetEntityIndex(Entity entity) const;
+		bool RemoveChild(Entity child);
 
-		Entity GetPreviousEntity(Entity entity);
-		Entity GetNextEntity(Entity entity);
-
-		std::vector<Entity> GetEntities();
-		std::vector<Entity> GetRootEntities();
-
-		EntityData& GetEntityData(EntityID entityID) { return m_EntityData.at(entityID); }
-		const EntityData& GetEntityData(EntityID entityID) const { return m_EntityData.at(entityID); }
-
-		std::vector<EntityID>& GetEntityIDs() { return m_EntityIDs; }
-		const std::vector<EntityID>& GetEntityIDs() const { return m_EntityIDs; }
-
-		EntityRegistry& GetRegistry() { return m_Registry; }
-		const EntityRegistry& GetRegistry() const { return m_Registry; }
+		entt::registry& GetRegistry() { return m_Registry; }
+		const entt::registry& GetRegistry() const { return m_Registry; }
 	private:
-		EntityRegistry m_Registry;
-		std::unordered_map<EntityID, EntityData> m_EntityData;
-		std::vector<EntityID> m_EntityIDs;
+		void OnComponentAdded(Entity entity, Component& component);
+
+		template<typename T>
+		void OnComponentAdded(entt::registry& registry, entt::entity entity)
+		{
+			OnComponentAdded({ entity, this }, dynamic_cast<Component&>(registry.get<T>(entity)));
+		}
+
+		template<typename... Component>
+		void RegisterComponentCallbacks(entt::registry& registry)
+		{
+			([&]()
+			{
+				registry.on_construct<Component>().connect<&Scene::OnComponentAdded<Component>>(this);
+			}(), ...);
+		}
+
+		template<typename... Component>
+		void RegisterComponentCallbacks(ComponentSet<Component...>, entt::registry& registry)
+		{
+			RegisterComponentCallbacks<Component...>(registry);
+		}
+	private:
+		entt::registry m_Registry;
+		std::unordered_map<Guid, Entity> m_EntityMap;
+
+		Entity* m_SceneEntity = nullptr;
 	};
 
 }

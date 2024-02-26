@@ -77,18 +77,20 @@ namespace Flux {
 		{
 			static uint32 entityIndex = 0;
 			entityIndex++;
-			m_Scene->CreateEntity(fmt::format("Entity {0}", entityIndex));
+			Entity entity = m_Scene->CreateEmpty(fmt::format("Entity {0}", entityIndex));
+
+			if (m_SelectedEntity && m_SelectedEntity != m_Scene->GetRootEntity())
+				entity.SetParent(m_SelectedEntity);
 		}
 
-		for (Entity entity : m_Scene->GetRootEntities())
-			DrawEntityNode(entity);
+		DrawEntityNode(m_Scene->GetRootEntity());
 
 		if (ImGui::BeginDragDropTargetCustom({ bounds[0].x, bounds[0].y, bounds[1].x, bounds[1].y }, ImGui::GetCurrentWindow()->ID))
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Hierarchy_Entity", ImGuiDragDropFlags_AcceptNoDrawDefaultRect))
 			{
-				EntityID draggedEntityID = *(EntityID*)payload->Data;
-				Entity draggedEntity(draggedEntityID, m_Scene.Get());
+				const Guid& draggedEntityGUID = *(Guid*)payload->Data;
+				Entity draggedEntity = m_Scene->GetEntityFromGUID(draggedEntityGUID);
 				draggedEntity.Unparent();
 			}
 
@@ -96,36 +98,60 @@ namespace Flux {
 		}
 
 		if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered())
-			SelectionManager::SetSelectedEntity({});
+			m_SelectedEntity = {};
+
+		ImGui::Begin("Entity Details");
+
+		if (m_SelectedEntity)
+		{
+			auto& relationShipComponent = m_SelectedEntity.GetComponent<RelationshipComponent>();
+			uint32 childCount = relationShipComponent.GetChildCount();
+		
+			Guid guid = m_SelectedEntity.GetGUID();
+			Guid firstChildGuid = relationShipComponent.GetFirstChild();
+			Guid previousGuid = relationShipComponent.GetPrevious();
+			Guid nextGuid = relationShipComponent.GetNext();
+			Guid parentGuid = relationShipComponent.GetParent();
+
+			std::string guidString = guid.ToString();
+			std::string firstChildGuidString = firstChildGuid.ToString();
+			std::string previousGuidString = previousGuid.ToString();
+			std::string nextGuidString = nextGuid.ToString();
+			std::string parentGuidString = parentGuid.ToString();
+
+			std::string firstChildEntityName = firstChildGuid.IsValid() ? m_Scene->GetEntityFromGUID(firstChildGuid).GetComponent<NameComponent>().GetName() : "None";
+			std::string previousEntityName = previousGuid.IsValid() ? m_Scene->GetEntityFromGUID(previousGuid).GetComponent<NameComponent>().GetName() : "None";
+			std::string nextEntityName = nextGuid.IsValid() ? m_Scene->GetEntityFromGUID(nextGuid).GetComponent<NameComponent>().GetName() : "None";
+			std::string parentEntityName = parentGuid.IsValid() ? m_Scene->GetEntityFromGUID(parentGuid).GetComponent<NameComponent>().GetName() : "None";
+
+			ImGui::Text("GUID: %s", guid.IsValid() ? guidString.c_str() : "None");
+			ImGui::Separator();
+			ImGui::Text("Child Count: %d", childCount);
+			ImGui::Text("First Child: %s (%s)", firstChildEntityName.c_str(), firstChildGuid.IsValid() ? firstChildGuidString.c_str() : "None");
+			ImGui::Text("Previous: %s (%s)", previousEntityName.c_str(), previousGuid.IsValid() ? previousGuidString.c_str() : "None");
+			ImGui::Text("Next: %s (%s)", nextEntityName.c_str(), nextGuid.IsValid() ? nextGuidString.c_str() : "None");
+			ImGui::Text("Parent: %s (%s)", parentEntityName.c_str(), parentGuid.IsValid() ? parentGuidString.c_str() : "None");
+			ImGui::Text("Is Child Of Scene Entity: %s", m_SelectedEntity.IsChildOf(m_Scene->GetRootEntity()) ? "True" : "False");
+		}
+
+		ImGui::End();
 	}
 
 	void HierarchyWindow::DrawEntityNode(Entity entity)
 	{
 		std::string entityIDString = fmt::format("Entity_{0}_{1}", (uint32)entity, (uintptr)entity.GetScene());
-		std::string separatorIDString = fmt::format("{0}_Separator", entityIDString);
+		std::string dragHandleIDString = fmt::format("{0}_DragHandle", entityIDString);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0.0f, 1.5f });
 
-		ImGui::InvisibleButton(separatorIDString.c_str(), { ImGui::GetWindowContentRegionMax().x, 2.0f }, ImGuiButtonFlags_None);
+		ImGui::InvisibleButton(dragHandleIDString.c_str(), { ImGui::GetWindowContentRegionMax().x, 2.0f }, ImGuiButtonFlags_None);
 
 		if (ImGui::BeginDragDropTarget())
 		{
 			if (const ImGuiPayload* payload = CustomDragDropPayload("Hierarchy_Entity"))
 			{
-				EntityID draggedEntityID = *(EntityID*)payload->Data;
-				Entity draggedEntity(draggedEntityID, m_Scene.Get());
-
-				uint32 draggedEntityIndex = m_Scene->GetEntityIndex(draggedEntity);
-				uint32 entityIndex = m_Scene->GetEntityIndex(entity);
-
-#if 0
-				if (draggedEntityIndex > entityIndex)
-					m_Scene->MoveEntity(draggedEntity, entityIndex);
-				else
-					m_Scene->MoveEntity(draggedEntity, entityIndex - 1);
-#endif
-
-				FLUX_INFO("dragged: {0} to entity: ~{1}", draggedEntityIndex, entityIndex);
+				const Guid& draggedEntityGUID = *(Guid*)payload->Data;
+				Entity draggedEntity = m_Scene->GetEntityFromGUID(draggedEntityGUID);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -133,23 +159,26 @@ namespace Flux {
 		ImGuiTreeNodeFlags flags = 0;
 		flags |= ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-		if (SelectionManager::GetSelectedEntity() == entity)
+		if (m_SelectedEntity == entity)
 			flags |= ImGuiTreeNodeFlags_Selected;
-		if (!entity.HasChildren())
-			flags |= ImGuiTreeNodeFlags_Leaf;
+		if (entity == m_Scene->GetRootEntity())
+		{
+			flags |= ImGuiTreeNodeFlags_DefaultOpen;
+			flags |= ImGuiTreeNodeFlags_AllowItemOverlap;
+			flags |= ImGuiTreeNodeFlags_OpenOnDoubleClick;
+		}
+		else
+		{
+			if (!entity.HasChildren())
+				flags |= ImGuiTreeNodeFlags_Leaf;
+		}
 
-		std::string debugLabel = fmt::format("{0} (index: {1})", entity.GetName(), m_Scene->GetEntityIndex(entity));
-
-#if 1
-		bool open = ImGui::TreeNodeEx(debugLabel.c_str(), flags);
-#else
-		bool open = ImGui::TreeNodeEx(entity.GetName().c_str(), flags);
-#endif
+		std::string entityName = entity.GetComponent<NameComponent>().GetName();
+		bool open = ImGui::TreeNodeEx(entityName.c_str(), flags);
 
 		if (ImGui::BeginDragDropSource())
 		{
-			EntityID entityID = entity;
-			ImGui::SetDragDropPayload("Hierarchy_Entity", &entityID, sizeof(EntityID));
+			ImGui::SetDragDropPayload("Hierarchy_Entity", &entity.GetGUID(), sizeof(Guid));
 			ImGui::EndDragDropSource();
 		}
 
@@ -157,16 +186,16 @@ namespace Flux {
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Hierarchy_Entity"))
 			{
-				EntityID draggedEntityID = *(EntityID*)payload->Data;
-
-				Entity draggedEntity(draggedEntityID, m_Scene.Get());
-				draggedEntity.SetParent(entity);
+				const Guid& draggedEntityGUID = *(Guid*)payload->Data;
+				Entity draggedEntity = m_Scene->GetEntityFromGUID(draggedEntityGUID);
+				if (draggedEntity)
+					draggedEntity.SetParent(entity);
 			}
 			ImGui::EndDragDropTarget();
 		}
 
 		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-			SelectionManager::SetSelectedEntity(entity);
+			m_SelectedEntity = entity;
 
 		ImGui::PopStyleVar();
 
