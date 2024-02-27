@@ -75,7 +75,6 @@ namespace Flux {
 		Entity GetParent() const;
 
 		void SetParent(Entity parent);
-		void Unparent();
 
 		std::vector<Guid> GetChildrenGUIDs() const;
 		std::vector<Entity> GetChildren();

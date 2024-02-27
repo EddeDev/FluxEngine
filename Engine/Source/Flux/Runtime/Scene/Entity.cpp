@@ -33,10 +33,7 @@ namespace Flux {
 	void Entity::SetParent(Entity parent)
 	{
 		if (!parent)
-		{
-			Unparent();
-			return;
-		}
+			parent = m_Scene->GetRootEntity();
 
 		Entity previousParent = GetParent();
 		if (previousParent == parent)
@@ -68,7 +65,7 @@ namespace Flux {
 			if (previousParentRelationship.GetFirstChild() == childGUID)
 				previousParentRelationship.SetFirstChild(childRelationship.GetNext());
 
-			childRelationship.SetParent({});
+			childRelationship.SetParent(m_Scene->GetRootEntity().GetGUID());
 			childRelationship.SetPrevious({});
 			childRelationship.SetNext({});
 		}
@@ -98,13 +95,6 @@ namespace Flux {
 		}
 
 		newParentRelationship.IncrementChildCount();
-	}
-
-	void Entity::Unparent()
-	{
-		Entity parent = GetParent();
-		if (!parent)
-			return;
 	}
 
 	Entity Entity::GetParent() const

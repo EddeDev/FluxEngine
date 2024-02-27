@@ -123,6 +123,9 @@ namespace Flux {
 		void SetRotation(const Quaternion& rotation);
 		const Quaternion& GetRotation() const { return m_Rotation; }
 
+		void SetEulerAngles(const Vector3& eulerAngles);
+		const Vector3& GetEulerAngles() const { return m_EulerAngles; }
+
 		void SetScale(const Vector3& scale);
 		const Vector3& GetScale() const { return m_Scale; }
 
@@ -136,6 +139,7 @@ namespace Flux {
 	private:
 		Vector3 m_Position;
 		Quaternion m_Rotation;
+		Vector3 m_EulerAngles;
 		Vector3 m_Scale;
 
 		Matrix4x4 m_WorldTransform;

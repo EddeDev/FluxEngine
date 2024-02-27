@@ -73,9 +73,10 @@ namespace Flux {
 		bounds[0] = { minRegion.x + windowPos.x, minRegion.y + windowPos.y };
 		bounds[1] = { maxRegion.x + windowPos.x, maxRegion.y + windowPos.y };
 
+		static uint32 entityIndex = 0;
+
 		if (ImGui::Button("+"))
 		{
-			static uint32 entityIndex = 0;
 			entityIndex++;
 			Entity entity = m_Scene->CreateEmpty(fmt::format("Entity {0}", entityIndex));
 
@@ -91,7 +92,7 @@ namespace Flux {
 			{
 				const Guid& draggedEntityGUID = *(Guid*)payload->Data;
 				Entity draggedEntity = m_Scene->GetEntityFromGUID(draggedEntityGUID);
-				draggedEntity.Unparent();
+				draggedEntity.SetParent({});
 			}
 
 			ImGui::EndDragDropTarget();
@@ -100,6 +101,7 @@ namespace Flux {
 		if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsWindowHovered())
 			m_SelectedEntity = {};
 
+#if 0
 		ImGui::Begin("Entity Details");
 
 		if (m_SelectedEntity)
@@ -107,11 +109,11 @@ namespace Flux {
 			auto& relationShipComponent = m_SelectedEntity.GetComponent<RelationshipComponent>();
 			uint32 childCount = relationShipComponent.GetChildCount();
 		
-			Guid guid = m_SelectedEntity.GetGUID();
-			Guid firstChildGuid = relationShipComponent.GetFirstChild();
-			Guid previousGuid = relationShipComponent.GetPrevious();
-			Guid nextGuid = relationShipComponent.GetNext();
-			Guid parentGuid = relationShipComponent.GetParent();
+			auto& guid = m_SelectedEntity.GetGUID();
+			auto& firstChildGuid = relationShipComponent.GetFirstChild();
+			auto& previousGuid = relationShipComponent.GetPrevious();
+			auto& nextGuid = relationShipComponent.GetNext();
+			auto& parentGuid = relationShipComponent.GetParent();
 
 			std::string guidString = guid.ToString();
 			std::string firstChildGuidString = firstChildGuid.ToString();
@@ -135,6 +137,7 @@ namespace Flux {
 		}
 
 		ImGui::End();
+#endif
 	}
 
 	void HierarchyWindow::DrawEntityNode(Entity entity)
@@ -144,14 +147,29 @@ namespace Flux {
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 0.0f, 1.5f });
 
+		ImGui::PushItemFlag(ImGuiItemFlags_NoNav, true);
 		ImGui::InvisibleButton(dragHandleIDString.c_str(), { ImGui::GetWindowContentRegionMax().x, 2.0f }, ImGuiButtonFlags_None);
+		ImGui::PopItemFlag();
 
 		if (ImGui::BeginDragDropTarget())
 		{
-			if (const ImGuiPayload* payload = CustomDragDropPayload("Hierarchy_Entity"))
+			if (entity != m_Scene->GetRootEntity())
 			{
-				const Guid& draggedEntityGUID = *(Guid*)payload->Data;
-				Entity draggedEntity = m_Scene->GetEntityFromGUID(draggedEntityGUID);
+				if (const ImGuiPayload* payload = CustomDragDropPayload("Hierarchy_Entity"))
+				{
+					const Guid& draggedEntityGUID = *(Guid*)payload->Data;
+					Entity draggedEntity = m_Scene->GetEntityFromGUID(draggedEntityGUID);
+
+					Entity firstEntity = m_Scene->GetEntityFromGUID(entity.GetComponent<RelationshipComponent>().GetPrevious());
+					Entity secondEntity = m_Scene->GetEntityFromGUID(entity.GetGUID());
+
+					if (firstEntity)
+						draggedEntity.SetParent(firstEntity.GetParent());
+					else if (secondEntity)
+						draggedEntity.SetParent(secondEntity.GetParent());
+
+					// TODO: move entity
+				}
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -176,11 +194,15 @@ namespace Flux {
 		std::string entityName = entity.GetComponent<NameComponent>().GetName();
 		bool open = ImGui::TreeNodeEx(entityName.c_str(), flags);
 
-		if (ImGui::BeginDragDropSource())
+		if (entity != m_Scene->GetRootEntity())
 		{
-			ImGui::SetDragDropPayload("Hierarchy_Entity", &entity.GetGUID(), sizeof(Guid));
-			ImGui::EndDragDropSource();
+			if (ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload("Hierarchy_Entity", &entity.GetGUID(), sizeof(Guid));
+				ImGui::EndDragDropSource();
+			}
 		}
+
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -201,7 +223,8 @@ namespace Flux {
 
 		if (open)
 		{
-			for (Entity childEntity : entity.GetChildren())
+			std::vector<Entity> children = entity.GetChildren();
+			for (Entity childEntity : children)
 				DrawEntityNode(childEntity);
 
 			ImGui::TreePop();

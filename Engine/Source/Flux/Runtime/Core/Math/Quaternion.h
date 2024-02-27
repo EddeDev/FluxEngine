@@ -36,7 +36,7 @@ namespace Flux {
 			X = (sinX * cosY * cosZ) - (cosX * sinY * sinZ);
 			Y = (cosX * sinY * cosZ) + (sinX * cosY * sinZ);
 			Z = (cosX * cosY * sinZ) - (sinX * sinY * cosZ);
-			W = (cosX * cosY * cosZ) - (sinX * sinY * sinZ);
+			W = (cosX * cosY * cosZ) + (sinX * sinY * sinZ);
 		}
 
 		float GetPitch() const
@@ -58,7 +58,7 @@ namespace Flux {
 		float GetRoll() const
 		{
 			float y = 2.0f * (X * Y + W * Z);
-			float x = (W * W) - (X * X) - (Y * Y) + (Z * Z);
+			float x = (W * W) + (X * X) - (Y * Y) - (Z * Z);
 
 			if (Vector2::EpsilonEqual({ x, y }, Vector2(0.0f)))
 				return 0.0f;
@@ -105,6 +105,11 @@ namespace Flux {
 		Matrix4x4 ToMatrix4x4() const
 		{
 			return Matrix4x4(ToMatrix3x3());
+		}
+
+		operator Vector4&() const
+		{
+			return *(Vector4*)this;
 		}
 
 		Vector3 operator*(const Vector3& v) const

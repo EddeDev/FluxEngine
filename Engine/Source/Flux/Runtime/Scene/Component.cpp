@@ -18,7 +18,7 @@ namespace Flux {
 
 #pragma region Transform
 	TransformComponent::TransformComponent(const Vector3& position, const Vector3& eulerAngles, const Vector3& scale)
-		: m_Position(position), m_Rotation(eulerAngles), m_Scale(scale)
+		: m_Position(position), m_EulerAngles(eulerAngles), m_Rotation(eulerAngles), m_Scale(scale)
 	{
 	}
 
@@ -64,7 +64,27 @@ namespace Flux {
 	{
 		// if (Quaternion::EpsilonNotEqual(m_Rotation, rotation))
 		{
+			Vector3 previousEulerAngles = m_EulerAngles * Math::DegToRad;
 			m_Rotation = rotation;
+			Vector3 newEulerAngles = m_Rotation.GetEulerAngles();
+			m_EulerAngles = newEulerAngles * Math::RadToDeg;
+
+			if ((Math::Abs(newEulerAngles.X - previousEulerAngles.X) == Math::PI) &&
+				(Math::Abs(newEulerAngles.Z - previousEulerAngles.Z) == Math::PI))
+			{
+				m_EulerAngles = Vector3(previousEulerAngles.X, Math::PI - newEulerAngles.Y, previousEulerAngles.Z) * Math::RadToDeg;
+			}
+
+			RecalculateTransform();
+		}
+	}
+
+	void TransformComponent::SetEulerAngles(const Vector3& eulerAngles)
+	{
+		if (Vector3::EpsilonNotEqual(m_EulerAngles, eulerAngles))
+		{
+			m_EulerAngles = eulerAngles;
+			m_Rotation = Quaternion(eulerAngles * Math::DegToRad);
 			RecalculateTransform();
 		}
 	}

@@ -17,6 +17,8 @@ namespace Flux {
 		m_SceneEntity->AddComponent<RelationshipComponent>();
 
 		RegisterComponentCallbacks(AllComponents{}, m_Registry);
+
+		m_CubeMesh = Mesh::LoadFromFile("Resources/Meshes/Primitives/Cube.gltf");
 	}
 
 	Scene::~Scene()
@@ -41,6 +43,18 @@ namespace Flux {
 		cameraSettings.FarClip = 1000.0f;
 
 		pipeline->BeginRendering();
+
+		auto view = m_Registry.view<TransformComponent>();
+		for (auto& entityHandle : view)
+		{
+			Entity entity{ entityHandle, this };
+
+			StaticMeshSubmitInfo submitInfo;
+			submitInfo.Mesh = m_CubeMesh;
+			submitInfo.Transform = entity.GetComponent<TransformComponent>().GetWorldTransform();
+			pipeline->SubmitStaticMesh(submitInfo);
+		}
+
 		// Render all entities
 		pipeline->EndRendering();
 	}

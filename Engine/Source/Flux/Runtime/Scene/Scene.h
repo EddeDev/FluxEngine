@@ -56,6 +56,8 @@ namespace Flux {
 		std::unordered_map<Guid, Entity> m_EntityMap;
 
 		Entity* m_SceneEntity = nullptr;
+
+		Ref<Mesh> m_CubeMesh;
 	};
 
 }
