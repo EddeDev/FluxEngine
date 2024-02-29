@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Flux/Runtime/Asset/AssetDatabase.h"
+#include "Flux/Runtime/Asset/AssetDatabaseInterface.h"
 
 namespace Flux {
 
@@ -15,7 +15,7 @@ namespace Flux {
 		template<typename T, typename... TArgs>
 		void RegisterAssetDatabase()
 		{
-			static_assert(std::is_base_of<AssetDatabase, T>::value);
+			static_assert(std::is_base_of<AssetDatabaseInterface, T>::value);
 
 			m_AssetDatabase = Ref<T>::Create(m_ProjectDirectory, m_AssetsDirectory);
 			m_AssetDatabase->ImportAssets();
@@ -27,10 +27,10 @@ namespace Flux {
 			m_AssetDatabase = nullptr;
 		}
 
-		template<typename T = AssetDatabase>
+		template<typename T = AssetDatabaseInterface>
 		Ref<T> GetAssetDatabase() const
 		{
-			static_assert(std::is_base_of<AssetDatabase, T>::value);
+			static_assert(std::is_base_of<AssetDatabaseInterface, T>::value);
 			return m_AssetDatabase.As<T>();
 		}
 		
@@ -51,7 +51,7 @@ namespace Flux {
 		std::filesystem::path m_ProjectSettingsDirectory;
 		std::filesystem::path m_AssetsDirectory;
 
-		Ref<AssetDatabase> m_AssetDatabase;
+		Ref<AssetDatabaseInterface> m_AssetDatabase;
 
 		inline static Project* s_ActiveProject = nullptr;
 	};

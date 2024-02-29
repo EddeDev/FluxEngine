@@ -39,7 +39,7 @@ namespace Flux {
 	{
 		if (Platform::GetCurrentThreadID() != threadID)
 		{
-			auto threadName = Platform::GetThreadName(Platform::GetThreadFromID(threadID));
+			std::string threadName = Platform::GetThreadName(Platform::GetThreadFromID(threadID));
 			VerifyFailed("'{0}' must only be called from '{1}'.", functionName, threadName);
 		}
 	}

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "AssetType.h"
+#include "AssetID.h"
 
-#include "Flux/Runtime/Core/Guid.h"
 #include "Flux/Runtime/Core/RefCounting.h"
 
 namespace Flux {
@@ -16,12 +16,12 @@ namespace Flux {
 	public:
 		virtual ~Asset() {}
 
-		void SetID(const Guid& id) { m_ID = id; }
-		const Guid& GetID() const { return m_ID; }
+		void SetAssetID(const AssetID& assetID) { m_AssetID = assetID; }
+		const AssetID& GetAssetID() const { return m_AssetID; }
 
 		virtual AssetType GetType() const = 0;
 	private:
-		Guid m_ID;
+		AssetID m_AssetID;
 	};
 
 }

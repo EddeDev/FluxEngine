@@ -1,17 +1,17 @@
 #pragma once
 
-#include "Flux/Runtime/Asset/AssetDatabase.h"
+#include "Flux/Runtime/Asset/AssetDatabaseInterface.h"
 
 namespace Flux {
 
-	class EditorAssetDatabase : public AssetDatabase
+	class EditorAssetDatabase : public AssetDatabaseInterface
 	{
 	public:
 		EditorAssetDatabase(const std::filesystem::path& projectDirectory, const std::filesystem::path& assetDirectory);
 		virtual ~EditorAssetDatabase();
 
-		virtual Ref<Asset> ImportAsset(const Guid& assetID) override;
-		virtual Ref<Asset> GetAssetFromID(const Guid& assetID) override;
+		virtual Ref<Asset> ImportAsset(const AssetID& assetID) override;
+		virtual Ref<Asset> GetAssetFromID(const AssetID& assetID) override;
 		virtual void ImportAssets() override;
 		virtual bool SaveAsset(const Ref<Asset>& asset) override;
 		virtual void SaveAssets() override;
@@ -19,21 +19,21 @@ namespace Flux {
 		virtual const AssetMetadata& GetMetadataFromPath(const std::filesystem::path& metadataPath) const override;
 		virtual const AssetMetadata& GetMetadataFromAssetPath(const std::filesystem::path& assetPath) const override;
 		virtual const AssetMetadata& GetMetadataFromAsset(const Ref<Asset>& asset) const override;
-		virtual const AssetMetadata& GetMetadataFromAssetID(const Guid& assetID) const override;
+		virtual const AssetMetadata& GetMetadataFromAssetID(const AssetID& assetID) const override;
 
 		virtual std::filesystem::path GetMetadataPath(const std::filesystem::path& assetPath) const override;
 		virtual std::filesystem::path GetAssetPath(const std::filesystem::path& metadataPath) const override;
 		virtual std::filesystem::path GetFilesystemPath(const std::filesystem::path& relativePath) const override;
 		virtual std::filesystem::path GetRelativePath(const std::filesystem::path& filesystemPath) const override;
 
-		virtual std::unordered_map<Guid, Ref<Asset>>& GetAssetMap() override { return m_AssetMap; }
-		virtual const std::unordered_map<Guid, Ref<Asset>>& GetAssetMap() const override { return m_AssetMap; }
+		virtual std::unordered_map<AssetID, Ref<Asset>>& GetAssetMap() override { return m_AssetMap; }
+		virtual const std::unordered_map<AssetID, Ref<Asset>>& GetAssetMap() const override { return m_AssetMap; }
 
-		virtual std::unordered_map<Guid, Ref<Asset>>& GetMemoryAssetMap() override { return m_MemoryAssetMap; }
-		virtual const std::unordered_map<Guid, Ref<Asset>>& GetMemoryAssetMap() const override { return m_MemoryAssetMap; }
+		virtual std::unordered_map<AssetID, Ref<Asset>>& GetMemoryAssetMap() override { return m_MemoryAssetMap; }
+		virtual const std::unordered_map<AssetID, Ref<Asset>>& GetMemoryAssetMap() const override { return m_MemoryAssetMap; }
 
-		virtual std::unordered_map<Guid, AssetMetadata>& GetMetadataMap() override { return m_MetadataMap; }
-		virtual const std::unordered_map<Guid, AssetMetadata>& GetMetadataMap() const override { return m_MetadataMap; }
+		virtual std::unordered_map<AssetID, AssetMetadata>& GetMetadataMap() override { return m_MetadataMap; }
+		virtual const std::unordered_map<AssetID, AssetMetadata>& GetMetadataMap() const override { return m_MetadataMap; }
 
 		void Refresh();
 
@@ -47,7 +47,7 @@ namespace Flux {
 
 			auto& assetID = CreateMetadata(GetMetadataPath(assetPath));
 			Ref<Asset> asset = Ref<T>::Create(std::forward<TArgs>(args)...);
-			asset->SetID(assetID);
+			asset->SetAssetID(assetID);
 
 			m_AssetMap[assetID] = asset;
 			SaveAsset(asset);
@@ -58,13 +58,13 @@ namespace Flux {
 		Ref<T> CreateMemoryAsset(TArgs&&... args)
 		{
 			AssetMetadata metadata;
-			metadata.ID = Guid::NewGuid();
+			metadata.ID = Utils::GenerateAssetID();
 			metadata.Type = T::GetStaticType();
 			metadata.Name = fmt::format("Untitled {0}", Utils::AssetTypeToString(metadata.Type));
 			metadata.IsMemoryAsset = true;
 
 			Ref<Asset> asset = Ref<T>::Create(std::forward<TArgs>(args)...);
-			asset->SetID(metadata.ID);
+			asset->SetAssetID(metadata.ID);
 
 			m_MemoryAssetMap[metadata.ID] = asset;
 			m_MetadataMap[metadata.ID] = metadata;
@@ -93,17 +93,17 @@ namespace Flux {
 			return asset;
 		}
 	private:
-		const Guid& CreateMetadata(const std::filesystem::path& metadataPath);
-		const Guid& ImportMetadata(const std::filesystem::path& metadataPath);
+		const AssetID& CreateMetadata(const std::filesystem::path& metadataPath);
+		const AssetID& ImportMetadata(const std::filesystem::path& metadataPath);
 		bool RemoveMetadata(const std::filesystem::path& metadataPath);
 		bool SaveMetadata(const std::filesystem::path& metadataPath) const;
 	private:
 		std::filesystem::path m_ProjectDirectory;
 		std::filesystem::path m_AssetDirectory;
 
-		std::unordered_map<Guid, AssetMetadata> m_MetadataMap;
-		std::unordered_map<Guid, Ref<Asset>> m_AssetMap;
-		std::unordered_map<Guid, Ref<Asset>> m_MemoryAssetMap;
+		std::unordered_map<AssetID, AssetMetadata> m_MetadataMap;
+		std::unordered_map<AssetID, Ref<Asset>> m_AssetMap;
+		std::unordered_map<AssetID, Ref<Asset>> m_MemoryAssetMap;
 	};
 
 }

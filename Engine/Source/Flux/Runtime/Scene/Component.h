@@ -2,6 +2,8 @@
 
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
 
+#include "Flux/Runtime/Asset/AssetID.h"
+
 #include <entt/entt.hpp>
 
 namespace Flux {
@@ -205,17 +207,17 @@ namespace Flux {
 	class SubmeshComponent : public Component
 	{
 	public:
-		SubmeshComponent(Ref<Mesh> mesh = nullptr, uint32 submeshIndex = 0);
+		SubmeshComponent(const AssetID& meshAssetID = {}, uint32 submeshIndex = 0);
 
-		void SetMesh(Ref<Mesh> mesh);
-		Ref<Mesh> GetMesh() const { return m_Mesh; }
+		void SetMeshAssetID(const AssetID& assetID);
+		const AssetID& GetMeshAssetID() const { return m_MeshAssetID; }
 
 		void SetSubmeshIndex(uint32 index);
 		uint32 GetSubmeshIndex() const { return m_SubmeshIndex; }
 
 		COMPONENT_CLASS_TYPE(Submesh)
 	private:
-		Ref<Mesh> m_Mesh;
+		AssetID m_MeshAssetID;
 		uint32 m_SubmeshIndex;
 	};
 

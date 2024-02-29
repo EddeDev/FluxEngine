@@ -3,6 +3,8 @@
 
 #include "Entity.h"
 
+#include "Flux/Runtime/Asset/AssetDatabase.h"
+
 namespace Flux {
 
 #pragma region Name
@@ -186,16 +188,16 @@ namespace Flux {
 #pragma endregion Camera
 
 #pragma region Submesh
-	SubmeshComponent::SubmeshComponent(Ref<Mesh> mesh, uint32 submeshIndex)
-		: m_Mesh(mesh), m_SubmeshIndex(submeshIndex)
+	SubmeshComponent::SubmeshComponent(const AssetID& meshAssetID, uint32 submeshIndex)
+		: m_MeshAssetID(meshAssetID), m_SubmeshIndex(submeshIndex)
 	{
 	}
 
-	void SubmeshComponent::SetMesh(Ref<Mesh> mesh)
+	void SubmeshComponent::SetMeshAssetID(const AssetID& assetID)
 	{
-		if (m_Mesh != mesh)
+		if (m_MeshAssetID != assetID)
 		{
-			m_Mesh = mesh;
+			m_MeshAssetID = assetID;
 			OnChanged();
 		}
 	}
@@ -217,16 +219,17 @@ namespace Flux {
 
 		if (entity.HasComponent<SubmeshComponent>())
 		{
-			auto& submesh = entity.GetComponent<SubmeshComponent>();
-			auto& transform = entity.GetComponent<TransformComponent>();
+			auto& submeshComponent = entity.GetComponent<SubmeshComponent>();
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
 
-			Ref<Mesh> mesh = submesh.GetMesh();
+			auto& meshAssetID = submeshComponent.GetMeshAssetID();
+			Ref<Mesh> mesh = AssetDatabase::GetAssetFromID<Mesh>(meshAssetID);
 			if (mesh)
 			{
 				DynamicMeshSubmitInfo submitInfo;
 				submitInfo.Mesh = mesh;
-				submitInfo.SubmeshIndex = submesh.GetSubmeshIndex();
-				submitInfo.Transform = transform.GetWorldTransform();
+				submitInfo.SubmeshIndex = submeshComponent.GetSubmeshIndex();
+				submitInfo.Transform = transformComponent.GetWorldTransform();
 
 				pipeline->SubmitDynamicMesh(submitInfo);
 			}

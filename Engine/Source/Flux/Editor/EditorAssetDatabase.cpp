@@ -3,10 +3,18 @@
 
 #include "Flux/Runtime/Utils/FileHelper.h"
 
+
+
+
+// TODO: TEMP
+#include "Flux/Runtime/Renderer/Mesh.h"
+
+#include <yaml-cpp/yaml.h>
+
 namespace Flux {
 
 	static AssetMetadata s_NullMetadata;
-	static Guid s_NullGuid;
+	static AssetID s_NullAssetID;
 
 	EditorAssetDatabase::EditorAssetDatabase(const std::filesystem::path& projectDirectory, const std::filesystem::path& assetDirectory)
 		: m_ProjectDirectory(projectDirectory), m_AssetDirectory(assetDirectory)
@@ -18,7 +26,7 @@ namespace Flux {
 	{
 	}
 
-	Ref<Asset> EditorAssetDatabase::ImportAsset(const Guid& assetID)
+	Ref<Asset> EditorAssetDatabase::ImportAsset(const AssetID& assetID)
 	{
 		auto memoryAssetIt = m_MemoryAssetMap.find(assetID);
 		if (memoryAssetIt != m_MemoryAssetMap.end())
@@ -35,9 +43,17 @@ namespace Flux {
 		{
 			Ref<Asset> asset = nullptr;
 
-#if 0
+#if TODO_WIP
 			metadataIt->second.IsLoaded = AssetImporter::Import(metadata, asset);
+#else
+			if (metadataIt->second.Type == AssetType::Mesh)
+			{
+				asset = Mesh::LoadFromFile(metadataIt->second.FilesystemAssetPath);
+				asset->SetAssetID(assetID);
+				metadataIt->second.IsLoaded = true;
+			}
 #endif
+			
 
 			if (!metadataIt->second.IsLoaded)
 				return nullptr;
@@ -48,7 +64,7 @@ namespace Flux {
 		return m_AssetMap[assetID];
 	}
 
-	Ref<Asset> EditorAssetDatabase::GetAssetFromID(const Guid& assetID)
+	Ref<Asset> EditorAssetDatabase::GetAssetFromID(const AssetID& assetID)
 	{
 		return ImportAsset(assetID);
 	}
@@ -66,16 +82,11 @@ namespace Flux {
 
 		FLUX_VERIFY(!IsMemoryAsset(asset));
 
-		auto& assetID = asset->GetID();
+		auto& assetID = asset->GetAssetID();
 
 		auto it = m_MetadataMap.find(assetID);
 		if (it == m_MetadataMap.end())
 			return false;
-
-#if 0
-		if (!AssetImporters::Save(it->second, asset))
-			return false;
-#endif
 
 		if (!SaveMetadata(it->second.RelativeMetaPath))
 		{
@@ -131,11 +142,11 @@ namespace Flux {
 		}
 	}
 
-	const Guid& EditorAssetDatabase::CreateMetadata(const std::filesystem::path& metadataPath)
+	const AssetID& EditorAssetDatabase::CreateMetadata(const std::filesystem::path& metadataPath)
 	{
 		auto assetPath = GetAssetPath(metadataPath);
 
-		Guid assetID = Guid::NewGuid();
+		AssetID assetID = Utils::GenerateAssetID();
 
 		AssetMetadata& metadata = m_MetadataMap[assetID];
 		metadata.ID = assetID;
@@ -150,10 +161,40 @@ namespace Flux {
 		return metadata.ID;
 	}
 
-	const Guid& EditorAssetDatabase::ImportMetadata(const std::filesystem::path& metadataPath)
+	const AssetID& EditorAssetDatabase::ImportMetadata(const std::filesystem::path& metadataPath)
 	{
-		FLUX_VERIFY(false, "Not implemented!");
-		return s_NullMetadata.ID;
+		YAML::Node data;
+		try
+		{
+			data = YAML::LoadFile(GetFilesystemPath(metadataPath).string());
+		}
+		catch (YAML::Exception e)
+		{
+			FLUX_VERIFY(false, "{0}", e.msg);
+		}
+
+		Guid assetID;
+		if (data["GUID"].size() == 4)
+		{
+			assetID[0] = data["GUID"][0].as<uint32>();
+			assetID[1] = data["GUID"][1].as<uint32>();
+			assetID[2] = data["GUID"][2].as<uint32>();
+			assetID[3] = data["GUID"][3].as<uint32>();
+		}
+		else
+		{
+			Guid::Parse(data["GUID"].as<std::string>(), assetID);
+		}
+
+		AssetMetadata& metadata = m_MetadataMap[assetID];
+		metadata.ID = assetID;
+		metadata.Name = GetAssetPath(metadataPath).filename().stem().string();
+		metadata.Type = Utils::AssetTypeFromString(data["Type"].as<std::string>());
+		metadata.RelativeAssetPath = GetAssetPath(metadataPath);
+		metadata.RelativeMetaPath = metadataPath;
+		metadata.FilesystemAssetPath = GetFilesystemPath(metadata.RelativeAssetPath);
+		metadata.FilesystemMetaPath = GetFilesystemPath(metadataPath);
+		return metadata.ID;
 	}
 
 	bool EditorAssetDatabase::RemoveMetadata(const std::filesystem::path& metadataPath)
@@ -180,7 +221,12 @@ namespace Flux {
 			return false;
 		}
 
-		return FileHelper::SaveStringToFile("Flux Asset Metadata File", GetFilesystemPath(metadataPath));
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "GUID" << YAML::Value << metadata.ID.ToString();
+		out << YAML::Key << "Type" << YAML::Value << Utils::AssetTypeToString(metadata.Type);
+		out << YAML::EndMap;
+		return FileHelper::SaveStringToFile(out.c_str(), GetFilesystemPath(metadataPath));
 	}
 
 	const AssetMetadata& EditorAssetDatabase::GetMetadataFromPath(const std::filesystem::path& metadataPath) const
@@ -201,13 +247,13 @@ namespace Flux {
 
 	const AssetMetadata& EditorAssetDatabase::GetMetadataFromAsset(const Ref<Asset>& asset) const
 	{
-		auto& assetID = asset->GetID();
+		auto& assetID = asset->GetAssetID();
 		if (m_MetadataMap.find(assetID) != m_MetadataMap.end())
 			return m_MetadataMap.at(assetID);
 		return s_NullMetadata;
 	}
 
-	const AssetMetadata& EditorAssetDatabase::GetMetadataFromAssetID(const Guid& assetID) const
+	const AssetMetadata& EditorAssetDatabase::GetMetadataFromAssetID(const AssetID& assetID) const
 	{
 		auto it = m_MetadataMap.find(assetID);
 		if (it != m_MetadataMap.end())

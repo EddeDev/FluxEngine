@@ -4,6 +4,8 @@
 // TODO: temp
 #include "HierarchyWindow.h"
 
+#include "Flux/Runtime/Asset/AssetDatabase.h"
+
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -251,16 +253,16 @@ namespace Flux {
 			UI::EndProperties();
 		});
 
-		DrawComponent<SubmeshComponent, false>("Submesh", selectedEntity, [&](SubmeshComponent& component)
+		DrawComponent<SubmeshComponent>("Submesh", selectedEntity, [&](SubmeshComponent& component)
 		{
 			UI::BeginProperties();
 
-			Ref<Mesh> mesh = component.GetMesh();
+			Ref<Mesh> mesh = AssetDatabase::GetAssetFromID<Mesh>(component.GetMeshAssetID());
 			if (mesh)
 			{
 				int32 submeshIndex = component.GetSubmeshIndex();
 			
-				int32 maxSubmeshIndex = mesh->GetProperties().Submeshes.size();
+				int32 maxSubmeshIndex = (int32)mesh->GetProperties().Submeshes.size();
 				if (maxSubmeshIndex > 0)
 					maxSubmeshIndex--;
 				UI::Property("Submesh Index", submeshIndex, 0.1f, 0, maxSubmeshIndex);
@@ -269,14 +271,14 @@ namespace Flux {
 			UI::EndProperties();
 		});
 
-		DrawComponent<MeshRendererComponent, false>("Mesh Renderer", selectedEntity, [&](MeshRendererComponent& component)
+		DrawComponent<MeshRendererComponent>("Mesh Renderer", selectedEntity, [&](MeshRendererComponent& component)
 		{
 			UI::BeginProperties();
 
 			UI::EndProperties();
 		});
 
-		DrawComponent<LightComponent, false>("Light", selectedEntity, [&](LightComponent& component)
+		DrawComponent<LightComponent>("Light", selectedEntity, [&](LightComponent& component)
 		{
 			UI::BeginProperties();
 			

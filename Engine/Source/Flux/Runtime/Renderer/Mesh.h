@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Flux/Runtime/Asset/Asset.h"
+
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 
@@ -57,7 +59,7 @@ namespace Flux {
 		std::vector<MaterialDescriptor> Materials;
 	};
 
-	class Mesh : public ReferenceCounted
+	class Mesh : public Asset
 	{
 	public:
 		Mesh(const MeshProperties& properties);
@@ -68,6 +70,8 @@ namespace Flux {
 		const MeshProperties& GetProperties() const { return m_Properties; }
 
 		static Ref<Mesh> LoadFromFile(const std::filesystem::path& path);
+
+		ASSET_CLASS_TYPE(Mesh)
 	private:
 		MeshProperties m_Properties;
 

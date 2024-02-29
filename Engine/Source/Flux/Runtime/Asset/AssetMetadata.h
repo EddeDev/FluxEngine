@@ -1,10 +1,12 @@
 #pragma once
 
+#include "AssetID.h"
+
 namespace Flux {
 
 	struct AssetMetadata
 	{
-		Guid ID;
+		AssetID ID;
 		std::string Name;
 		AssetType Type = AssetType::None;
 		

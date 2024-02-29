@@ -76,7 +76,7 @@ namespace Flux {
 			return AssetType::None;
 		}
 
-		inline static std::string_view AssetTypeToString(AssetType type)
+		inline static const char* AssetTypeToString(AssetType type)
 		{
 			switch (type)
 			{

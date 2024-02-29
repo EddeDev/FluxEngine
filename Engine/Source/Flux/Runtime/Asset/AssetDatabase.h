@@ -1,78 +1,95 @@
 #pragma once
 
 #include "Asset.h"
-#include "AssetMetadata.h"
 
-#include <filesystem>
+#include "Flux/Editor/Project/Project.h"
 
 namespace Flux {
 
-	class AssetDatabase : public ReferenceCounted
+	class AssetDatabase
 	{
 	public:
-		virtual ~AssetDatabase() {}
-
-		virtual Ref<Asset> ImportAsset(const Guid& assetID) = 0;
-		virtual Ref<Asset> GetAssetFromID(const Guid& assetID) = 0;
-		virtual void ImportAssets() = 0;
-		virtual bool SaveAsset(const Ref<Asset>& asset) = 0;
-		virtual void SaveAssets() = 0;
-
-		virtual const AssetMetadata& GetMetadataFromPath(const std::filesystem::path& metadataPath) const = 0;
-		virtual const AssetMetadata& GetMetadataFromAssetPath(const std::filesystem::path& assetPath) const = 0;
-		virtual const AssetMetadata& GetMetadataFromAsset(const Ref<Asset>& asset) const = 0;
-		virtual const AssetMetadata& GetMetadataFromAssetID(const Guid& assetID) const = 0;
-
-		virtual std::filesystem::path GetMetadataPath(const std::filesystem::path& assetPath) const = 0;
-		virtual std::filesystem::path GetAssetPath(const std::filesystem::path& metadataPath) const = 0;
-		virtual std::filesystem::path GetFilesystemPath(const std::filesystem::path& relativePath) const = 0;
-		virtual std::filesystem::path GetRelativePath(const std::filesystem::path& filesystemPath) const = 0;
-
-		virtual std::unordered_map<Guid, Ref<Asset>>& GetAssetMap() = 0;
-		virtual const std::unordered_map<Guid, Ref<Asset>>& GetAssetMap() const = 0;
-
-		virtual std::unordered_map<Guid, Ref<Asset>>& GetMemoryAssetMap() = 0;
-		virtual const std::unordered_map<Guid, Ref<Asset>>& GetMemoryAssetMap() const = 0;
-
-		virtual std::unordered_map<Guid, AssetMetadata>& GetMetadataMap() = 0;
-		virtual const std::unordered_map<Guid, AssetMetadata>& GetMetadataMap() const = 0;
-
-		template<typename T = Asset>
-		Ref<T> GetAssetFromID(const Guid& assetID)
+		static Ref<Asset> ImportAsset(const AssetID& assetID)
 		{
-			static_assert(std::is_base_of<Asset, T>::value);
-			return GetAssetFromID(assetID).As<T>();
+			return Project::GetActive()->GetAssetDatabase()->ImportAsset(assetID);
+		}
+
+		static Ref<Asset> GetAssetFromID(const AssetID& assetID)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetAssetFromID(assetID);
+		}
+
+		static const AssetMetadata& GetMetadataFromPath(const std::filesystem::path& metadataPath)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetMetadataFromPath(metadataPath);
+		}
+
+		static const AssetMetadata& GetMetadataFromAssetPath(const std::filesystem::path& assetPath)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetMetadataFromAssetPath(assetPath);
+		}
+
+		static const AssetMetadata& GetMetadataFromAsset(const Ref<Asset>& asset)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetMetadataFromAsset(asset);
+		}
+
+		static const AssetMetadata& GetMetadataFromAssetID(const AssetID& assetID)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetMetadataFromAssetID(assetID);
+		}
+
+		static std::filesystem::path GetMetadataPath(const std::filesystem::path& assetPath)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetMetadataPath(assetPath);
+		}
+
+		static std::filesystem::path GetAssetPath(const std::filesystem::path& metadataPath)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetAssetPath(metadataPath);
+		}
+
+		static std::filesystem::path GetFilesystemPath(const std::filesystem::path& relativePath)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetFilesystemPath(relativePath);
+		}
+
+		static std::filesystem::path GetRelativePath(const std::filesystem::path& filesystemPath)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetRelativePath(filesystemPath);
 		}
 
 		template<typename T = Asset>
-		Ref<T> GetAssetFromMetadata(const AssetMetadata& metadata)
+		static Ref<T> GetAssetFromID(const AssetID& assetID)
 		{
-			static_assert(std::is_base_of<Asset, T>::value);
-			return GetAssetFromID<T>(metadata.ID);
+			return Project::GetActive()->GetAssetDatabase()->GetAssetFromID<T>(assetID);
 		}
 
 		template<typename T = Asset>
-		Ref<T> GetAssetFromPath(const std::filesystem::path& assetPath)
+		static Ref<T> GetAssetFromMetadata(const AssetMetadata& metadata)
 		{
-			static_assert(std::is_base_of<Asset, T>::value);
-			return GetAssetFromMetadata<T>(GetMetadataFromAssetPath(assetPath));
+			return Project::GetActive()->GetAssetDatabase()->GetAssetFromMetadata<T>(metadata);
 		}
 
-		bool IsMemoryAsset(const Guid& assetID) const
+		template<typename T = Asset>
+		static Ref<T> GetAssetFromPath(const std::filesystem::path& assetPath)
 		{
-			auto& memoryAssetMap = GetMemoryAssetMap();
-			return memoryAssetMap.find(assetID) != memoryAssetMap.end();
+			return Project::GetActive()->GetAssetDatabase()->GetAssetFromPath<T>(assetPath);
 		}
 
-		bool IsMemoryAsset(const Ref<Asset>& asset) const
+		static bool IsMemoryAsset(const AssetID& assetID)
 		{
-			return IsMemoryAsset(asset->GetID());
+			return Project::GetActive()->GetAssetDatabase()->IsMemoryAsset(assetID);
 		}
 
-		const std::string& GetAssetName(const Ref<Asset>& asset) const
+		static bool IsMemoryAsset(const Ref<Asset>& asset)
 		{
-			return GetMetadataFromAsset(asset).Name;
+			return Project::GetActive()->GetAssetDatabase()->IsMemoryAsset(asset);
+		}
+
+		static const std::string& GetAssetName(const Ref<Asset>& asset)
+		{
+			return Project::GetActive()->GetAssetDatabase()->GetAssetName(asset);
 		}
 	};
-
 }

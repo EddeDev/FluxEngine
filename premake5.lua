@@ -33,6 +33,7 @@ project "FluxEngine"
         "Engine/Libraries/stb_image/include",
         "Engine/Libraries/CityHash/src",
         "Engine/Libraries/entt/include",
+        "Engine/Libraries/yaml-cpp/include",
         "Engine/Libraries/ImGui"
     }
 
@@ -46,7 +47,13 @@ project "FluxEngine"
         "ImGui",
         "stb_image",
         "CityHash",
-        "EnTT"
+        "EnTT",
+        "yaml-cpp"
+    }
+
+    defines
+    {
+        "YAML_CPP_STATIC_DEFINE"
     }
 
     filter "system:windows"
@@ -169,4 +176,5 @@ group "Libraries"
     include "Engine/Libraries/stb_image"
     include "Engine/Libraries/CityHash"
     include "Engine/Libraries/entt"
+    include "Engine/Libraries/yaml-cpp"
 group ""

@@ -402,6 +402,7 @@ namespace Flux {
 
 		// TODO: TEMP
 		// if (false)
+#if 0
 		{
 			Entity cubeEntity = m_EditorScene->CreateEmpty("Cube");
 			cubeEntity.GetComponent<TransformComponent>().SetLocalPosition({ -4.0f, 0.0f, 0.0f });
@@ -439,6 +440,21 @@ namespace Flux {
 
 			Entity directionalLightEntity = m_EditorScene->CreateDirectionalLight("Directional Light", { 50.0f, -30.0f, 0.0f });
 		}
+#else
+		{
+			Entity cubeEntity = m_EditorScene->CreateEmpty("Cube");
+			cubeEntity.GetComponent<TransformComponent>().SetLocalPosition({ -4.0f, 0.0f, 0.0f });
+
+			Ref<Mesh> cubeMeshAsset = m_Project->GetAssetDatabase()->GetAssetFromPath("Assets/Meshes/Primitives/Cube.gltf");
+			cubeEntity.AddComponent<SubmeshComponent>(cubeMeshAsset->GetAssetID());
+			cubeEntity.AddComponent<MeshRendererComponent>();
+
+			Entity cameraEntity = m_EditorScene->CreateCamera("Main Camera");
+			cameraEntity.GetComponent<TransformComponent>().SetLocalPosition({ 0.0f, 1.0f, -10.0f });
+
+			Entity directionalLightEntity = m_EditorScene->CreateDirectionalLight("Directional Light", { 50.0f, -30.0f, 0.0f });
+		}
+#endif
 
 		EditorWindowManager::SetActiveScene(scene);
 	}
