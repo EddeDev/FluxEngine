@@ -33,13 +33,17 @@ namespace Flux {
 		void NewProject();
 		void SaveProject();
 		void CloseProject();
+
+		void NewScene();
+		void OpenScene();
+		void OpenScene(const std::filesystem::path& path);
+		void InitScene(Ref<Scene> scene);
+		void SaveScene();
+		void SaveSceneAs();
 	private:
 		Ref<Project> m_Project;
 
 		Ref<Scene> m_EditorScene;
-
-		uint32 m_ViewportWidth = 0;
-		uint32 m_ViewportHeight = 0;
 
 		enum MenuItem : uint32
 		{

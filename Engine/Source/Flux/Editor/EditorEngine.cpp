@@ -1,10 +1,13 @@
 #include "FluxPCH.h"
 #include "EditorEngine.h"
 
+#include "EditorAssetDatabase.h"
+
 #include "EditorWindow.h"
 #include "HierarchyWindow.h"
 #include "InspectorWindow.h"
-#include "ViewportWindow.h"
+#include "SceneViewWindow.h"
+#include "GameViewWindow.h"
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
@@ -28,10 +31,8 @@ namespace Flux {
 		EditorWindowManager::Init();
 		EditorWindowManager::AddWindow<HierarchyWindow>("Hierarchy");
 		EditorWindowManager::AddWindow<InspectorWindow>("Inspector");
-		EditorWindowManager::AddWindow<ViewportWindow>("Viewport");
-
-		m_EditorScene = Ref<Scene>::Create();
-		EditorWindowManager::SetActiveScene(m_EditorScene);
+		EditorWindowManager::AddWindow<SceneViewWindow>("Scene");
+		EditorWindowManager::AddWindow<GameViewWindow>("Game");
 
 		OpenProject();
 	}
@@ -188,6 +189,8 @@ namespace Flux {
 
 	void EditorEngine::OnEvent(Event& event)
 	{
+		EditorWindowManager::OnEvent(event);
+
 		EventHandler handler(event);
 		handler.Bind<WindowMenuEvent>(FLUX_BIND_CALLBACK(OnWindowMenuEvent, this));
 		handler.Bind<WindowCloseEvent>(FLUX_BIND_CALLBACK(OnWindowCloseEvent, this));
@@ -282,13 +285,15 @@ namespace Flux {
 		FLUX_INFO("Opening project: {0}", path.filename().stem().string());
 
 		m_Project = Project::Load(path);
+		m_Project->RegisterAssetDatabase<EditorAssetDatabase>();
+
+		NewScene();
 	}
 
 	void EditorEngine::NewProject()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		// TODO: hack
 		SubmitToEventThread([this]()
 		{
 			std::string path;
@@ -300,6 +305,7 @@ namespace Flux {
 				{
 					CloseProject();
 
+					// TODO
 					// m_Project = Ref<Project>::Create(path + '/' + ...)
 				}
 			});
@@ -321,15 +327,137 @@ namespace Flux {
 	void EditorEngine::CloseProject()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
-
+	
 		if (m_Project)
 		{
 			FLUX_INFO("Saving and closing project: {0}", m_Project->GetName());
 
-			m_Project->SaveSettings();
+			SaveScene();
+			InitScene(nullptr);
 
+			m_Project->GetAssetDatabase<EditorAssetDatabase>()->SaveAssets();
+			m_Project->UnregisterAssetDatabase();
+
+			if (m_EditorScene)
+			{
+				FLUX_VERIFY(m_EditorScene->GetReferenceCount() == 1);
+				m_EditorScene = nullptr;
+			}
+
+			m_Project->SaveSettings();
 			FLUX_VERIFY(m_Project->GetReferenceCount() == 1);
 			m_Project = nullptr;
+		}
+	}
+
+	void EditorEngine::NewScene()
+	{
+		m_EditorScene = m_Project->GetAssetDatabase<EditorAssetDatabase>()->CreateMemoryAsset<Scene>();
+
+		InitScene(m_EditorScene);
+	}
+
+	void EditorEngine::OpenScene()
+	{
+		SubmitToEventThread([this]()
+		{
+			std::string path;
+			Platform::OpenFolderDialog(nullptr, &path, "Load Scene");
+
+			SubmitToMainThread([this, path]()
+			{
+				OpenScene(path);
+			});
+		});
+	}
+
+	void EditorEngine::OpenScene(const std::filesystem::path& path)
+	{
+		if (!std::filesystem::exists(path))
+			return;
+
+		if (m_EditorScene)
+		{
+			const auto& metadata = m_Project->GetAssetDatabase()->GetMetadataFromAsset(m_EditorScene);
+			if (path == metadata.RelativeAssetPath)
+				return;
+		}
+
+		FLUX_INFO("Opening scene: {0}", path.filename().stem().string());
+
+		Ref<Scene> newScene = m_Project->GetAssetDatabase()->GetAssetFromPath(path);
+		if (newScene)
+		{
+			if (m_EditorScene)
+				SaveScene();
+
+			m_EditorScene = newScene;
+			InitScene(m_EditorScene);
+		}
+	}
+
+	void EditorEngine::InitScene(Ref<Scene> scene)
+	{
+		// TODO: Update window title
+
+		// TODO: TEMP
+		// if (false)
+		{
+			Entity cubeEntity = m_EditorScene->CreateEmpty("Cube");
+			cubeEntity.GetComponent<TransformComponent>().SetLocalPosition({ -4.0f, 0.0f, 0.0f });
+			cubeEntity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Cube.gltf"));
+			cubeEntity.AddComponent<MeshRendererComponent>();
+
+			Entity planeEntity = m_EditorScene->CreateEmpty("Plane");
+			planeEntity.GetComponent<TransformComponent>().SetLocalPosition({ -2.0f, 0.0f, 0.0f });
+			planeEntity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Plane.gltf"));
+			planeEntity.AddComponent<MeshRendererComponent>();
+
+			Entity sphereEntity = m_EditorScene->CreateEmpty("Sphere");
+			sphereEntity.GetComponent<TransformComponent>().SetLocalPosition({ 0.0f, 0.0f, 0.0f });
+			sphereEntity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Sphere.gltf"));
+			sphereEntity.AddComponent<MeshRendererComponent>();
+
+			Entity capsuleEntity = m_EditorScene->CreateEmpty("Capsule");
+			capsuleEntity.GetComponent<TransformComponent>().SetLocalPosition({ 2.0f, 0.0f, 0.0f });
+			capsuleEntity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Capsule.gltf"));
+			capsuleEntity.AddComponent<MeshRendererComponent>();
+
+			Entity parentEntity = m_EditorScene->CreateEmpty("Parent Test");
+			parentEntity.GetComponent<TransformComponent>().SetLocalPosition({ 4.0f, 0.0f, 0.0f });
+			parentEntity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Cube.gltf"));
+			parentEntity.AddComponent<MeshRendererComponent>();
+
+			Entity childEntity = m_EditorScene->CreateEmpty("Child Test");
+			childEntity.GetComponent<TransformComponent>().SetLocalPosition({ 2.0f, -2.0f, 0.0f });
+			childEntity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Cube.gltf"));
+			childEntity.AddComponent<MeshRendererComponent>();
+			childEntity.SetParent(parentEntity);
+
+			Entity cameraEntity = m_EditorScene->CreateCamera("Main Camera");
+			cameraEntity.GetComponent<TransformComponent>().SetLocalPosition({ 0.0f, 1.0f, -10.0f });
+
+			Entity directionalLightEntity = m_EditorScene->CreateDirectionalLight("Directional Light", { 50.0f, -30.0f, 0.0f });
+		}
+
+		EditorWindowManager::SetActiveScene(scene);
+	}
+
+	void EditorEngine::SaveScene()
+	{
+		FLUX_INFO("Saving scene...");
+
+		if (m_Project->GetAssetDatabase()->IsMemoryAsset(m_EditorScene))
+			SaveSceneAs();
+		else
+			m_Project->GetAssetDatabase<EditorAssetDatabase>()->SaveAsset(m_EditorScene);
+	}
+
+	void EditorEngine::SaveSceneAs()
+	{
+		if (m_EditorScene)
+		{
+			// TODO
 		}
 	}
 

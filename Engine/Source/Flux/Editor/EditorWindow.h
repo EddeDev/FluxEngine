@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Flux/Runtime/Core/Events/Event.h"
+
 #include "Flux/Runtime/Scene/Scene.h"
 #include "Flux/Runtime/Scene/Entity.h"
 
@@ -12,6 +14,7 @@ namespace Flux {
 
 		virtual void OnUpdate() {}
 		virtual void OnImGuiRender() {}
+		virtual void OnEvent(Event& event) {}
 
 		void SetScene(Ref<Scene> scene) { m_Scene = scene; }
 	protected:
@@ -43,6 +46,7 @@ namespace Flux {
 
 		static void OnUpdate();
 		static void OnImGuiRender();
+		static void OnEvent(Event& event);
 
 		static void SetActiveScene(Ref<Scene> scene) { s_ActiveScene = scene; }
 

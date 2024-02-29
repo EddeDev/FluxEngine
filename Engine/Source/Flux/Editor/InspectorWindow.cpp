@@ -9,6 +9,109 @@
 
 namespace Flux {
 
+	namespace UI {
+
+		static char s_IDBuffer[16] = "##";
+		static uint32 s_IDCounter = 0;
+		static uint32 s_IDStackCounter = 0;
+		static const char* GenerateID() { itoa(s_IDCounter++, s_IDBuffer + 2, 16); return s_IDBuffer; }
+
+		static void PushID()
+		{
+			ImGui::PushID(s_IDStackCounter++);
+			s_IDCounter = 0;
+		}
+
+		static void PopID()
+		{
+			ImGui::PopID();
+			s_IDStackCounter--;
+		}
+
+		static void BeginProperties()
+		{
+			PushID();
+			ImGui::Columns(2);
+		}
+
+		static void EndProperties()
+		{
+			ImGui::Columns(1);
+			PopID();
+		}
+
+		static bool Property(std::string_view label, int32& value, float speed = 1.0f, int32 minValue = 0, int32 maxValue = 0)
+		{
+			ImGui::Text(label.data());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1.0f);
+
+			bool modified = ImGui::InputInt(GenerateID(), &value, 1, 100, ImGuiInputTextFlags_ReadOnly);
+
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+
+			return modified;
+		}
+
+		static bool Property(std::string_view label, float& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
+		{
+			ImGui::Text(label.data());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1.0f);
+
+			bool modified = ImGui::DragFloat(GenerateID(), &value, speed, minValue, maxValue, "%.2f");
+
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+
+			return modified;
+		}
+
+		static bool Property(std::string_view label, Vector2& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
+		{
+			ImGui::Text(label.data());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1.0f);
+
+			bool modified = ImGui::DragFloat2(GenerateID(), value.GetPointer(), speed, minValue, maxValue, "%.2f");
+
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+
+			return modified;
+		}
+
+		static bool Property(std::string_view label, Vector3& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
+		{
+			ImGui::Text(label.data());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1.0f);
+
+			bool modified = ImGui::DragFloat3(GenerateID(), value.GetPointer(), speed, minValue, maxValue, "%.2f");
+
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+
+			return modified;
+		}
+
+		static bool Property(std::string_view label, Vector4& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
+		{
+			ImGui::Text(label.data());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1.0f);
+
+			bool modified = ImGui::DragFloat4(GenerateID(), value.GetPointer(), speed, minValue, maxValue, "%.2f");
+
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+
+			return modified;
+		}
+
+	}
+
 	InspectorWindow::InspectorWindow()
 	{
 	}
@@ -93,15 +196,15 @@ namespace Flux {
 
 		DrawComponent<TransformComponent, false>("Transform", selectedEntity, [&](TransformComponent& component)
 		{
-			ImGui::Columns(2);
+			UI::BeginProperties();
 
-			Vector3 position = component.GetPosition();
+			Vector3 position = component.GetLocalPosition();
 			if (DrawVector3Control("Position", position))
-				component.SetPosition(position);
+				component.SetLocalPosition(position);
 
-			Vector3 eulerAngles = component.GetEulerAngles();
+			Vector3 eulerAngles = component.GetLocalEulerAngles();
 			if (DrawVector3Control("Rotation", eulerAngles))
-				component.SetEulerAngles(eulerAngles);
+				component.SetLocalEulerAngles(eulerAngles);
 
 			Vector3 scale = component.GetScale();
 			if (DrawVector3Control("Scale", scale, 1.0f))
@@ -126,20 +229,59 @@ namespace Flux {
 
 			ImGui::EndDisabled();
 
-			ImGui::Columns(1);
+			UI::EndProperties();
 		});
 
-#if 0
-		for (auto&& [id, set] : m_Scene->GetRegistry().storage())
+		DrawComponent<CameraComponent>("Camera", selectedEntity, [&](CameraComponent& component)
 		{
-			if (set.contains(selectedEntity))
+			UI::BeginProperties();
+
+			float fieldOfView = component.GetFieldOfView();
+			if (UI::Property("Field of View", fieldOfView, 0.1f, 0.0f, 179.0f))
+				component.SetFieldOfView(fieldOfView);
+
+			float nearClip = component.GetNearClip();
+			if (UI::Property("Near Clip", nearClip, 0.001f, 0.01f, std::numeric_limits<float>::max()))
+				component.SetNearClip(nearClip);
+
+			float farClip = component.GetFarClip();
+			if (UI::Property("Far Clip", farClip, 1.0f, 0.0f, std::numeric_limits<float>::max()))
+				component.SetFarClip(farClip);
+
+			UI::EndProperties();
+		});
+
+		DrawComponent<SubmeshComponent, false>("Submesh", selectedEntity, [&](SubmeshComponent& component)
+		{
+			UI::BeginProperties();
+
+			Ref<Mesh> mesh = component.GetMesh();
+			if (mesh)
 			{
-				if (id == entt::type_id<RelationshipComponent>().hash())
-				{
-				}
+				int32 submeshIndex = component.GetSubmeshIndex();
+			
+				int32 maxSubmeshIndex = mesh->GetProperties().Submeshes.size();
+				if (maxSubmeshIndex > 0)
+					maxSubmeshIndex--;
+				UI::Property("Submesh Index", submeshIndex, 0.1f, 0, maxSubmeshIndex);
 			}
-		}
-#endif
+
+			UI::EndProperties();
+		});
+
+		DrawComponent<MeshRendererComponent, false>("Mesh Renderer", selectedEntity, [&](MeshRendererComponent& component)
+		{
+			UI::BeginProperties();
+
+			UI::EndProperties();
+		});
+
+		DrawComponent<LightComponent, false>("Light", selectedEntity, [&](LightComponent& component)
+		{
+			UI::BeginProperties();
+			
+			UI::EndProperties();
+		});
 	}
 
 	bool InspectorWindow::DrawVector3Control(const std::string& label, Vector3& values, float resetValue, float columnWidth)

@@ -9,10 +9,10 @@ namespace Flux {
 
 	void EditorCamera::OnUpdate(float deltaTime)
 	{
-		bool isUsing = Input::GetMouseButton(MouseButtonCode::ButtonRight);
+		m_IsUsing = Input::GetMouseButton(MouseButtonCode::ButtonRight);
 
 		// FLUX_INFO("IsUsing: {0} ({1}, {2})", isUsing, Input::GetAxis("Mouse X"), Input::GetAxis("Mouse Y"));
-		if (isUsing)
+		if (m_IsUsing)
 		{
 			float mouseX = Input::GetAxis("Mouse X");
 			float mouseY = Input::GetAxis("Mouse Y");
@@ -28,7 +28,7 @@ namespace Flux {
 
 		m_Boost += Input::GetMouseScrollDeltaY() * 0.1f;
 
-		if (isUsing && (x != 0.0f || y != 0.0f))
+		if (m_IsUsing && (x != 0.0f || y != 0.0f))
 		{
 			Vector3 translation = Vector3(x, 0.0f, y) * deltaTime;
 			if (Input::GetKey(KeyCode::LeftShift))

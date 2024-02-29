@@ -39,13 +39,49 @@ namespace Flux {
 			W = (cosX * cosY * cosZ) + (sinX * sinY * sinZ);
 		}
 
+		inline static Quaternion Conjugate(const Quaternion& q)
+		{
+			return { -q.X, -q.Y, -q.Z, q.W };
+		}
+
+		inline static Quaternion Inverse(const Quaternion& q)
+		{
+			return Conjugate(q) / q.LengthSquared();
+		}
+
+		inline static bool EpsilonEqual(const Quaternion& a, const Quaternion& b, float epsilon = std::numeric_limits<float>::epsilon())
+		{
+			return Math::EpsilonEqual(a.X, b.X, epsilon) &&
+				   Math::EpsilonEqual(a.Y, b.Y, epsilon) &&
+				   Math::EpsilonEqual(a.Z, b.Z, epsilon) &&
+				   Math::EpsilonEqual(a.W, b.W, epsilon);
+		}
+
+		inline static bool EpsilonNotEqual(const Quaternion& a, const Quaternion& b, float epsilon = std::numeric_limits<float>::epsilon())
+		{
+			return Math::EpsilonNotEqual(a.X, b.X, epsilon) ||
+				   Math::EpsilonNotEqual(a.Y, b.Y, epsilon) ||
+				   Math::EpsilonNotEqual(a.Z, b.Z, epsilon) ||
+				   Math::EpsilonNotEqual(a.W, b.W, epsilon);
+		}
+
+		float LengthSquared() const
+		{
+			return X * X + Y * Y + Z * Z + W * W;
+		}
+
+		float Length() const
+		{
+			return Math::Sqrt(LengthSquared());
+		}
+
 		float GetPitch() const
 		{
 			float y = 2.0f * (Y * Z + W * X);
 			float x = (W * W) - (X * X) - (Y * Y) + (Z * Z);
 
 			if (Vector2::EpsilonEqual({ x, y }, Vector2(0.0f)))
-				return 2.0f * Math::Atan2 (X, W);
+				return 2.0f * Math::Atan2(X, W);
 
 			return Math::Atan2(y, x);
 		}
@@ -112,12 +148,32 @@ namespace Flux {
 			return *(Vector4*)this;
 		}
 
+		Quaternion operator*(const Quaternion& q) const
+		{
+			Quaternion result;
+			result.X = W * q.X + X * q.W + Y * q.Z - Z * q.Y;
+			result.Y = W * q.Y + Y * q.W + Z * q.X - X * q.Z;
+			result.Z = W * q.Z + Z * q.W + X * q.Y - Y * q.X;
+			result.W = W * q.W - X * q.X - Y * q.Y - Z * q.Z;
+			return result;
+		}
+
 		Vector3 operator*(const Vector3& v) const
 		{
 			Vector3 a(X, Y, Z);
 			Vector3 b(Vector3::Cross(a, v));
 
 			return v + ((b * W) + Vector3::Cross(a, b)) * 2.0f;
+		}
+
+		Quaternion operator/(float scalar) const
+		{
+			Quaternion result;
+			result.X = X / scalar;
+			result.Y = Y / scalar;
+			result.Z = Z / scalar;
+			result.W = W / scalar;
+			return result;
 		}
 
 		float& operator[](uint32 index)

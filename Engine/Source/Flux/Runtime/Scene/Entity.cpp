@@ -95,6 +95,9 @@ namespace Flux {
 		}
 
 		newParentRelationship.IncrementChildCount();
+
+		auto& transformComponent = GetComponent<TransformComponent>();
+		transformComponent.RecalculateTransform();
 	}
 
 	Entity Entity::GetParent() const

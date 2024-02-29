@@ -33,6 +33,9 @@ namespace Flux {
 
 		struct EnvironmentSettings
 		{
+			Vector3 LightDirection = Vector3(0.0f);
+			Vector3 LightColor = Vector3(1.0f);
+
 			// TODO:
 			// - Directional lights
 			// - Point lights
@@ -64,7 +67,7 @@ namespace Flux {
 	class ForwardRenderPipeline : public RenderPipeline
 	{
 	public:
-		ForwardRenderPipeline();
+		ForwardRenderPipeline(bool swapchainTarget = false);
 		virtual ~ForwardRenderPipeline();
 
 		virtual void BeginRendering() override;
@@ -100,8 +103,6 @@ namespace Flux {
 		Ref<Texture> m_WhiteTexture;
 		MaterialDescriptor m_Material;
 
-		Vector3 m_LightColor = Vector3(0.9f, 0.87f, 0.96f);
-		Vector3 m_LightRotation = Vector3(50.0f, -30.0f, 0.0f);
 		float m_AmbientMultiplier = 0.0f;
 
 		struct DrawCommand

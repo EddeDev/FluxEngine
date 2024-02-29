@@ -2,6 +2,7 @@
 
 #include "Component.h"
 
+#include "Flux/Runtime/Asset/Asset.h"
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
 
 #include <entt/entt.hpp>
@@ -10,25 +11,34 @@ namespace Flux {
 
 	class Entity;
 
-	class Scene : public ReferenceCounted
+	class Scene : public Asset
 	{
 	public:
 		Scene();
 		virtual ~Scene();
 
 		void OnUpdate();
-		void OnRender(Ref<RenderPipeline> pipeline, const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix);
+		void OnRender(Ref<RenderPipeline> pipeline);
+		void OnRender(Ref<RenderPipeline> pipeline, const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, float nearClip = 0.1f, float farClip = 1000.0f);
+		void SetViewportSize(uint32 width, uint32 height);
 
 		Entity CreateEmpty(const std::string& name);
 		Entity CreateEmpty(const std::string& name, const Guid& guid);
+		Entity CreateCamera(const std::string& name);
+		Entity CreateDirectionalLight(const std::string& name, const Vector3& rotation);
 		Entity GetEntityFromGUID(const Guid& guid);
 		const Entity& GetRootEntity() const { return *m_SceneEntity; }
 
-		bool RemoveChild(Entity child);
+		Entity GetMainCameraEntity();
 
 		entt::registry& GetRegistry() { return m_Registry; }
 		const entt::registry& GetRegistry() const { return m_Registry; }
+
+		ASSET_CLASS_TYPE(Scene)
 	private:
+		void CreateSceneEntity();
+		void DestroySceneEntity();
+
 		void OnComponentAdded(Entity entity, Component& component);
 
 		template<typename T>
@@ -51,13 +61,85 @@ namespace Flux {
 		{
 			RegisterComponentCallbacks<Component...>(registry);
 		}
+
+		void RegisterComponentCallbacks(entt::registry& registry)
+		{
+			RegisterComponentCallbacks(AllComponents{}, registry);
+		}
+
+		template<typename... Component>
+		void OnUpdate(entt::entity entity)
+		{
+			([&]()
+			{
+				Component* component = m_Registry.try_get<Component>(entity);
+				if (component)
+					component->OnUpdate();
+			}(), ...);
+		}
+
+		template<typename... Component>
+		void OnUpdate(ComponentSet<Component...>, entt::entity entity)
+		{
+			OnUpdate<Component...>(entity);
+		}
+
+		void OnUpdate(entt::entity entity)
+		{
+			OnUpdate(AllComponents{}, entity);
+		}
+
+		template<typename... Component>
+		void OnRender(entt::entity entity, Ref<RenderPipeline> pipeline)
+		{
+			([&]()
+			{
+				Component* component = m_Registry.try_get<Component>(entity);
+				if (component)
+					component->OnRender(pipeline);
+			}(), ...);
+		}
+
+		template<typename... Component>
+		void OnRender(ComponentSet<Component...>, entt::entity entity, Ref<RenderPipeline> pipeline)
+		{
+			OnRender<Component...>(entity, pipeline);
+		}
+
+		void OnRender(entt::entity entity, Ref<RenderPipeline> pipeline)
+		{
+			OnRender(AllComponents{}, entity, pipeline);
+		}
+
+		template<typename... Component>
+		void OnViewportResize(entt::entity entity, uint32 width, uint32 height)
+		{
+			([&]()
+			{
+				Component* component = m_Registry.try_get<Component>(entity);
+				if (component)
+					component->OnViewportResize(width, height);
+			}(), ...);
+		}
+
+		template<typename... Component>
+		void OnViewportResize(ComponentSet<Component...>, entt::entity entity, uint32 width, uint32 height)
+		{
+			OnViewportResize<Component...>(entity, width, height);
+		}
+
+		void OnViewportResize(entt::entity entity, uint32 width, uint32 height)
+		{
+			OnViewportResize(AllComponents{}, entity, width, height);
+		}
 	private:
 		entt::registry m_Registry;
 		std::unordered_map<Guid, Entity> m_EntityMap;
 
 		Entity* m_SceneEntity = nullptr;
 
-		Ref<Mesh> m_CubeMesh;
+		uint32 m_ViewportWidth = 0;
+		uint32 m_ViewportHeight = 0;
 	};
 
 }

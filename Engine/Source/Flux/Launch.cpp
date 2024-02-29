@@ -37,7 +37,7 @@ namespace Flux {
 
 #ifdef FLUX_RUNTIME
 		createInfo.Title = "Flux Runtime";
-		createInfo.EnableImGui = true;
+		createInfo.EnableImGui = false;
 		createInfo.ClearImGuiPass = false;
 		createInfo.ShowSplashScreen = false;
 		createInfo.MaximizeOnStart = false;

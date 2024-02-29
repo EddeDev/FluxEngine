@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Flux/Runtime/Asset/AssetDatabase.h"
+
 namespace Flux {
 
 	class Project : public ReferenceCounted
@@ -9,6 +11,28 @@ namespace Flux {
 		~Project();
 
 		void SaveSettings();
+
+		template<typename T, typename... TArgs>
+		void RegisterAssetDatabase()
+		{
+			static_assert(std::is_base_of<AssetDatabase, T>::value);
+
+			m_AssetDatabase = Ref<T>::Create(m_ProjectDirectory, m_AssetsDirectory);
+			m_AssetDatabase->ImportAssets();
+		}
+
+		void UnregisterAssetDatabase()
+		{
+			FLUX_VERIFY(m_AssetDatabase->GetReferenceCount() == 1);
+			m_AssetDatabase = nullptr;
+		}
+
+		template<typename T = AssetDatabase>
+		Ref<T> GetAssetDatabase() const
+		{
+			static_assert(std::is_base_of<AssetDatabase, T>::value);
+			return m_AssetDatabase.As<T>();
+		}
 		
 		const std::filesystem::path& GetProjectDirectory() const { return m_ProjectDirectory; }
 		const std::filesystem::path& GetProjectSettingsDirectory() const { return m_ProjectSettingsDirectory; }
@@ -26,6 +50,8 @@ namespace Flux {
 		std::filesystem::path m_ProjectDirectory;
 		std::filesystem::path m_ProjectSettingsDirectory;
 		std::filesystem::path m_AssetsDirectory;
+
+		Ref<AssetDatabase> m_AssetDatabase;
 
 		inline static Project* s_ActiveProject = nullptr;
 	};

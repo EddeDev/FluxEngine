@@ -59,4 +59,15 @@ namespace Flux {
 		}
 	}
 
+	void EditorWindowManager::OnEvent(Event& event)
+	{
+		for (auto& [hashCode, data] : s_Windows)
+		{
+			if (!data.IsOpen)
+				continue;
+
+			data.Window->OnEvent(event);
+		}
+	}
+
 }

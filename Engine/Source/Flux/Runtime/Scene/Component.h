@@ -16,7 +16,8 @@ namespace Flux {
 		Transform,
 		Camera,
 		Submesh,
-		MeshRenderer
+		MeshRenderer,
+		Light
 	};
 
 #define COMPONENT_CLASS_TYPE(type) \
@@ -35,6 +36,7 @@ namespace Flux {
 		virtual void OnUpdate() {}
 		virtual void OnRender(Ref<RenderPipeline> pipeline) {}
 		virtual void OnImGuiRender() {}
+		virtual void OnViewportResize(uint32 width, uint32 height) {}
 		virtual void SetChangedCallback(const ComponentChangedCallback& callback) { m_Callback = callback; }
 
 		virtual ComponentType GetType() const = 0;
@@ -117,18 +119,28 @@ namespace Flux {
 	
 		virtual void OnInit();
 
-		void SetPosition(const Vector3& position);
-		const Vector3& GetPosition() const { return m_Position; }
+		void SetLocalPosition(const Vector3& position);
+		const Vector3& GetLocalPosition() const { return m_LocalPosition; }
 
-		void SetRotation(const Quaternion& rotation);
-		const Quaternion& GetRotation() const { return m_Rotation; }
+		void SetLocalRotation(const Quaternion& rotation);
+		const Quaternion& GetLocalRotation() const { return m_LocalRotation; }
 
-		void SetEulerAngles(const Vector3& eulerAngles);
-		const Vector3& GetEulerAngles() const { return m_EulerAngles; }
+		void SetLocalEulerAngles(const Vector3& eulerAngles);
+		const Vector3& GetLocalEulerAngles() const { return m_LocalEulerAngles; }
 
 		void SetScale(const Vector3& scale);
-		const Vector3& GetScale() const { return m_Scale; }
+		const Vector3& GetScale() const { return m_LocalScale; }
 
+		void SetWorldPosition(const Vector3& position);
+		const Vector3& GetWorldPosition() const { return m_WorldPosition; }
+
+		void SetWorldRotation(const Quaternion& rotation);
+		const Quaternion& GetWorldRotation() const { return m_WorldRotation; }
+
+		void SetWorldScale(const Vector3& scale);
+		const Vector3& GetWorldScale() const { return m_WorldScale; }
+
+		const Matrix4x4& GetLocalTransform() const { return m_LocalTransform; }
 		const Matrix4x4& GetWorldTransform() const { return m_WorldTransform; }
 
 		virtual void OnImGuiRender() override;
@@ -136,19 +148,58 @@ namespace Flux {
 		COMPONENT_CLASS_TYPE(Transform)
 	private:
 		void RecalculateTransform();
-	private:
-		Vector3 m_Position;
-		Quaternion m_Rotation;
-		Vector3 m_EulerAngles;
-		Vector3 m_Scale;
 
+		friend class Entity;
+	private:
+		Vector3 m_LocalPosition;
+		Quaternion m_LocalRotation;
+		Vector3 m_LocalEulerAngles;
+		Vector3 m_LocalScale;
+
+		Vector3 m_WorldPosition;
+		Quaternion m_WorldRotation;
+		Vector3 m_WorldScale;
+
+		Matrix4x4 m_LocalTransform;
 		Matrix4x4 m_WorldTransform;
 	};
 
 	class CameraComponent : public Component
 	{
 	public:
+		enum class ProjectionType : uint8
+		{
+			Perspective = 0,
+			Orthographic
+		};
+	public:
+		virtual void OnViewportResize(uint32 width, uint32 height) override;
+
+		const Matrix4x4& GetProjectionMatrix() const { return m_ProjectionMatrix; }
+
+		void SetProjectionType(ProjectionType type);
+		ProjectionType GetProjectionType() const { return m_ProjectionType; }
+
+		void SetNearClip(float nearClip);
+		float GetNearClip() const { return m_NearClip; }
+
+		void SetFarClip(float farClip);
+		float GetFarClip() const { return m_FarClip; }
+
+		void SetFieldOfView(float fieldOfView);
+		float GetFieldOfView() const { return m_FieldOfView; }
+
 		COMPONENT_CLASS_TYPE(Camera)
+	private:
+		void RecalculateProjectionMatrix();
+	private:
+		Matrix4x4 m_ProjectionMatrix;
+
+		ProjectionType m_ProjectionType = ProjectionType::Perspective;
+		float m_NearClip = 0.1f;
+		float m_FarClip = 1000.0f;
+		float m_FieldOfView = 60.0f;
+		float m_AspectRatio = 0.0f;
 	};
 
 	class SubmeshComponent : public Component
@@ -156,10 +207,10 @@ namespace Flux {
 	public:
 		SubmeshComponent(Ref<Mesh> mesh = nullptr, uint32 submeshIndex = 0);
 
-		void SetMesh(Ref<Mesh> mesh) { m_Mesh = mesh; }
+		void SetMesh(Ref<Mesh> mesh);
 		Ref<Mesh> GetMesh() const { return m_Mesh; }
 
-		void SetSubmeshIndex(uint32 index) { m_SubmeshIndex = index; }
+		void SetSubmeshIndex(uint32 index);
 		uint32 GetSubmeshIndex() const { return m_SubmeshIndex; }
 
 		COMPONENT_CLASS_TYPE(Submesh)
@@ -176,6 +227,26 @@ namespace Flux {
 		COMPONENT_CLASS_TYPE(MeshRenderer)
 	};
 
+	class LightComponent : public Component
+	{
+	public:
+		enum class LightType : uint8
+		{
+			Directional = 0
+		};
+	public:
+		void SetLightType(LightType type);
+		LightType GetLightType() const { return m_Type; }
+		
+		void SetColor(const Vector3& color);
+		const Vector3& GetColor() const { return m_Color; }
+
+		COMPONENT_CLASS_TYPE(Light)
+	private:
+		LightType m_Type = LightType::Directional;
+		Vector3 m_Color = Vector3(1.0f);
+	};
+
 	template<typename... Component>
 	class ComponentSet {};
 
@@ -186,8 +257,8 @@ namespace Flux {
 		TransformComponent,
 		CameraComponent,
 		SubmeshComponent,
-		MeshRendererComponent
+		MeshRendererComponent,
+		LightComponent
 	>;
-
 
 }

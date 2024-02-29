@@ -4,6 +4,8 @@
 #include "Flux/Runtime/Core/Engine.h"
 #include "Renderer.h"
 
+#include "ImGuizmo.h"
+
 #include <imgui.h>
 
 namespace Flux {
@@ -447,6 +449,8 @@ namespace Flux {
 		}
 
 		ImGui::NewFrame();
+
+		ImGuizmo::BeginFrame();
 	}
 
 	void ImGuiRenderer::Render()

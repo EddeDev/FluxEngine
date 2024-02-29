@@ -13,6 +13,8 @@ namespace Flux {
 		void SetPosition(const Vector3& position);
 		void SetRotation(const Vector3& rotation);
 
+		bool IsUsing() const { return m_IsUsing; }
+
 		const Vector3& GetPosition() const { return m_Position; }
 		const Vector3& GetRotation() const { return m_Rotation; }
 
@@ -31,6 +33,8 @@ namespace Flux {
 		float m_RotationLerpTime = 0.01f;
 
 		float m_Boost = 3.5f;
+
+		bool m_IsUsing = false;
 
 		float m_VerticalFOV = 60.0f;
 		float m_NearClip = 0.01f;
