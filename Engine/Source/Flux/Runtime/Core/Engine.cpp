@@ -87,6 +87,7 @@ namespace Flux {
 		WindowCreateInfo windowCreateInfo;
 		windowCreateInfo.Width = createInfo.WindowWidth;
 		windowCreateInfo.Height = createInfo.WindowHeight;
+		windowCreateInfo.Maximized = createInfo.MaximizeOnStart;
 		m_MainWindow = Window::Create(windowCreateInfo);
 		m_MainWindow->SetEventQueue(m_EventQueue);
 	}

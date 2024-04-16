@@ -71,7 +71,7 @@ namespace Flux {
 	{
 	public:
 		VertexDeclaration() = default;
-		VertexDeclaration(const std::initializer_list<VertexElement>& elements)
+		VertexDeclaration(std::initializer_list<VertexElement> elements)
 			: m_Elements(elements)
 		{
 			uint32 offset = 0;

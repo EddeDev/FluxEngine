@@ -11,7 +11,7 @@ namespace Flux {
 
 	enum class AssetType : uint8
 	{
-		None = 0,
+		Default = 0,
 
 		Scene,
 		Mesh,
@@ -53,7 +53,7 @@ namespace Flux {
 			if (s_AssetExtensionMap.find(extension) != s_AssetExtensionMap.end())
 				return s_AssetExtensionMap.at(extension);
 
-			return AssetType::None;
+			return AssetType::Default;
 		}
 
 		inline static AssetType AssetTypeFromPath(const std::filesystem::path& path)
@@ -62,25 +62,25 @@ namespace Flux {
 			if (!extension.empty())
 				return AssetTypeFromExtension(path.extension().string());
 
-			return AssetType::None;
+			return AssetType::Default;
 		}
 
 		inline static AssetType AssetTypeFromString(std::string_view name)
 		{
-			if (name == "None")     return AssetType::None;
+			if (name == "Default")  return AssetType::Default;
 			if (name == "Scene")    return AssetType::Scene;
 			if (name == "Mesh")     return AssetType::Mesh;
 			if (name == "Material") return AssetType::Material;
 			if (name == "Texture")  return AssetType::Texture;
 			FLUX_VERIFY(false);
-			return AssetType::None;
+			return AssetType::Default;
 		}
 
 		inline static const char* AssetTypeToString(AssetType type)
 		{
 			switch (type)
 			{
-			case AssetType::None:     return "None";
+			case AssetType::Default:  return "Default";
 			case AssetType::Scene:    return "Scene";
 			case AssetType::Mesh:     return "Mesh";
 			case AssetType::Material: return "Material";

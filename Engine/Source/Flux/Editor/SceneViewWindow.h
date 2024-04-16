@@ -31,6 +31,7 @@ namespace Flux {
 		uint32 m_ViewportHeight = 0;
 
 		bool m_IsViewportHovered = false;
+		bool m_IsViewportFocused = false;
 
 		enum class GizmoType
 		{

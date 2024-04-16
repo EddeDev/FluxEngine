@@ -2,7 +2,7 @@
 #include "ImGuiRenderer.h"
 
 #include "Flux/Runtime/Core/Engine.h"
-#include "Renderer.h"
+#include "Flux/Runtime/Renderer/Renderer.h"
 
 #include "ImGuizmo.h"
 
@@ -253,10 +253,19 @@ namespace Flux {
 		io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 #if 1
-		ImFontConfig fontConfig;
-		fontConfig.PixelSnapH = true;
-		io.Fonts->AddFontFromFileTTF("Resources/Fonts/Roboto/Roboto-Regular.ttf", 16.0f, &fontConfig, io.Fonts->GetGlyphRangesCyrillic());
+		// Roboto (Default font)
+		AddFont(FontType::Default, FontWeight::Regular,    "Resources/Fonts/Roboto/Roboto-Regular.ttf");
+		AddFont(FontType::Default, FontWeight::Bold,       "Resources/Fonts/Roboto/Roboto-Bold.ttf");
+		AddFont(FontType::Default, FontWeight::ThinItalic, "Resources/Fonts/Roboto/Roboto-ThinItalic.ttf");
 
+		// Font Awesome
+		AddFont(FontType::FontAwesome, FontWeight::Regular, "Resources/Fonts/FontAwesome/fa-regular-400.ttf");
+		AddFont(FontType::FontAwesome, FontWeight::Solid,   "Resources/Fonts/FontAwesome/fa-solid-900.ttf");
+
+		io.FontDefault = GetFont(FontType::Default, FontWeight::Regular, 16);
+#endif
+
+#if 1
 		auto& style = ImGui::GetStyle();
 		style.Alpha = 1.0f;
 		style.DisabledAlpha = 0.6f;
@@ -416,6 +425,41 @@ namespace Flux {
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
 		ImGui::DestroyContext(m_Context);
+	}
+
+	void ImGuiRenderer::AddFont(FontType type, FontWeight weight, std::string_view path)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+
+		static const ImWchar s_FontAwesomeGlyphRanges[] = {
+			0xe005, 0xf8ff,
+			0
+		};
+
+		const ImWchar* glyphRanges = nullptr;
+		if (type == FontType::FontAwesome)
+			glyphRanges = &s_FontAwesomeGlyphRanges[0];
+		else
+			glyphRanges = io.Fonts->GetGlyphRangesCyrillic();
+
+		for (uint32 size = 12; size <= 24; size += 2)
+		{
+			FLUX_TRACE_CATEGORY("ImGui Renderer", "Adding font '{0}' ({1}, {2})", std::filesystem::path(path).filename().string(), (uint8)weight, size);
+
+			ImFontConfig fontConfig;
+			fontConfig.PixelSnapH = true;
+
+			ImFont* font = io.Fonts->AddFontFromFileTTF(path.data(), (float)size, &fontConfig, glyphRanges);
+			if (!font)
+			{
+#ifdef FLUX_BUILD_DEBUG
+				FLUX_ERROR_CATEGORY("ImGui Renderer", "Failed to add font!");
+				FLUX_ASSERT(false);
+#endif
+			}
+
+			m_Fonts[type][weight][size] = font;
+		}
 	}
 
 	void ImGuiRenderer::NewFrame()

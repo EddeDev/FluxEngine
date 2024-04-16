@@ -48,6 +48,9 @@ namespace Flux {
 			style |= WS_POPUP;
 		}
 
+		if (createInfo.Maximized)
+			style |= WS_MAXIMIZE;
+
 		DWORD exStyle = 0;
 		exStyle |= WS_EX_APPWINDOW;
 

@@ -171,7 +171,7 @@ project "FluxEngine"
         end
 
 group "Libraries"
-    include "Engine/Libraries/Glad"
+    include "Engine/Libraries/glad"
     include "Engine/Libraries/ImGui"
     include "Engine/Libraries/stb_image"
     include "Engine/Libraries/CityHash"

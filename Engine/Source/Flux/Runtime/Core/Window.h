@@ -20,6 +20,7 @@ namespace Flux {
 		std::string Title = "Flux Engine";
 		bool Resizable = true;
 		bool Decorated = true;
+		bool Maximized = false;
 		WindowMode Mode = WindowMode::Windowed;
 
 		Ref<Window> ParentWindow;

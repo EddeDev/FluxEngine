@@ -8,6 +8,7 @@
 #include "InspectorWindow.h"
 #include "SceneViewWindow.h"
 #include "GameViewWindow.h"
+#include "ProjectBrowserWindow.h"
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
@@ -33,6 +34,7 @@ namespace Flux {
 		EditorWindowManager::AddWindow<InspectorWindow>("Inspector");
 		EditorWindowManager::AddWindow<SceneViewWindow>("Scene");
 		EditorWindowManager::AddWindow<GameViewWindow>("Game");
+		EditorWindowManager::AddWindow<ProjectBrowserWindow>("Project");
 
 		OpenProject();
 	}

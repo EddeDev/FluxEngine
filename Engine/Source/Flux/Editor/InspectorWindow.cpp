@@ -4,115 +4,12 @@
 // TODO: temp
 #include "HierarchyWindow.h"
 
+#include "Flux/Runtime/ImGui/ImGuiUtils.h"
 #include "Flux/Runtime/Asset/AssetDatabase.h"
 
-#include <imgui.h>
 #include <imgui_internal.h>
 
 namespace Flux {
-
-	namespace UI {
-
-		static char s_IDBuffer[16] = "##";
-		static uint32 s_IDCounter = 0;
-		static uint32 s_IDStackCounter = 0;
-		static const char* GenerateID() { itoa(s_IDCounter++, s_IDBuffer + 2, 16); return s_IDBuffer; }
-
-		static void PushID()
-		{
-			ImGui::PushID(s_IDStackCounter++);
-			s_IDCounter = 0;
-		}
-
-		static void PopID()
-		{
-			ImGui::PopID();
-			s_IDStackCounter--;
-		}
-
-		static void BeginProperties()
-		{
-			PushID();
-			ImGui::Columns(2);
-		}
-
-		static void EndProperties()
-		{
-			ImGui::Columns(1);
-			PopID();
-		}
-
-		static bool Property(std::string_view label, int32& value, float speed = 1.0f, int32 minValue = 0, int32 maxValue = 0)
-		{
-			ImGui::Text(label.data());
-			ImGui::NextColumn();
-			ImGui::PushItemWidth(-1.0f);
-
-			bool modified = ImGui::InputInt(GenerateID(), &value, 1, 100, ImGuiInputTextFlags_ReadOnly);
-
-			ImGui::PopItemWidth();
-			ImGui::NextColumn();
-
-			return modified;
-		}
-
-		static bool Property(std::string_view label, float& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
-		{
-			ImGui::Text(label.data());
-			ImGui::NextColumn();
-			ImGui::PushItemWidth(-1.0f);
-
-			bool modified = ImGui::DragFloat(GenerateID(), &value, speed, minValue, maxValue, "%.2f");
-
-			ImGui::PopItemWidth();
-			ImGui::NextColumn();
-
-			return modified;
-		}
-
-		static bool Property(std::string_view label, Vector2& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
-		{
-			ImGui::Text(label.data());
-			ImGui::NextColumn();
-			ImGui::PushItemWidth(-1.0f);
-
-			bool modified = ImGui::DragFloat2(GenerateID(), value.GetPointer(), speed, minValue, maxValue, "%.2f");
-
-			ImGui::PopItemWidth();
-			ImGui::NextColumn();
-
-			return modified;
-		}
-
-		static bool Property(std::string_view label, Vector3& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
-		{
-			ImGui::Text(label.data());
-			ImGui::NextColumn();
-			ImGui::PushItemWidth(-1.0f);
-
-			bool modified = ImGui::DragFloat3(GenerateID(), value.GetPointer(), speed, minValue, maxValue, "%.2f");
-
-			ImGui::PopItemWidth();
-			ImGui::NextColumn();
-
-			return modified;
-		}
-
-		static bool Property(std::string_view label, Vector4& value, float speed = 1.0f, float minValue = 0.0f, float maxValue = 0.0f)
-		{
-			ImGui::Text(label.data());
-			ImGui::NextColumn();
-			ImGui::PushItemWidth(-1.0f);
-
-			bool modified = ImGui::DragFloat4(GenerateID(), value.GetPointer(), speed, minValue, maxValue, "%.2f");
-
-			ImGui::PopItemWidth();
-			ImGui::NextColumn();
-
-			return modified;
-		}
-
-	}
 
 	InspectorWindow::InspectorWindow()
 	{
@@ -198,7 +95,7 @@ namespace Flux {
 
 		DrawComponent<TransformComponent, false>("Transform", selectedEntity, [&](TransformComponent& component)
 		{
-			UI::BeginProperties();
+			UI::BeginPropertyGrid();
 
 			Vector3 position = component.GetLocalPosition();
 			if (DrawVector3Control("Position", position))
@@ -231,12 +128,12 @@ namespace Flux {
 
 			ImGui::EndDisabled();
 
-			UI::EndProperties();
+			UI::EndPropertyGrid();
 		});
 
 		DrawComponent<CameraComponent>("Camera", selectedEntity, [&](CameraComponent& component)
 		{
-			UI::BeginProperties();
+			UI::BeginPropertyGrid();
 
 			float fieldOfView = component.GetFieldOfView();
 			if (UI::Property("Field of View", fieldOfView, 0.1f, 0.0f, 179.0f))
@@ -250,12 +147,12 @@ namespace Flux {
 			if (UI::Property("Far Clip", farClip, 1.0f, 0.0f, std::numeric_limits<float>::max()))
 				component.SetFarClip(farClip);
 
-			UI::EndProperties();
+			UI::EndPropertyGrid();
 		});
 
 		DrawComponent<SubmeshComponent>("Submesh", selectedEntity, [&](SubmeshComponent& component)
 		{
-			UI::BeginProperties();
+			UI::BeginPropertyGrid();
 
 			Ref<Mesh> mesh = AssetDatabase::GetAssetFromID<Mesh>(component.GetMeshAssetID());
 			if (mesh)
@@ -268,21 +165,21 @@ namespace Flux {
 				UI::Property("Submesh Index", submeshIndex, 0.1f, 0, maxSubmeshIndex);
 			}
 
-			UI::EndProperties();
+			UI::EndPropertyGrid();
 		});
 
 		DrawComponent<MeshRendererComponent>("Mesh Renderer", selectedEntity, [&](MeshRendererComponent& component)
 		{
-			UI::BeginProperties();
+			UI::BeginPropertyGrid();
 
-			UI::EndProperties();
+			UI::EndPropertyGrid();
 		});
 
 		DrawComponent<LightComponent>("Light", selectedEntity, [&](LightComponent& component)
 		{
-			UI::BeginProperties();
+			UI::BeginPropertyGrid();
 			
-			UI::EndProperties();
+			UI::EndPropertyGrid();
 		});
 	}
 

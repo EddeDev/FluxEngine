@@ -2,9 +2,7 @@
 #include "GameViewWindow.h"
 
 #include "Flux/Runtime/Core/Engine.h"
-
-#include <imgui.h>
-#include <imgui_internal.h>
+#include "Flux/Runtime/ImGui/ImGuiUtils.h"
 
 namespace Flux {
 
@@ -49,10 +47,7 @@ namespace Flux {
 			m_IsViewportHovered = ImGui::IsWindowHovered();
 
 			if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
-			{
-				Ref<ImGuiRenderer> imGuiRenderer = Engine::Get().GetImGuiRenderer();
-				imGuiRenderer->Image(m_RenderPipeline->GetComposedTexture(), viewportSize, { 0.0f, 1.0f }, { 1.0f, 0.0f });
-			}
+				UI::Image(m_RenderPipeline->GetComposedTexture(), viewportSize, { 0.0f, 1.0f }, { 1.0f, 0.0f });
 		}
 	}
 

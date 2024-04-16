@@ -8,7 +8,7 @@ namespace Flux {
 	{
 		AssetID ID;
 		std::string Name;
-		AssetType Type = AssetType::None;
+		AssetType Type = AssetType::Default;
 		
 		std::filesystem::path RelativeMetaPath;
 		std::filesystem::path RelativeAssetPath;
@@ -21,6 +21,6 @@ namespace Flux {
 		operator bool() const { return ID && !IsMemoryAsset; }
 	};
 
-	static const char* s_AssetMetadataFileExtension = ".fluxmeta";
+	inline static const char* s_AssetMetadataFileExtension = ".fluxmeta";
 
 }

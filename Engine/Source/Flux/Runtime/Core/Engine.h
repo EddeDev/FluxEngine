@@ -9,7 +9,8 @@
 #include "Flux/Runtime/Renderer/GraphicsAPI.h"
 #include "Flux/Runtime/Renderer/GraphicsContext.h"
 #include "Flux/Runtime/Renderer/Framebuffer.h"
-#include "Flux/Runtime/Renderer/ImGuiRenderer.h"
+
+#include "Flux/Runtime/ImGui/ImGuiRenderer.h"
 
 namespace Flux {
 
@@ -51,7 +52,7 @@ namespace Flux {
 
 		static BuildConfiguration GetBuildConfiguration();
 
-		static Engine& Get() { return *(Engine*)s_Instance; }
+		static Engine& Get() { return *s_Instance; }
 	protected:
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}

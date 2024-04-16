@@ -38,7 +38,7 @@ namespace Flux {
 		void Refresh();
 
 		std::filesystem::path GetAvailableAssetPath(const std::filesystem::path& assetPath) const;
-		void CreateFolder(const std::filesystem::path& parentFolder, const std::string& newFolderName);
+		bool CreateFolder(const std::filesystem::path& parentFolder, const std::string& newFolderName) const;
 
 		template<typename T, typename... TArgs>
 		Ref<T> CreateAsset(std::filesystem::path assetPath, TArgs&&... args)

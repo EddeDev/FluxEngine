@@ -5,7 +5,8 @@
 #include "HierarchyWindow.h"
 
 #include "Flux/Runtime/Core/Engine.h"
-#include "Flux/Runtime/Renderer/ImGuizmo.h"
+#include "Flux/Runtime/ImGui/ImGuiUtils.h"
+#include "Flux/Runtime/ImGui/ImGuizmo.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -32,6 +33,8 @@ namespace Flux {
 		if (m_Scene && m_ViewportWidth > 0 && m_ViewportHeight > 0)
 		{
 			float deltaTime = Engine::Get().GetDeltaTime();
+
+			m_EditorCamera.SetActive(m_IsViewportFocused && m_IsViewportHovered);
 			m_EditorCamera.OnUpdate(deltaTime);
 
 			m_EditorCamera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
@@ -48,18 +51,22 @@ namespace Flux {
 		{
 			ImVec2 minRegion = ImGui::GetWindowContentRegionMin();
 			ImVec2 maxRegion = ImGui::GetWindowContentRegionMax();
-
 			ImVec2 viewportSize = { maxRegion.x - minRegion.x, maxRegion.y - minRegion.y };
+
+			ImVec2 windowPos = ImGui::GetWindowPos();
+			ImVec2 bounds[2];
+			bounds[0] = { minRegion.x + windowPos.x, minRegion.y + windowPos.y };
+			bounds[1] = { maxRegion.x + windowPos.x, maxRegion.y + windowPos.y };
 
 			m_ViewportWidth = (uint32)viewportSize.x;
 			m_ViewportHeight = (uint32)viewportSize.y;
 
 			m_IsViewportHovered = ImGui::IsWindowHovered();
+			m_IsViewportFocused = ImGui::IsWindowFocused();
 
 			if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
 			{
-				Ref<ImGuiRenderer> imGuiRenderer = Engine::Get().GetImGuiRenderer();
-				imGuiRenderer->Image(m_RenderPipeline->GetComposedTexture(), viewportSize, { 0.0f, 1.0f }, { 1.0f, 0.0f });
+				UI::Image(m_RenderPipeline->GetComposedTexture(), viewportSize, { 0.0f, 1.0f }, { 1.0f, 0.0f });
 
 				DrawGizmos();
 			}
@@ -90,7 +97,6 @@ namespace Flux {
 		ImGuizmo::OPERATION operation = (ImGuizmo::OPERATION)0;
 		switch (m_GizmoType)
 		{
-		case GizmoType::None: operation = ImGuizmo::BOUNDS;
 		case GizmoType::Translate: operation = ImGuizmo::TRANSLATE; break;
 		case GizmoType::Rotate: operation = ImGuizmo::ROTATE; break;
 		case GizmoType::Scale: operation = ImGuizmo::SCALE; break;

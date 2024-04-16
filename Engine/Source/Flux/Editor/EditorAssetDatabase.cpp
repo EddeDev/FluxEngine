@@ -173,27 +173,17 @@ namespace Flux {
 			FLUX_VERIFY(false, "{0}", e.msg);
 		}
 
-		Guid assetID;
-		if (data["GUID"].size() == 4)
-		{
-			assetID[0] = data["GUID"][0].as<uint32>();
-			assetID[1] = data["GUID"][1].as<uint32>();
-			assetID[2] = data["GUID"][2].as<uint32>();
-			assetID[3] = data["GUID"][3].as<uint32>();
-		}
-		else
-		{
-			Guid::Parse(data["GUID"].as<std::string>(), assetID);
-		}
+		AssetID assetID;
+		Guid::Parse(data["GUID"].as<std::string>(), assetID);
 
 		AssetMetadata& metadata = m_MetadataMap[assetID];
 		metadata.ID = assetID;
 		metadata.Name = GetAssetPath(metadataPath).filename().stem().string();
 		metadata.Type = Utils::AssetTypeFromString(data["Type"].as<std::string>());
-		metadata.RelativeAssetPath = GetAssetPath(metadataPath);
 		metadata.RelativeMetaPath = metadataPath;
+		metadata.FilesystemMetaPath = GetFilesystemPath(metadata.RelativeMetaPath);
+		metadata.RelativeAssetPath = GetAssetPath(metadataPath);
 		metadata.FilesystemAssetPath = GetFilesystemPath(metadata.RelativeAssetPath);
-		metadata.FilesystemMetaPath = GetFilesystemPath(metadataPath);
 		return metadata.ID;
 	}
 
@@ -329,10 +319,10 @@ namespace Flux {
 		return result;
 	}
 
-	void EditorAssetDatabase::CreateFolder(const std::filesystem::path& parentFolder, const std::string& newFolderName)
+	bool EditorAssetDatabase::CreateFolder(const std::filesystem::path& parentFolder, const std::string& newFolderName) const
 	{
 		std::filesystem::path path = GetAvailableAssetPath(parentFolder / newFolderName);
-		std::filesystem::create_directories(GetFilesystemPath(path));
+		return std::filesystem::create_directories(GetFilesystemPath(path));
 	}
 
 }

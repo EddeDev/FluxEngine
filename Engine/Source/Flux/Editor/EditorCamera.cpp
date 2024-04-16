@@ -9,7 +9,7 @@ namespace Flux {
 
 	void EditorCamera::OnUpdate(float deltaTime)
 	{
-		m_IsUsing = Input::GetMouseButton(MouseButtonCode::ButtonRight);
+		m_IsUsing = m_IsActive ? Input::GetMouseButton(MouseButtonCode::ButtonRight) : false;
 
 		// FLUX_INFO("IsUsing: {0} ({1}, {2})", isUsing, Input::GetAxis("Mouse X"), Input::GetAxis("Mouse Y"));
 		if (m_IsUsing)

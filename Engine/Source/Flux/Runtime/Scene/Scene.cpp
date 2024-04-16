@@ -23,7 +23,7 @@ namespace Flux {
 
 	void Scene::OnUpdate()
 	{
-		for (auto& entity : m_Registry.view<const IDComponent>())
+		for (auto entity : m_Registry.view<entt::entity>())
 			OnUpdate(entity);
 	}
 
@@ -63,7 +63,7 @@ namespace Flux {
 
 		pipeline->BeginRendering();
 
-		for (auto& entity : m_Registry.view<const IDComponent>())
+		for (auto entity : m_Registry.view<entt::entity>())
 			OnRender(entity, pipeline);
 
 		// Render all entities
@@ -77,7 +77,7 @@ namespace Flux {
 			m_ViewportWidth = width;
 			m_ViewportHeight = height;
 
-			for (auto& entity : m_Registry.view<const IDComponent>())
+			for (auto entity : m_Registry.view<entt::entity>())
 				OnViewportResize(entity, width, height);
 		}
 	}
