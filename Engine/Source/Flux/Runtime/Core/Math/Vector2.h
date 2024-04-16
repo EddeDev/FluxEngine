@@ -35,6 +35,166 @@ namespace Flux {
 		{
 		}
 
+		struct Vector2Wrapper
+		{
+			float& X;
+			float& Y;
+
+			Vector2 operator-() const
+			{
+				return { -X, -Y };
+			}
+
+			Vector2 operator+(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X + v.X;
+				result.Y = Y + v.Y;
+				return result;
+			}
+
+			Vector2Wrapper& operator+=(const Vector2& v)
+			{
+				X += v.X;
+				Y += v.Y;
+				return *this;
+			}
+
+			Vector2 operator-(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X - v.X;
+				result.Y = Y - v.Y;
+				return result;
+			}
+
+			Vector2Wrapper& operator-=(const Vector2& v)
+			{
+				X -= v.X;
+				Y -= v.Y;
+				return *this;
+			}
+
+			Vector2 operator*(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X * v.X;
+				result.Y = Y * v.Y;
+				return result;
+			}
+
+			Vector2 operator*(float scalar) const
+			{
+				Vector2 result;
+				result.X = X * scalar;
+				result.Y = Y * scalar;
+				return result;
+			}
+
+			Vector2Wrapper& operator*=(float scalar)
+			{
+				X *= scalar;
+				Y *= scalar;
+				return *this;
+			}
+
+			Vector2 operator/(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X / v.X;
+				result.Y = Y / v.Y;
+				return result;
+			}
+
+			Vector2 operator/(float scalar) const
+			{
+				Vector2 result;
+				result.X = X / scalar;
+				result.Y = Y / scalar;
+				return result;
+			}
+
+			Vector2Wrapper& operator/=(float scalar)
+			{
+				X /= scalar;
+				Y /= scalar;
+				return *this;
+			}
+
+			operator Vector2() const
+			{
+				return { X, Y };
+			}
+		};
+
+		struct Vector2WrapperConst
+		{
+			const float& X;
+			const float& Y;
+
+			Vector2 operator-() const
+			{
+				return { -X, -Y };
+			}
+
+			Vector2 operator+(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X + v.X;
+				result.Y = Y + v.Y;
+				return result;
+			}
+
+			Vector2 operator-(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X - v.X;
+				result.Y = Y - v.Y;
+				return result;
+			}
+
+			Vector2 operator*(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X * v.X;
+				result.Y = Y * v.Y;
+				return result;
+			}
+
+			Vector2 operator*(float scalar) const
+			{
+				Vector2 result;
+				result.X = X * scalar;
+				result.Y = Y * scalar;
+				return result;
+			}
+
+			Vector2 operator/(const Vector2& v) const
+			{
+				Vector2 result;
+				result.X = X / v.X;
+				result.Y = Y / v.Y;
+				return result;
+			}
+
+			Vector2 operator/(float scalar) const
+			{
+				Vector2 result;
+				result.X = X / scalar;
+				result.Y = Y / scalar;
+				return result;
+			}
+		};
+
+#define SWIZZLE_VECTOR2_FUNC(x, y, ...) \
+Vector2Wrapper __VA_ARGS__ ##x##y() { return { x, y }; } \
+Vector2WrapperConst __VA_ARGS__ ##x##y() const { return { x, y }; }
+
+		SWIZZLE_VECTOR2_FUNC(X, X)
+		SWIZZLE_VECTOR2_FUNC(X, Y)
+		SWIZZLE_VECTOR2_FUNC(Y, X)
+		SWIZZLE_VECTOR2_FUNC(Y, Y)
+
 		inline static Vector2 Lerp(const Vector2& a, const Vector2& b, float t)
 		{
 			t = Math::Clamp(t, 0.0f, 1.0f);

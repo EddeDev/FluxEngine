@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Vector2.h"
+
 #include "Flux/Runtime/Core/AssertionMacros.h"
 
 namespace Flux {
@@ -38,6 +40,207 @@ namespace Flux {
 			: X(x), Y(y), Z(z)
 		{
 		}
+
+		struct Vector3Wrapper
+		{
+			float& X;
+			float& Y;
+			float& Z;
+
+			Vector3 operator-() const
+			{
+				return { -X, -Y, -Z };
+			}
+
+			Vector3 operator+(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X + v.X;
+				result.Y = Y + v.Y;
+				result.Z = Z + v.Z;
+				return result;
+			}
+
+			Vector3Wrapper& operator+=(const Vector3& v)
+			{
+				X += v.X;
+				Y += v.Y;
+				Z += v.Z;
+				return *this;
+			}
+
+			Vector3 operator-(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X - v.X;
+				result.Y = Y - v.Y;
+				result.Z = Z - v.Z;
+				return result;
+			}
+
+			Vector3Wrapper& operator-=(const Vector3& v)
+			{
+				X -= v.X;
+				Y -= v.Y;
+				Z -= v.Z;
+				return *this;
+			}
+
+			Vector3 operator*(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X * v.X;
+				result.Y = Y * v.Y;
+				result.Z = Z * v.Z;
+				return result;
+			}
+
+			Vector3 operator*(float scalar) const
+			{
+				Vector3 result;
+				result.X = X * scalar;
+				result.Y = Y * scalar;
+				result.Z = Z * scalar;
+				return result;
+			}
+
+			Vector3Wrapper& operator*=(float scalar)
+			{
+				X *= scalar;
+				Y *= scalar;
+				Z *= scalar;
+				return *this;
+			}
+
+			Vector3 operator/(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X / v.X;
+				result.Y = Y / v.Y;
+				result.Z = Z / v.Z;
+				return result;
+			}
+
+			Vector3 operator/(float scalar) const
+			{
+				Vector3 result;
+				result.X = X / scalar;
+				result.Y = Y / scalar;
+				result.Z = Z / scalar;
+				return result;
+			}
+
+			Vector3Wrapper& operator/=(float scalar)
+			{
+				X /= scalar;
+				Y /= scalar;
+				Z /= scalar;
+				return *this;
+			}
+
+			operator Vector3() const
+			{
+				return { X, Y, Z };
+			}
+		};
+
+		struct Vector3WrapperConst
+		{
+			const float& X;
+			const float& Y;
+			const float& Z;
+
+			Vector3 operator-() const
+			{
+				return { -X, -Y, -Z };
+			}
+
+			Vector3 operator+(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X + v.X;
+				result.Y = Y + v.Y;
+				result.Z = Z + v.Z;
+				return result;
+			}
+
+			Vector3 operator-(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X - v.X;
+				result.Y = Y - v.Y;
+				result.Z = Z - v.Z;
+				return result;
+			}
+
+			Vector3 operator*(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X * v.X;
+				result.Y = Y * v.Y;
+				result.Z = Z * v.Z;
+				return result;
+			}
+
+			Vector3 operator*(float scalar) const
+			{
+				Vector3 result;
+				result.X = X * scalar;
+				result.Y = Y * scalar;
+				result.Z = Z * scalar;
+				return result;
+			}
+
+			Vector3 operator/(const Vector3& v) const
+			{
+				Vector3 result;
+				result.X = X / v.X;
+				result.Y = Y / v.Y;
+				result.Z = Z / v.Z;
+				return result;
+			}
+
+			Vector3 operator/(float scalar) const
+			{
+				Vector3 result;
+				result.X = X / scalar;
+				result.Y = Y / scalar;
+				result.Z = Z / scalar;
+				return result;
+			}
+		};
+
+#define SWIZZLE_VECTOR3_FUNC(x, y, z, ...) \
+Vector3Wrapper __VA_ARGS__ ##x##y##z() { return { x, y, z }; } \
+Vector3WrapperConst __VA_ARGS__ ##x##y##z() const { return { x, y, z }; }
+
+		SWIZZLE_VECTOR3_FUNC(X, X, X)
+		SWIZZLE_VECTOR3_FUNC(X, X, Y)
+		SWIZZLE_VECTOR3_FUNC(X, X, Z)
+		SWIZZLE_VECTOR3_FUNC(X, Y, X)
+		SWIZZLE_VECTOR3_FUNC(X, Y, Y)
+		SWIZZLE_VECTOR3_FUNC(X, Y, Z)
+		SWIZZLE_VECTOR3_FUNC(X, Z, X)
+		SWIZZLE_VECTOR3_FUNC(X, Z, Y)
+		SWIZZLE_VECTOR3_FUNC(X, Z, Z)
+		SWIZZLE_VECTOR3_FUNC(Y, X, X)
+		SWIZZLE_VECTOR3_FUNC(Y, X, Y)
+		SWIZZLE_VECTOR3_FUNC(Y, X, Z)
+		SWIZZLE_VECTOR3_FUNC(Y, Y, X)
+		SWIZZLE_VECTOR3_FUNC(Y, Y, Y)
+		SWIZZLE_VECTOR3_FUNC(Y, Y, Z)
+		SWIZZLE_VECTOR3_FUNC(Y, Z, X)
+		SWIZZLE_VECTOR3_FUNC(Y, Z, Y)
+		SWIZZLE_VECTOR3_FUNC(Y, Z, Z)
+		SWIZZLE_VECTOR3_FUNC(Z, X, X)
+		SWIZZLE_VECTOR3_FUNC(Z, X, Y)
+		SWIZZLE_VECTOR3_FUNC(Z, X, Z)
+		SWIZZLE_VECTOR3_FUNC(Z, Y, X)
+		SWIZZLE_VECTOR3_FUNC(Z, Y, Y)
+		SWIZZLE_VECTOR3_FUNC(Z, Y, Z)
+		SWIZZLE_VECTOR3_FUNC(Z, Z, X)
+		SWIZZLE_VECTOR3_FUNC(Z, Z, Y)
+		SWIZZLE_VECTOR3_FUNC(Z, Z, Z)
 
 		inline static Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
 		{

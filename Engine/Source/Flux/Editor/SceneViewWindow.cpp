@@ -120,6 +120,17 @@ namespace Flux {
 			Vector3 worldScale;
 			Math::DecomposeTransformationMatrix(worldTransform, worldPosition, worldRotation, worldScale);
 
+			const bool interpolation = true;
+			if (interpolation)
+			{
+				float lerpFactor = 30.0f * Engine::Get().GetDeltaTime();
+				// FLUX_WARNING("Interpolation factor: {0}", lerpFactor);
+
+				worldPosition = Vector3::Lerp(transformComponent.GetWorldPosition(), worldPosition, lerpFactor);
+				// worldRotation = Quaternion::Slerp(transformComponent.GetWorldRotation(), worldRotation, lerpFactor);
+				worldScale = Vector3::Lerp(transformComponent.GetWorldScale(), worldScale, lerpFactor);
+			}
+
 			transformComponent.SetWorldPosition(worldPosition);
 			transformComponent.SetWorldRotation(worldRotation);
 			transformComponent.SetWorldScale(worldScale);

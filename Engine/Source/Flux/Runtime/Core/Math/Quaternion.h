@@ -39,6 +39,53 @@ namespace Flux {
 			W = (cosX * cosY * cosZ) + (sinX * sinY * sinZ);
 		}
 
+		inline static Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t)
+		{
+			t = Math::Clamp(t, 0.0f, 1.0f);
+			return SlerpUnclamped(a, b, t);
+		}
+
+		inline static Quaternion SlerpUnclamped(const Quaternion& a, const Quaternion& b, float t)
+		{
+			// From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/index.htm
+			float cosHalfTheta =
+				a.X * b.X +
+				a.Y * b.Y +
+				a.Z * b.Z +
+				a.W * b.W;
+
+			if (cosHalfTheta < 0.0f)
+			{
+				FLUX_VERIFY(false, "Handle this");
+				// invert b
+			}
+
+			if (Math::Abs(cosHalfTheta) >= 1.0f)
+				return a;
+
+			float halfTheta = Math::Acos(cosHalfTheta);
+			float sinHalfTheta = Math::Sqrt(1.0f - cosHalfTheta * cosHalfTheta);
+
+			float ratioA, ratioB;
+			if (Math::EpsilonEqual(sinHalfTheta, 0.0f))
+			{
+				ratioA = 0.5f;
+				ratioB = 0.5f;
+			}
+			else
+			{
+				ratioA = Math::Sin((1.0f - t) * halfTheta) / sinHalfTheta;
+				ratioB = Math::Sin(t * halfTheta) / sinHalfTheta;
+			}
+
+			Quaternion result;
+			result.X = a.X * ratioA + b.X * ratioB;
+			result.Y = a.Y * ratioA + b.Y * ratioB;
+			result.Z = a.Z * ratioA + b.Z * ratioB;
+			result.W = a.W * ratioA + b.W * ratioB;
+			return result;
+		}
+
 		inline static Quaternion Conjugate(const Quaternion& q)
 		{
 			return { -q.X, -q.Y, -q.Z, q.W };

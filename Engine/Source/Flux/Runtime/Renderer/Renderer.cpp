@@ -21,11 +21,25 @@ namespace Flux {
 
 		s_Data = new RendererData();
 		s_Data->CurrentQueueCount = commandQueueCount;
+	
+		for (uint32 i = 0; i < commandQueueCount; i++)
+			s_RenderCommandQueue[i] = new CommandQueue(fmt::format("Renderer - Render Command Queue [{0}]", i), 1024 * 1024);
+
+		s_ReleaseCommandQueue = new CommandQueue("Renderer - Release Command Queue", 1024);
 	}
 
 	void Renderer::Shutdown()
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		for (uint32 i = 0; i < s_MaxRenderCommandQueueCount; i++)
+		{
+			delete s_RenderCommandQueue[i];
+			s_RenderCommandQueue[i] = nullptr;
+		}
+
+		delete s_ReleaseCommandQueue;
+		s_ReleaseCommandQueue = nullptr;
 
 		delete s_Data;
 		s_Data = nullptr;
@@ -49,60 +63,6 @@ namespace Flux {
 		s_Data->CurrentQueueIndex = (s_Data->CurrentQueueIndex + 1) % s_Data->CurrentQueueCount;
 	}
 
-#ifndef FLUX_BUILD_SHIPPING
-	void Renderer::SubmitRenderCommand(const char* functionName, RenderCommand command)
-	{
-		FLUX_CHECK_IS_IN_MAIN_THREAD();
-
-		if (s_RenderCommandQueueLocked[s_Data->CurrentQueueIndex])
-		{
-			FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
-			FLUX_VERIFY(false);
-		}
-
-		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push(std::move(command));
-	}
-
-	void Renderer::SubmitRenderCommandRelease(const char* functionName, RenderCommand command)
-	{
-		FLUX_CHECK_IS_IN_MAIN_THREAD();
-
-		if (s_RenderCommandQueueLocked[s_Data->CurrentQueueIndex])
-		{
-			FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
-			FLUX_VERIFY(false);
-		}
-
-		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push([functionName, command = std::move(command)]() mutable
-		{
-			if (s_ReleaseQueueLocked)
-			{
-				FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
-				FLUX_VERIFY(false);
-			}
-
-			s_ReleaseQueue.push(std::move(command));
-		});
-	}
-#else
-	void Renderer::SubmitRenderCommand(RenderCommand command)
-	{
-		FLUX_CHECK_IS_IN_MAIN_THREAD();
-
-		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push(std::move(command));
-	}
-
-	void Renderer::SubmitRenderCommandRelease(RenderCommand command)
-	{
-		FLUX_CHECK_IS_IN_MAIN_THREAD();
-
-		s_RenderCommandQueue[s_Data->CurrentQueueIndex].push([command = std::move(command)]() mutable
-		{
-			s_ReleaseQueue.push(std::move(command));
-		});
-	}
-#endif
-
 	void Renderer::FlushRenderCommands(uint32 queueIndex)
 	{
 		FLUX_CHECK_IS_IN_RENDER_THREAD();
@@ -117,13 +77,7 @@ namespace Flux {
 		s_RenderCommandQueueLocked[queueIndex] = true;
 #endif
 
-		auto& queue = s_RenderCommandQueue[queueIndex];
-		while (!queue.empty())
-		{
-			RenderCommand& command = queue.front();
-			command();
-			queue.pop();
-		}
+		s_RenderCommandQueue[queueIndex]->Flush();
 
 #ifndef FLUX_BUILD_SHIPPING
 		s_RenderCommandQueueLocked[queueIndex] = false;
@@ -144,12 +98,7 @@ namespace Flux {
 		s_ReleaseQueueLocked = true;
 #endif
 
-		while (!s_ReleaseQueue.empty())
-		{
-			RenderCommand& command = s_ReleaseQueue.front();
-			command();
-			s_ReleaseQueue.pop();
-		}
+		s_ReleaseCommandQueue->Flush();
 
 #ifndef FLUX_BUILD_SHIPPING
 		s_ReleaseQueueLocked = false;

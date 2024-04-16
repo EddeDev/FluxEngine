@@ -187,12 +187,14 @@ namespace Flux {
 	{
 		bool modified = false;
 
+#if 0
 		if (Math::EpsilonEqual(values.X, 0.0f))
 			values.X = 0.0f;
 		if (Math::EpsilonEqual(values.Y, 0.0f))
 			values.Y = 0.0f;
 		if (Math::EpsilonEqual(values.Z, 0.0f))
 			values.Z = 0.0f;
+#endif
 
 		ImGui::PushID(label.c_str());
 
@@ -267,6 +269,7 @@ namespace Flux {
 	{
 		bool modified = false;
 
+#if 0
 		if (Math::EpsilonEqual(values.X, 0.0f))
 			values.X = 0.0f;
 		if (Math::EpsilonEqual(values.Y, 0.0f))
@@ -275,6 +278,7 @@ namespace Flux {
 			values.Z = 0.0f;
 		if (Math::EpsilonEqual(values.W, 0.0f))
 			values.W = 0.0f;
+#endif
 
 		ImGui::PushID(label.c_str());
 

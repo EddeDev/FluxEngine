@@ -1,8 +1,8 @@
 #pragma once
 
-namespace Flux {
+#include "Flux/Runtime/Core/CommandQueue.h"
 
-	using RenderCommand = std::function<void()>;
+namespace Flux {
 
 	class Renderer
 	{
@@ -14,11 +14,51 @@ namespace Flux {
 		static void EndFrame();
 
 #ifndef FLUX_BUILD_SHIPPING
-		static void SubmitRenderCommand(const char* functionName, RenderCommand command);
-		static void SubmitRenderCommandRelease(const char* functionName, RenderCommand command);
+		template<typename TFunc>
+		static void SubmitRenderCommand(const char* functionName, TFunc&& func)
+		{
+			uint32 queueIndex = GetCurrentQueueIndex();
+
+			if (s_RenderCommandQueueLocked[queueIndex])
+			{
+				FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
+				FLUX_VERIFY(false);
+			}
+
+			s_RenderCommandQueue[queueIndex]->Push(std::forward<TFunc>(func));
+		}
+
+		template<typename TFunc>
+		static void SubmitRenderCommandRelease(const char* functionName, TFunc&& func)
+		{
+			SubmitRenderCommand(functionName, [func, functionName]()
+			{
+				if (s_ReleaseQueueLocked)
+				{
+					FLUX_CRITICAL_CATEGORY("Renderer", "Recursive call from {0} detected!", functionName);
+					FLUX_VERIFY(false);
+				}
+
+				s_ReleaseCommandQueue->Push(std::forward<TFunc>((TFunc&&)func));
+			});
+		}
 #else
-		static void SubmitRenderCommand(RenderCommand command);
-		static void SubmitRenderCommandRelease(RenderCommand command);
+		template<typename TFunc>
+		static void SubmitRenderCommand(TFunc&& func)
+		{
+			uint32 queueIndex = GetCurrentQueueIndex();
+
+			s_RenderCommandQueue[queueIndex]->Push(std::forward<TFunc>(func));
+		}
+
+		template<typename TFunc>
+		static void SubmitRenderCommandRelease(TFunc&& func)
+		{
+			SubmitRenderCommand([func]()
+			{
+				s_ReleaseCommandQueue->Push(std::forward<TFunc>((TFunc&&)func));
+			});
+		}
 #endif
 		static void FlushRenderCommands(uint32 queueIndex = 0);
 		static void FlushReleaseQueue();
@@ -28,8 +68,8 @@ namespace Flux {
 	private:
 		inline static constexpr uint32 s_MaxRenderCommandQueueCount = 2;
 
-		inline static std::queue<RenderCommand> s_RenderCommandQueue[s_MaxRenderCommandQueueCount];
-		inline static std::queue<RenderCommand> s_ReleaseQueue;
+		inline static CommandQueue* s_RenderCommandQueue[s_MaxRenderCommandQueueCount];
+		inline static CommandQueue* s_ReleaseCommandQueue = nullptr;
 
 #ifndef FLUX_BUILD_SHIPPING
 		inline static std::atomic<bool> s_RenderCommandQueueLocked[s_MaxRenderCommandQueueCount];

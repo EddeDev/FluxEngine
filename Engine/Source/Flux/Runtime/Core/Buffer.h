@@ -41,6 +41,16 @@ namespace Flux {
 			}
 		}
 
+		void Reallocate(uint64_t size)
+		{
+			void* data = realloc(Data, size);
+			if (data)
+			{
+				Data = data;
+				Size = size;
+			}
+		}
+
 		void Release()
 		{
 			free(Data);
@@ -59,9 +69,10 @@ namespace Flux {
 			memcpy((uint8*)Data + offset, data, size);
 		}
 
-		void* GetData(uint64 offset = 0) const
+		template<typename T = const void>
+		T* GetData(uint64 offset = 0) const
 		{
-			return (uint8*)Data + offset;
+			return (T*)((uint8*)Data + offset);
 		}
 
 		operator bool() const { return Data != nullptr; }

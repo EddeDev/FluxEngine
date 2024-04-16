@@ -1,5 +1,11 @@
 #pragma once
 
+#include "Flux/Runtime/Core/BaseTypes.h"
+
+#include <unordered_map>
+
+#include <Windows.h>
+
 namespace Flux {
 
 	namespace Utils {
