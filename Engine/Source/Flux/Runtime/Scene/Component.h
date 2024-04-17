@@ -22,6 +22,27 @@ namespace Flux {
 		Light
 	};
 
+	namespace Utils {
+
+		inline const char* ComponentTypeToString(ComponentType type)
+		{
+			switch (type)
+			{
+			case ComponentType::Name: return "Name";
+			case ComponentType::ID: return "ID";
+			case ComponentType::Relationship: return "Relationship";
+			case ComponentType::Transform: return "Transform";
+			case ComponentType::Camera: return "Camera";
+			case ComponentType::Submesh: return "Submesh";
+			case ComponentType::MeshRenderer: return "MeshRenderer";
+			case ComponentType::Light: return "Light";
+			}
+			FLUX_VERIFY("Unknown component type!");
+			return "";
+		}
+
+	}
+
 #define COMPONENT_CLASS_TYPE(type) \
 	static ComponentType GetStaticType() { return ComponentType::type; } \
 	ComponentType GetType() const { return GetStaticType(); }
@@ -130,8 +151,8 @@ namespace Flux {
 		void SetLocalEulerAngles(const Vector3& eulerAngles);
 		const Vector3& GetLocalEulerAngles() const { return m_LocalEulerAngles; }
 
-		void SetScale(const Vector3& scale);
-		const Vector3& GetScale() const { return m_LocalScale; }
+		void SetLocalScale(const Vector3& scale);
+		const Vector3& GetLocalScale() const { return m_LocalScale; }
 
 		void SetWorldPosition(const Vector3& position);
 		const Vector3& GetWorldPosition() const { return m_WorldPosition; }

@@ -27,12 +27,6 @@ namespace Flux {
 
 		m_Scene = Ref<Scene>::Create();
 		m_RenderPipeline = Ref<ForwardRenderPipeline>::Create(true);
-
-#if 0
-		Entity entity = m_Scene->CreateEmpty("Entity");
-		entity.AddComponent<SubmeshComponent>(Mesh::LoadFromFile("Resources/Meshes/Primitives/Cube.gltf"));
-		entity.AddComponent<MeshRendererComponent>();
-#endif
 	}
 
 	void RuntimeEngine::OnShutdown()

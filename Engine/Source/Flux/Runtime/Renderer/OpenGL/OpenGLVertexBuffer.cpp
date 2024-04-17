@@ -49,7 +49,7 @@ namespace Flux {
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, usage]() mutable
 		{
-			auto& buffer = data->Storage.GetBuffer(bufferIndex);
+			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
 			glCreateBuffers(1, &data->BufferID);
 			glNamedBufferData(data->BufferID, buffer.Size, buffer.Data, Utils::OpenGLBufferUsage(usage));
 			data->Storage.SetBufferAvailable(bufferIndex);
@@ -96,7 +96,7 @@ namespace Flux {
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, size, offset]() mutable
 		{
-			auto& buffer = data->Storage.GetBuffer(bufferIndex);
+			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
 			glNamedBufferSubData(data->BufferID, offset, size, buffer.GetData());
 			data->Storage.SetBufferAvailable(bufferIndex);
 		});

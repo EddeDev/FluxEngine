@@ -41,14 +41,16 @@ namespace Flux {
 			}
 		}
 
-		void Reallocate(uint64_t size)
+		bool Reallocate(uint64_t size)
 		{
 			void* data = realloc(Data, size);
 			if (data)
 			{
 				Data = data;
 				Size = size;
+				return true;
 			}
+			return false;
 		}
 
 		void Release()
@@ -109,17 +111,23 @@ namespace Flux {
 
 			if (bufferIndex == -1)
 			{
+				bufferIndex = static_cast<int32>(m_BufferPool.size());
 				m_BufferPool.resize(m_BufferPool.size() * 2);
-				bufferIndex = static_cast<int32>(m_BufferPool.size() / 2);
 			}
 
 			auto& buffer = m_BufferPool[bufferIndex];
 			buffer.IsAvailable = false;
+			FLUX_VERIFY(buffer.UsedSize <= buffer.Buffer.Size);
 
-			buffer.Buffer.Release();
-			// TODO: optimize
-			buffer.Buffer = Buffer::Copy(data, size);
+			if (size > buffer.Buffer.Size)
+			{
+				// FLUX_INFO_CATEGORY("Render Thread Storage", "Reallocating buffer at index {0} from {1} bytes to {2} bytes", bufferIndex, buffer.Buffer.Size, size);
+				bool success = buffer.Buffer.Reallocate(size);
+				FLUX_VERIFY(success);
+			}
 
+			buffer.UsedSize = size;
+			buffer.Buffer.SetData(data, size);
 			return bufferIndex;
 		}
 
@@ -133,21 +141,23 @@ namespace Flux {
 			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
 
 			auto& buffer = m_BufferPool[bufferIndex];
-#if TODO
-			buffer.Buffer.Release();
-#endif
 			buffer.IsAvailable = true;
 		}
 
-		const Buffer& GetBuffer(uint32 bufferIndex) const
+		Buffer GetBuffer(uint32 bufferIndex) const
 		{
 			std::lock_guard<std::mutex> lock(m_BufferPoolMutex);
-			return m_BufferPool[bufferIndex].Buffer;
+
+			Buffer buffer;
+			buffer.Data = m_BufferPool[bufferIndex].Buffer.Data;
+			buffer.Size = m_BufferPool[bufferIndex].UsedSize;
+			return buffer;
 		}
 	private:
 		struct BufferData
 		{
 			Flux::Buffer Buffer;
+			uint32 UsedSize = 0;
 			bool IsAvailable = true;
 		};
 

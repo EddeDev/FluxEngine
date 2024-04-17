@@ -156,6 +156,12 @@ namespace Flux {
 		component.SetEntity(entity, this);
 		component.OnInit();
 		component.OnViewportResize(m_ViewportWidth, m_ViewportHeight);
+#if 0
+		component.SetChangedCallback([entity](auto component)
+		{
+			FLUX_WARNING("{0} Component in entity '{1}' was modified!", Utils::ComponentTypeToString(component->GetType()), entity.GetComponent<NameComponent>().GetName());
+		});
+#endif
 	}
 
 }

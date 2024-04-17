@@ -174,7 +174,7 @@ namespace Flux {
 
 		FLUX_SUBMIT_RENDER_COMMAND([data = m_Data, bufferIndex, properties = m_Properties]() mutable
 		{
-			auto& buffer = data->Storage.GetBuffer(bufferIndex);
+			Buffer buffer = data->Storage.GetBuffer(bufferIndex);
 
 			if (properties.Layers > 1)
 			{

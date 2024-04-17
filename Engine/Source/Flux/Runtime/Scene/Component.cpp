@@ -95,7 +95,7 @@ namespace Flux {
 		}
 	}
 
-	void TransformComponent::SetScale(const Vector3& scale)
+	void TransformComponent::SetLocalScale(const Vector3& scale)
 	{
 		if (Vector3::EpsilonNotEqual(m_LocalScale, scale))
 		{
@@ -118,7 +118,7 @@ namespace Flux {
 
 	void TransformComponent::SetWorldScale(const Vector3& scale)
 	{
-		SetScale(m_LocalScale + scale - m_WorldScale);
+		SetLocalScale(m_LocalScale + scale - m_WorldScale);
 	}
 #pragma endregion Transform
 

@@ -105,9 +105,9 @@ namespace Flux {
 			if (DrawVector3Control("Rotation", eulerAngles))
 				component.SetLocalEulerAngles(eulerAngles);
 
-			Vector3 scale = component.GetScale();
+			Vector3 scale = component.GetLocalScale();
 			if (DrawVector3Control("Scale", scale, 1.0f))
-				component.SetScale(scale);
+				component.SetLocalScale(scale);
 
 			ImGui::Separator();
 
