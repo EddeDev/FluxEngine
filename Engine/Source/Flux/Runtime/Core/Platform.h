@@ -3,6 +3,8 @@
 #include "Window.h"
 #include "Thread.h"
 
+#include "Flux/Runtime/Core/Math/IntRect.h"
+
 namespace Flux {
 
 	enum class MessageBoxButtons : uint8
@@ -46,18 +48,13 @@ namespace Flux {
 
 	struct MonitorInfo
 	{
-		uint32 MainPositionX;
-		uint32 MainPositionY;
-		uint32 MainSizeX;
-		uint32 MainSizeY;
-
-		uint32 WorkPositionX;
-		uint32 WorkPositionY;
-		uint32 WorkSizeX;
-		uint32 WorkSizeY;
-	
-		float DpiScale;
+		IntRect Rect;
+		IntRect WorkRect;
 	};
+
+	using MonitorHandle = void*;
+	using MonitorHandleList = std::vector<MonitorHandle>;
+	using MonitorMap = std::map<MonitorHandle, MonitorInfo>;
 
 	using WindowClassHandle = uint32;
 
@@ -94,6 +91,19 @@ namespace Flux {
 		static ThreadHandle GetThreadFromID(ThreadID threadID);
 		static ThreadID GetThreadID(ThreadHandle handle);
 		static ThreadID GetCurrentThreadID();
+
+		static MonitorHandle GetPrimaryMonitorHandle();
+		static MonitorInfo GetMonitorInfo(MonitorHandle handle);
+		static MonitorHandleList GetMonitorHandles();
+
+		static MonitorMap GetMonitors()
+		{
+			auto handles = GetMonitorHandles();
+			MonitorMap result;
+			for (auto handle : handles)
+				result[handle] = GetMonitorInfo(handle);
+			return result;
+		}
 
 		static std::string GetErrorMessage(uint32 error = 0);
 		static uint32 GetLastError();

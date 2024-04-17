@@ -12,6 +12,8 @@
 #include "Matrix3x3.h"
 #include "Matrix4x4.h"
 
+#include "IntRect.h"
+
 namespace Flux {
 
 	namespace Math {

@@ -65,6 +65,7 @@ namespace Flux {
 			return result;
 		}
 
+		// TODO: optimize this
 		inline static Matrix4x4 Inverse(const Matrix4x4& m)
 		{
 			Matrix3x3 xx;

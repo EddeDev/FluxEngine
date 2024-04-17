@@ -43,8 +43,10 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		EditorWindowManager::Shutdown();
+		SaveProject();
 
+		EditorWindowManager::Shutdown();
+	
 		CloseProject();
 	}
 
@@ -282,12 +284,21 @@ namespace Flux {
 		if (m_Project && path == m_Project->GetProjectDirectory())
 			return;
 
+		SaveProject();
+
 		CloseProject();
 
 		FLUX_INFO("Opening project: {0}", path.filename().stem().string());
 
-		m_Project = Project::Load(path);
+		m_Project = Project::LoadFromFile(path);
 		m_Project->RegisterAssetDatabase<EditorAssetDatabase>();
+
+		auto& settings = m_Project->GetSettings();
+
+		Ref<SceneViewWindow> sceneViewWindow = EditorWindowManager::GetWindow<SceneViewWindow>();
+		auto& editorCamera = sceneViewWindow->GetEditorCamera();
+		editorCamera.SetPosition(settings.EditorCameraPosition);
+		editorCamera.SetRotation(settings.EditorCameraRotation);
 
 		NewScene();
 	}
@@ -305,6 +316,7 @@ namespace Flux {
 			{
 				if (!path.empty())
 				{
+					SaveProject();
 					CloseProject();
 
 					// TODO
@@ -322,7 +334,21 @@ namespace Flux {
 		{
 			FLUX_INFO("Saving project: {0}", m_Project->GetName());
 
-			m_Project->SaveSettings();
+			auto& settings = m_Project->GetSettings();
+
+			Ref<SceneViewWindow> sceneViewWindow = EditorWindowManager::GetWindow<SceneViewWindow>();
+			if (sceneViewWindow)
+			{
+				auto& editorCamera = sceneViewWindow->GetEditorCamera();
+				settings.EditorCameraPosition = editorCamera.GetPosition();
+				settings.EditorCameraRotation = editorCamera.GetRotation();
+			}
+			else
+			{
+				FLUX_VERIFY(false);
+			}
+
+			m_Project->SaveToFile();
 		}
 	}
 
@@ -332,7 +358,7 @@ namespace Flux {
 	
 		if (m_Project)
 		{
-			FLUX_INFO("Saving and closing project: {0}", m_Project->GetName());
+			FLUX_INFO("Closing project: {0}", m_Project->GetName());
 
 			SaveScene();
 			InitScene(nullptr);
@@ -346,7 +372,6 @@ namespace Flux {
 				m_EditorScene = nullptr;
 			}
 
-			m_Project->SaveSettings();
 			FLUX_VERIFY(m_Project->GetReferenceCount() == 1);
 			m_Project = nullptr;
 		}

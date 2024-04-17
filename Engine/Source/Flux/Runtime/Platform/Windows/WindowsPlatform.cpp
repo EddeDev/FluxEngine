@@ -10,6 +10,20 @@
 
 namespace Flux {
 
+	namespace Utils {
+
+		static IntRect IntRectFromWin32Rect(RECT rect)
+		{
+			IntRect result;
+			result.MinX = rect.left;
+			result.MinY = rect.top;
+			result.MaxX = rect.right;
+			result.MaxY = rect.bottom;
+			return result;
+		}
+
+	}
+
 	extern HINSTANCE g_Instance;
 
 	struct WindowsPlatformData
@@ -38,43 +52,12 @@ namespace Flux {
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 
-	static BOOL CALLBACK MonitorEnum(HMONITOR handle, HDC hDC, RECT* rect, LPARAM data)
-	{
-		MONITORINFOEXW info = {};
-		info.cbSize = sizeof(MONITORINFO);
-		if (GetMonitorInfoW(handle, (MONITORINFO*)&info))
-		{
-			// TODO
-		}
-
-		return TRUE;
-	}
-
-	static void UpdateMonitors()
-	{
-		::EnumDisplayMonitors(NULL, NULL, MonitorEnum, NULL);
-	}
-
-	static LRESULT CALLBACK HelperWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-	{
-		switch (uMsg)
-		{
-		case WM_DISPLAYCHANGE:
-		{
-			UpdateMonitors();
-			break;
-		}
-		}
-
-		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-	}
-
 	static bool CreateHelperWindow()
 	{
 		WNDCLASSEXW wc = {};
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_OWNDC;
-		wc.lpfnWndProc = (WNDPROC)HelperWindowProc;
+		wc.lpfnWndProc = DefWindowProcW;
 		wc.hInstance = g_Instance;
 		wc.lpszClassName = L"HelperWindow";
 
@@ -120,6 +103,7 @@ namespace Flux {
 
 	static void CreateKeyTables()
 	{
+		// From glfw (win32_init.c)
 		s_Data->KeyCodes[0x00B] = FLUX_KEY_0;
 		s_Data->KeyCodes[0x002] = FLUX_KEY_1;
 		s_Data->KeyCodes[0x003] = FLUX_KEY_2;
@@ -314,7 +298,9 @@ namespace Flux {
 
 		CreateHelperWindow();
 
+#if 0
 		UpdateMonitors();
+#endif
 	}
 
 	void Platform::Shutdown()
@@ -597,6 +583,36 @@ namespace Flux {
 	ThreadID Platform::GetCurrentThreadID()
 	{
 		return static_cast<ThreadID>(::GetCurrentThreadId());
+	}
+
+	MonitorHandle Platform::GetPrimaryMonitorHandle()
+	{
+		return MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+	}
+
+	MonitorInfo Platform::GetMonitorInfo(MonitorHandle handle)
+	{
+		MONITORINFO mi = {};
+		mi.cbSize = sizeof(MONITORINFO);
+		if (!::GetMonitorInfo((HMONITOR)handle, &mi))
+			FLUX_ASSERT(false, "GetMonitorInfo failed. ({0})", Platform::GetErrorMessage());
+
+		MonitorInfo result = {};
+		result.Rect = Utils::IntRectFromWin32Rect(mi.rcMonitor);
+		result.WorkRect = Utils::IntRectFromWin32Rect(mi.rcWork);
+		return result;
+	}
+
+	MonitorHandleList Platform::GetMonitorHandles()
+	{
+		MonitorHandleList handles;
+		::EnumDisplayMonitors(NULL, NULL, [](HMONITOR handle, HDC hdc, RECT* rect, LPARAM data)
+		{
+			auto handles = (MonitorHandleList*)data;
+			handles->push_back(handle);
+			return TRUE;
+		}, (LPARAM)&handles);
+		return handles;
 	}
 
 	std::string Platform::GetErrorMessage(uint32 error)

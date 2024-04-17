@@ -17,6 +17,9 @@ namespace Flux {
 		virtual void OnUpdate() override;
 		virtual void OnImGuiRender() override;
 		virtual void OnEvent(Event& event) override;
+
+		EditorCamera& GetEditorCamera() { return m_EditorCamera; }
+		const EditorCamera& GetEditorCamera() const { return m_EditorCamera; }
 	private:
 		void DrawGizmos();
 

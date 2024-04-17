@@ -34,6 +34,19 @@ namespace Flux {
 
 		m_ThreadID = Platform::GetCurrentThreadID();
 
+#if 0
+		auto monitorHandles = Platform::GetMonitorHandles();
+		MonitorHandle secondMonitorHandle = monitorHandles[1];
+		MonitorInfo secondMonitorInfo = Platform::GetMonitorInfo(secondMonitorHandle);
+		__debugbreak();
+#endif
+
+		if (createInfo.Mode == WindowMode::Fullscreen)
+		{
+			FLUX_VERIFY(false, "Not implemented");
+			// TODO
+		}
+
 		DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX;
 
 		if (createInfo.Decorated)

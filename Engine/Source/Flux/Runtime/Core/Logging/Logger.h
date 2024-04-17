@@ -7,6 +7,8 @@
 #include <spdlog/fmt/fmt.h>
 #pragma warning(pop)
 
+#define FLUX_FORMAT fmt::format
+
 namespace Flux {
 
 	enum class LogVerbosity : uint8
