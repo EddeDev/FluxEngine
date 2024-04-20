@@ -79,8 +79,8 @@ namespace Flux {
 		m_Shader->SetUniform("u_LightColor", m_EnvironmentSettings.LightColor);
 		m_Shader->SetUniform("u_AmbientMultiplier", m_AmbientMultiplier);
 		m_Shader->SetUniform("u_ViewMatrix", m_CameraSettings.ViewMatrix);
-		m_Shader->SetUniform("u_ViewProjectionMatrix", m_CameraSettings.ProjectionMatrix * m_CameraSettings.ViewMatrix);
-		m_Shader->SetUniform("u_CameraPosition", Matrix4x4::Inverse(m_CameraSettings.ViewMatrix)[3].ToVector3());
+		m_Shader->SetUniform("u_ViewProjectionMatrix", m_CameraSettings.ViewProjectionMatrix);
+		m_Shader->SetUniform("u_CameraPosition", m_CameraSettings.CameraPosition);
 		m_Shader->SetUniform("u_LightDirection", m_EnvironmentSettings.LightDirection);
 
 		for (auto it = m_DrawCommandQueue.begin(); it != m_DrawCommandQueue.end(); it++)

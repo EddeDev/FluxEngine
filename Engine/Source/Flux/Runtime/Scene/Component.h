@@ -196,9 +196,13 @@ namespace Flux {
 			Orthographic
 		};
 	public:
+		virtual void OnUpdate() override;
 		virtual void OnViewportResize(uint32 width, uint32 height) override;
 
+		const Matrix4x4& GetViewMatrix() const { return m_ViewMatrix; }
 		const Matrix4x4& GetProjectionMatrix() const { return m_ProjectionMatrix; }
+		const Matrix4x4& GetViewProjectionMatrix() const { return m_ViewProjectionMatrix; }
+		const Matrix4x4& GetInverseViewProjectionMatrix() const { return m_InverseViewProjectionMatrix; }
 
 		void SetProjectionType(ProjectionType type);
 		ProjectionType GetProjectionType() const { return m_ProjectionType; }
@@ -215,8 +219,14 @@ namespace Flux {
 		COMPONENT_CLASS_TYPE(Camera)
 	private:
 		void RecalculateProjectionMatrix();
+		void RecalculateViewProjectionMatrix();
 	private:
-		Matrix4x4 m_ProjectionMatrix;
+		Matrix4x4 m_ViewMatrix = Matrix4x4(1.0f);
+		Matrix4x4 m_ProjectionMatrix = Matrix4x4(1.0f);
+		Matrix4x4 m_ViewProjectionMatrix = Matrix4x4(1.0f);
+		Matrix4x4 m_InverseViewProjectionMatrix = Matrix4x4(1.0f);
+
+		uint64 m_LastTransformHashCode = 0;
 
 		ProjectionType m_ProjectionType = ProjectionType::Perspective;
 		float m_NearClip = 0.1f;

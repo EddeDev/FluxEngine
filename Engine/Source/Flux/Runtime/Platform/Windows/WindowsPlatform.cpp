@@ -606,7 +606,7 @@ namespace Flux {
 	MonitorHandleList Platform::GetMonitorHandles()
 	{
 		MonitorHandleList handles;
-		::EnumDisplayMonitors(NULL, NULL, [](HMONITOR handle, HDC hdc, RECT* rect, LPARAM data)
+		::EnumDisplayMonitors(NULL, NULL, [](HMONITOR handle, HDC hDC, RECT* rect, LPARAM data)
 		{
 			auto handles = (MonitorHandleList*)data;
 			handles->push_back(handle);

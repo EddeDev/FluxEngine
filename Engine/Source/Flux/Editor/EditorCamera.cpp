@@ -43,28 +43,54 @@ namespace Flux {
 
 		float positionLerpFactor = 1.0f - Math::Exp((Math::Log(1.0f - 0.99f) / m_PositionLerpTime) * deltaTime);
 		float rotationLerpFactor = 1.0f - Math::Exp((Math::Log(1.0f - 0.99f) / m_RotationLerpTime) * deltaTime);
+
+		Vector3 previousPosition = m_Position;
+		Vector3 previousRotation = m_Rotation;
 		m_Position = Vector3::Lerp(m_Position, m_TargetPosition, positionLerpFactor);
 		m_Rotation = Vector3::Lerp(m_Rotation, m_TargetRotation, rotationLerpFactor);
 
-		m_ViewMatrix = Matrix4x4::Inverse(Math::BuildTransformationMatrix(m_Position, m_Rotation));
+		if (Vector3::EpsilonNotEqual(m_Position, previousPosition) || Vector3::EpsilonNotEqual(m_Rotation, previousRotation))
+			RecalculateViewMatrix();
 	}
 
 	void EditorCamera::SetViewportSize(uint32 width, uint32 height)
 	{
 		float aspectRatio = (float)width / (float)height;
-		m_ProjectionMatrix = Matrix4x4::Perspective(m_VerticalFOV, aspectRatio, m_FarClip, m_NearClip);
+		if (m_AspectRatio != aspectRatio)
+		{
+			m_ProjectionMatrix = Matrix4x4::Perspective(m_VerticalFOV, aspectRatio, m_FarClip, m_NearClip);
+			m_AspectRatio = aspectRatio;
+			RecalculateViewProjectionMatrix();
+		}
 	}
 
 	void EditorCamera::SetPosition(const Vector3& position)
 	{
 		m_Position = position;
 		m_TargetPosition = position;
+
+		RecalculateViewMatrix();
 	}
 
 	void EditorCamera::SetRotation(const Vector3& rotation)
 	{
 		m_Rotation = rotation;
 		m_TargetRotation = rotation;
+	
+		RecalculateViewMatrix();
+	}
+
+	void EditorCamera::RecalculateViewMatrix()
+	{
+		m_ViewMatrix = Matrix4x4::Inverse(Math::BuildTransformationMatrix(m_Position, m_Rotation));
+
+		RecalculateViewProjectionMatrix();
+	}
+
+	void EditorCamera::RecalculateViewProjectionMatrix()
+	{
+		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+		m_InverseViewProjectionMatrix = Matrix4x4::Inverse(m_ViewProjectionMatrix);
 	}
 
 }

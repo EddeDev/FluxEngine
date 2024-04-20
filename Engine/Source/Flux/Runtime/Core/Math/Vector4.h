@@ -40,6 +40,11 @@ namespace Flux {
 		{
 		}
 
+		Vector4(const Vector4& other)
+			: X(other.X), Y(other.Y), Z(other.Z), W(other.W)
+		{
+		}
+
 		struct Vector4Wrapper
 		{
 			float& X;
@@ -668,6 +673,16 @@ Vector4WrapperConst __VA_ARGS__ ##x##y##z##w() const { return { x, y, z, w }; }
 			}
 			FLUX_VERIFY(false, "Invalid Vector4 index!");
 			return X;
+		}
+
+		bool operator==(const Vector4& other) const
+		{
+			return X == other.X && Y == other.Y && Z == other.Z && W == other.W;
+		}
+
+		bool operator!=(const Vector4& other)
+		{
+			return !(*this == other);
 		}
 
 		float* GetPointer() { return &X; }

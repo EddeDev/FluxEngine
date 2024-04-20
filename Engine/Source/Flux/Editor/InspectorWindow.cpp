@@ -111,6 +111,7 @@ namespace Flux {
 
 			ImGui::Separator();
 
+#if 0
 			ImGui::BeginDisabled();
 		
 			const Matrix4x4& worldTransform = component.GetWorldTransform();
@@ -127,6 +128,7 @@ namespace Flux {
 			DrawVector3Control("World Scale", worldScale);
 
 			ImGui::EndDisabled();
+#endif
 
 			UI::EndPropertyGrid();
 		});

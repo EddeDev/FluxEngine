@@ -2,13 +2,27 @@
 
 #include "Event.h"
 
+#include "Flux/Runtime/Core/Window.h"
+#include "Flux/Runtime/Core/MouseButtonCodes.h"
+
 namespace Flux {
 
-	class MouseButtonPressedEvent : public Event
+	class MouseEvent : public Event
+	{
+	protected:
+		MouseEvent(Ref<Window> window)
+			: m_Window(window) {}
+	public:
+		Ref<Window> GetWindow() const { return m_Window; }
+	private:
+		Ref<Window> m_Window;
+	};
+
+	class MouseButtonPressedEvent : public MouseEvent
 	{
 	public:
-		MouseButtonPressedEvent(MouseButtonCode button)
-			: m_Button(button) {}
+		MouseButtonPressedEvent(Ref<Window> window, MouseButtonCode button)
+			: MouseEvent(window), m_Button(button) {}
 
 		MouseButtonCode GetButton() const { return m_Button; }
 
@@ -17,11 +31,11 @@ namespace Flux {
 		MouseButtonCode m_Button;
 	};
 
-	class MouseButtonReleasedEvent : public Event
+	class MouseButtonReleasedEvent : public MouseEvent
 	{
 	public:
-		MouseButtonReleasedEvent(MouseButtonCode button)
-			: m_Button(button) {}
+		MouseButtonReleasedEvent(Ref<Window> window, MouseButtonCode button)
+			: MouseEvent(window), m_Button(button) {}
 
 		MouseButtonCode GetButton() const { return m_Button; }
 
@@ -30,11 +44,11 @@ namespace Flux {
 		MouseButtonCode m_Button;
 	};
 
-	class MouseMovedEvent : public Event
+	class MouseMovedEvent : public MouseEvent
 	{
 	public:
-		MouseMovedEvent(float x, float y)
-			: m_X(x), m_Y(y) {}
+		MouseMovedEvent(Ref<Window> window, float x, float y)
+			: MouseEvent(window), m_X(x), m_Y(y) {}
 
 		float GetX() const { return m_X; }
 		float GetY() const { return m_Y; }
@@ -44,11 +58,11 @@ namespace Flux {
 		float m_X, m_Y;
 	};
 
-	class MouseScrolledEvent : public Event
+	class MouseScrolledEvent : public MouseEvent
 	{
 	public:
-		MouseScrolledEvent(float x, float y)
-			: m_X(x), m_Y(y) {}
+		MouseScrolledEvent(Ref<Window> window, float x, float y)
+			: MouseEvent(window), m_X(x), m_Y(y) {}
 
 		float GetX() const { return m_X; }
 		float GetY() const { return m_Y; }

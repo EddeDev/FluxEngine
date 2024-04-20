@@ -11,6 +11,18 @@ namespace Flux {
 
 	class Entity;
 
+	// TODO: rename this?
+	struct SceneCameraData
+	{
+		Matrix4x4 ViewMatrix = Matrix4x4(1.0f);
+		Matrix4x4 ProjectionMatrix = Matrix4x4(1.0f);
+		Matrix4x4 ViewProjectionMatrix = Matrix4x4(1.0f);
+		Matrix4x4 InverseViewProjectionMatrix = Matrix4x4(1.0f);
+		Vector3 Position = Vector3(0.0f);
+		float NearClip = 0.1f;
+		float FarClip = 1000.0f;
+	};
+
 	class Scene : public Asset
 	{
 	public:
@@ -19,7 +31,7 @@ namespace Flux {
 
 		void OnUpdate();
 		void OnRender(Ref<RenderPipeline> pipeline);
-		void OnRender(Ref<RenderPipeline> pipeline, const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, float nearClip = 0.1f, float farClip = 1000.0f);
+		void OnRender(Ref<RenderPipeline> pipeline, const SceneCameraData& cameraData);
 		void SetViewportSize(uint32 width, uint32 height);
 
 		Entity CreateEmpty(const std::string& name);

@@ -141,6 +141,18 @@ namespace Flux {
 			ImGui::Text("Render Thread wait: %.2fms", m_RenderThreadWaitTime);
 		}
 
+#ifdef FLUX_MATH_DEBUG_ENABLED
+		ImGui::Separator();
+
+		auto& mathFunctionCalls = MathDebug::GetFunctionCalls();
+
+		for (auto& [functionName, numCalls] : mathFunctionCalls)
+		{
+			std::string textString = fmt::format("{0}: {1} calls", functionName, numCalls);
+			ImGui::TextUnformatted(textString.c_str());
+		}
+#endif
+
 		ImGui::End();
 #endif
 	}

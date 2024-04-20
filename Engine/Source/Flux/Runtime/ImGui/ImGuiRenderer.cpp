@@ -156,71 +156,188 @@ namespace Flux {
 
 	}
 
+	static std::vector<Ref<Window>> s_ImGuiWindows;
+
+	static uint32 GetWindowIndex(ImGuiViewport* viewport)
+	{
+		return (uint32)(uintptr)viewport->PlatformUserData;
+	}
+
+	static Ref<Window> GetWindow(ImGuiViewport* viewport)
+	{
+		uint32 windowIndex = GetWindowIndex(viewport);
+		// TODO: validate index
+		return s_ImGuiWindows[windowIndex];
+	}
+
 	static void ImGui_Platform_CreateWindow(ImGuiViewport* viewport)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Creating window...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			WindowCreateInfo createInfo;
+			createInfo.Width = static_cast<uint32>(viewport->Size.x);
+			createInfo.Height = static_cast<uint32>(viewport->Size.y);
+			// createInfo.Decorated = (viewport->Flags & ImGuiViewportFlags_NoDecoration) ? false : true;
+			// createInfo.ShowInTaskbar = false;
+			createInfo.ParentWindow = Engine::Get().GetMainWindow();
+
+			Ref<Window> window = Window::Create(createInfo);
+			window->SetEventQueue(createInfo.ParentWindow->GetEventQueue());
+
+			uint32 windowIndex = static_cast<uint32>(s_ImGuiWindows.size());
+			s_ImGuiWindows.push_back(window);
+
+			viewport->PlatformUserData = (void*)(uintptr)windowIndex;
+			viewport->PlatformHandle = window.Get();
+			viewport->PlatformHandleRaw = window->GetNativeHandle();
+		});
 	}
 
 	static void ImGui_Platform_DestroyWindow(ImGuiViewport* viewport)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Detroying window...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			uint32 windowIndex = GetWindowIndex(viewport);
+			s_ImGuiWindows.erase(s_ImGuiWindows.begin() + windowIndex);
+			
+			viewport->PlatformUserData = nullptr;
+			viewport->PlatformHandle = nullptr;
+			viewport->PlatformHandleRaw = nullptr;
+		});
 	}
 
 	static void ImGui_Platform_ShowWindow(ImGuiViewport* viewport)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Showing window...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			Ref<Window> window = GetWindow(viewport);
+			window->SetVisible(true);
+		});
 	}
 
 	static ImVec2 ImGui_Platform_GetWindowPos(ImGuiViewport* viewport)
 	{
-		return {};
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Ref<Window> window = GetWindow(viewport);
+		// GetPosition is thread safe
+		auto [x, y] = window->GetPosition();
+		return { (float)x, (float)y };
 	}
 
 	static void ImGui_Platform_SetWindowPos(ImGuiViewport* viewport, ImVec2 pos)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Setting window position...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			Ref<Window> window = GetWindow(viewport);
+			window->SetPosition((uint32)pos.x, (uint32)pos.y);
+		});
 	}
 
 	static ImVec2 ImGui_Platform_GetWindowSize(ImGuiViewport* viewport)
 	{
-		return {};
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Ref<Window> window = GetWindow(viewport);
+		// GetSize is thread safe
+		auto [width, height] = window->GetSize();
+		return { (float)width, (float)height };
 	}
 
 	static void ImGui_Platform_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Setting window size...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			Ref<Window> window = GetWindow(viewport);
+			window->SetSize((uint32)size.x, (uint32)size.y);
+		});
 	}
 
 	static void ImGui_Platform_SetWindowFocus(ImGuiViewport* viewport)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Setting window focus...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+	
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			Ref<Window> window = GetWindow(viewport);
+			window->SetFocus();
+		});
 	}
 
 	static bool ImGui_Platform_GetWindowFocus(ImGuiViewport* viewport)
 	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
 		return true;
 	}
 
 	static bool ImGui_Platform_GetWindowMinimized(ImGuiViewport* viewport)
 	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
 		return false;
 	}
 
 	static void ImGui_Platform_SetWindowTitle(ImGuiViewport* viewport, const char* title)
 	{
-		FLUX_INFO_CATEGORY("ImGui", "Setting window title...");
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			Ref<Window> window = GetWindow(viewport);
+			window->SetTitle(title);
+		});
+	}
+
+	static void ImGui_Platform_RenderWindow(ImGuiViewport* viewport, void* render_arg)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+	}
+
+	static void ImGui_Platform_SwapBuffers(ImGuiViewport* viewport, void* render_arg)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	static void ImGui_Renderer_CreateWindow(ImGuiViewport* viewport)
 	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	static void ImGui_Renderer_DestroyWindow(ImGuiViewport* viewport)
 	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	static void ImGui_Renderer_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
 	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+
+		Engine::Get().SubmitToEventThread<true>([&]()
+		{
+			Ref<Window> window = GetWindow(viewport);
+			window->SetSize((uint32)size.x, (uint32)size.y);
+		});
+	}
+
+	static void ImGui_Renderer_RenderWindow(ImGuiViewport* viewport, void* render_arg)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
+	}
+
+	static void ImGui_Renderer_SwapBuffers(ImGuiViewport* viewport, void* render_arg)
+	{
+		FLUX_CHECK_IS_IN_MAIN_THREAD();
 	}
 
 	ImGuiRenderer::ImGuiRenderer()
@@ -353,7 +470,11 @@ namespace Flux {
 
 		WindowHandle windowHandle = window->GetNativeHandle();
 
+		uint32 mainWindowIndex = s_ImGuiWindows.size();
+		s_ImGuiWindows.push_back(window);
+
 		ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+		mainViewport->PlatformUserData = (void*)(uintptr)mainWindowIndex;
 		mainViewport->PlatformHandle = window.Get();
 		mainViewport->PlatformHandleRaw = windowHandle;
 
@@ -373,20 +494,41 @@ namespace Flux {
 		platformIO.Platform_GetWindowFocus = ImGui_Platform_GetWindowFocus;
 		platformIO.Platform_GetWindowMinimized = ImGui_Platform_GetWindowMinimized;
 		platformIO.Platform_SetWindowTitle = ImGui_Platform_SetWindowTitle;
-
-		ImGuiPlatformMonitor monitor;
-#ifdef FLUX_PLATFORM_WINDOWS
-		monitor.MainSize.x = GetSystemMetrics(SM_CXSCREEN);
-		monitor.MainSize.y = GetSystemMetrics(SM_CYSCREEN);
-#else
-		static_assert(false)
-#endif
-		platformIO.Monitors.push_back(monitor);
+		platformIO.Platform_RenderWindow = ImGui_Platform_RenderWindow;
+		platformIO.Platform_SwapBuffers = ImGui_Platform_SwapBuffers;
 
 		// Renderer
 		platformIO.Renderer_CreateWindow = ImGui_Renderer_CreateWindow;
 		platformIO.Renderer_DestroyWindow = ImGui_Renderer_DestroyWindow;
 		platformIO.Renderer_SetWindowSize = ImGui_Renderer_SetWindowSize;
+		platformIO.Renderer_RenderWindow = ImGui_Renderer_RenderWindow;
+		platformIO.Renderer_SwapBuffers = ImGui_Renderer_SwapBuffers;
+
+		auto monitors = Platform::GetMonitors();
+
+		for (auto& [handle, monitorInfo] : monitors)
+		{
+			ImGuiPlatformMonitor monitor;
+
+			// Main rect
+			monitor.MainPos.x = monitorInfo.Rect.MinX;
+			monitor.MainPos.y = monitorInfo.Rect.MinY;
+			monitor.MainSize.x = monitorInfo.Rect.GetWidth();
+			monitor.MainSize.y = monitorInfo.Rect.GetHeight();
+
+			// Work rect
+			monitor.WorkPos.x = monitorInfo.WorkRect.MinX;
+			monitor.WorkPos.y = monitorInfo.WorkRect.MinY;
+			monitor.WorkSize.x = monitorInfo.WorkRect.GetWidth();
+			monitor.WorkSize.y = monitorInfo.WorkRect.GetHeight();
+
+			// 96 DPI (TODO)
+			monitor.DpiScale = 1.0f;
+
+			monitor.PlatformHandle = handle;
+
+			platformIO.Monitors.push_back(monitor);
+		}
 
 		// Font texture
 		{
@@ -640,9 +782,15 @@ namespace Flux {
 
 	void ImGuiRenderer::OnWindowResizeEvent(WindowResizeEvent& event) const
 	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = ImVec2((float)event.GetWidth(), (float)event.GetHeight());
-		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+		// TODO: HACK
+		uint32 mainWindowIndex = GetWindowIndex(ImGui::GetMainViewport());
+		Ref<Window> mainWindow = s_ImGuiWindows[mainWindowIndex];
+		if (mainWindow == event.GetWindow().Get())
+		{
+			ImGuiIO& io = ImGui::GetIO();
+			io.DisplaySize = ImVec2((float)event.GetWidth(), (float)event.GetHeight());
+			io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+		}
 	}
 
 	void ImGuiRenderer::OnWindowFocusEvent(WindowFocusEvent& event) const
@@ -672,7 +820,16 @@ namespace Flux {
 	void ImGuiRenderer::OnMouseMovedEvent(MouseMovedEvent& event) const
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.AddMousePosEvent(event.GetX(), event.GetY());
+
+		float mouseX = event.GetX();
+		float mouseY = event.GetY();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			auto [x, y] = event.GetWindow()->GetPosition();
+			mouseX += x;
+			mouseY += y;
+		}
+		io.AddMousePosEvent(mouseX, mouseY);
 	}
 
 	void ImGuiRenderer::OnMouseButtonPressedEvent(MouseButtonPressedEvent& event) const

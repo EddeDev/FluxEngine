@@ -27,6 +27,9 @@ namespace Flux {
 		{
 			Matrix4x4 ViewMatrix = Matrix4x4(1.0f);
 			Matrix4x4 ProjectionMatrix = Matrix4x4(1.0f);
+			Matrix4x4 ViewProjectionMatrix = Matrix4x4(1.0f);
+			Matrix4x4 InverseViewProjectionMatrix = Matrix4x4(1.0f);
+			Vector3 CameraPosition = Vector3(0.0f);
 			float NearClip = 0.1f;
 			float FarClip = 1000.0f;
 		};

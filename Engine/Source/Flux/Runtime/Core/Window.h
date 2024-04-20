@@ -50,8 +50,20 @@ namespace Flux {
 	public:
 		virtual ~Window() {}
 
+		virtual void SetSize(uint32 width, uint32 height) = 0;
+		virtual std::pair<uint32, uint32> GetSize() const = 0;
+
+		virtual void SetPosition(uint32 x, uint32 y) = 0;
+		virtual std::pair<uint32, uint32> GetPosition() const = 0;
+
+		virtual void SetTitle(const std::string& title) = 0;
+		virtual const std::string& GetTitle() = 0;
+
 		virtual void SetVisible(bool visible) const = 0;
 		virtual bool IsVisible() const = 0;
+
+		virtual void SetFocus() = 0;
+		virtual bool IsFocused() const = 0;
 
 		virtual WindowMenu CreateMenu() const = 0;
 		virtual bool SetMenu(WindowMenu menu) const = 0;
@@ -63,6 +75,7 @@ namespace Flux {
 		virtual CursorShape GetCursorShape() const = 0;
 
 		virtual void SetEventQueue(Ref<EventQueue> eventQueue) = 0;
+		virtual Ref<EventQueue> GetEventQueue() const = 0;
 
 		virtual uint32 GetWidth() const = 0;
 		virtual uint32 GetHeight() const = 0;

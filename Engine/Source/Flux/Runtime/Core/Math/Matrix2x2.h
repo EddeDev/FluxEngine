@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MathDebug.h"
+
 #include "Vector2.h"
 
 #include "Flux/Runtime/Core/AssertionMacros.h"
@@ -28,6 +30,8 @@ namespace Flux {
 
 		inline static Matrix2x2 Transpose(const Matrix2x2& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix2x2 result;
 			result[0][0] = m[0][0];
 			result[0][1] = m[1][0];
@@ -38,6 +42,8 @@ namespace Flux {
 
 		inline static Matrix2x2 Inverse(const Matrix2x2& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			float invDeterminant = 1.0f / Determinant(m);
 
 			Matrix2x2 result;

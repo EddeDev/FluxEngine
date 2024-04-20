@@ -3,8 +3,6 @@
 
 #include "Flux/Runtime/Renderer/Renderer.h"
 
-#include <stb_image.h>
-
 namespace Flux {
 
 	RuntimeEngine::RuntimeEngine(const EngineCreateInfo& createInfo)
@@ -21,12 +19,31 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		uint32 width = m_MainWindow->GetWidth();
-		uint32 height = m_MainWindow->GetHeight();
-		m_EditorCamera.SetViewportSize(width, height);
+		// TODO: very temp
+		m_Project = Project::LoadFromFile("C:/Users/Edvin Pettersson/Desktop/FluxProject");
+		m_Project->RegisterAssetDatabase<EditorAssetDatabase>();
 
 		m_Scene = Ref<Scene>::Create();
 		m_RenderPipeline = Ref<ForwardRenderPipeline>::Create(true);
+
+		{
+			Entity cubeEntity = m_Scene->CreateEmpty("Cube");
+			cubeEntity.GetComponent<TransformComponent>().SetLocalPosition({ -4.0f, 0.0f, 0.0f });
+			Ref<Mesh> cubeMeshAsset = m_Project->GetAssetDatabase()->GetAssetFromPath("Assets/Meshes/Primitives/Cube.gltf");
+			cubeEntity.AddComponent<SubmeshComponent>(cubeMeshAsset->GetAssetID());
+			cubeEntity.AddComponent<MeshRendererComponent>();
+
+			Entity sphereEntity = m_Scene->CreateEmpty("Sphere");
+			sphereEntity.GetComponent<TransformComponent>().SetLocalPosition({ 0.0f, 0.0f, 0.0f });
+			Ref<Mesh> sphereMeshAsset = m_Project->GetAssetDatabase()->GetAssetFromPath("Assets/Meshes/Primitives/Sphere.gltf");
+			sphereEntity.AddComponent<SubmeshComponent>(sphereMeshAsset->GetAssetID());
+			sphereEntity.AddComponent<MeshRendererComponent>();
+
+			Entity cameraEntity = m_Scene->CreateCamera("Main Camera");
+			cameraEntity.GetComponent<TransformComponent>().SetLocalPosition({ 0.0f, 1.0f, -10.0f });
+
+			Entity directionalLightEntity = m_Scene->CreateDirectionalLight("Directional Light", { 50.0f, -30.0f, 0.0f });
+		}
 	}
 
 	void RuntimeEngine::OnShutdown()
@@ -44,22 +61,13 @@ namespace Flux {
 	{
 		FLUX_CHECK_IS_IN_MAIN_THREAD();
 
-		// TODO
-		float deltaTime = m_DeltaTime;
-		m_EditorCamera.OnUpdate(deltaTime);
-
 		m_Scene->OnUpdate();
-		m_Scene->OnRender(m_RenderPipeline, m_EditorCamera.GetViewMatrix(), m_EditorCamera.GetProjectionMatrix());
+		m_Scene->OnRender(m_RenderPipeline);
 	}
 
 	void RuntimeEngine::OnImGuiRender()
 	{
 		ImGui::Begin("Debug");
-
-		ImGui::Text("Camera Position: [%.2f, %.2f, %.2f]", m_EditorCamera.GetPosition().X, m_EditorCamera.GetPosition().Y, m_EditorCamera.GetPosition().Z);
-		ImGui::Text("Camera Rotation: [%.2f, %.2f, %.2f]", m_EditorCamera.GetRotation().X, m_EditorCamera.GetRotation().Y, m_EditorCamera.GetRotation().Z);
-
-		ImGui::Separator();
 
 		BuildConfiguration buildConfig = Engine::GetBuildConfiguration();
 		const char* buildConfigString = Utils::BuildConfigurationToString(buildConfig);
@@ -90,6 +98,18 @@ namespace Flux {
 			ImGui::Text("Render Thread wait: %.2fms", m_RenderThreadWaitTime);
 		}
 
+#ifdef FLUX_MATH_DEBUG_ENABLED
+		ImGui::Separator();
+
+		auto& mathFunctionCalls = MathDebug::GetFunctionCalls();
+
+		for (auto& [functionName, numCalls] : mathFunctionCalls)
+		{
+			std::string textString = fmt::format("{0}: {1} calls", functionName, numCalls);
+			ImGui::TextUnformatted(textString.c_str());
+		}
+#endif
+
 		ImGui::End();
 	}
 
@@ -101,8 +121,8 @@ namespace Flux {
 
 	void RuntimeEngine::OnWindowResizeEvent(WindowResizeEvent& event)
 	{
+		m_Scene->SetViewportSize(event.GetWidth(), event.GetHeight());
 		m_RenderPipeline->SetViewportSize(event.GetWidth(), event.GetHeight());
-		m_EditorCamera.SetViewportSize(event.GetWidth(), event.GetHeight());
 	}
 
 }

@@ -41,7 +41,16 @@ namespace Flux {
 			m_RenderPipeline->SetViewportSize(m_ViewportWidth, m_ViewportHeight);
 			m_Scene->SetViewportSize(m_ViewportWidth, m_ViewportHeight);
 
-			m_Scene->OnRender(m_RenderPipeline, m_EditorCamera.GetViewMatrix(), m_EditorCamera.GetProjectionMatrix());
+			SceneCameraData cameraData;
+			cameraData.ViewMatrix = m_EditorCamera.GetViewMatrix();
+			cameraData.ProjectionMatrix = m_EditorCamera.GetProjectionMatrix();
+			cameraData.ViewProjectionMatrix = m_EditorCamera.GetViewProjectionMatrix();
+			cameraData.InverseViewProjectionMatrix = m_EditorCamera.GetInverseViewProjectionMatrix();
+			cameraData.Position = m_EditorCamera.GetPosition();
+			cameraData.NearClip = m_EditorCamera.GetNearClip();
+			cameraData.FarClip = m_EditorCamera.GetFarClip();
+
+			m_Scene->OnRender(m_RenderPipeline, cameraData);
 		}
 	}
 

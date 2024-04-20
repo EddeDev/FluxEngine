@@ -123,6 +123,26 @@ namespace Flux {
 #pragma endregion Transform
 
 #pragma region Camera
+	void CameraComponent::OnUpdate()
+	{
+		Entity entity = { m_Entity, m_Scene };
+
+		if (entity.HasComponent<TransformComponent>())
+		{
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+
+			auto& worldTransform = transformComponent.GetWorldTransform();
+
+			uint64 hashCode = worldTransform.GetHashCode();
+			if (m_LastTransformHashCode != hashCode)
+			{
+				m_ViewMatrix = Matrix4x4::Inverse(Math::BuildTransformationMatrix(transformComponent.GetWorldPosition(), transformComponent.GetWorldRotation()));
+				RecalculateViewProjectionMatrix();
+				m_LastTransformHashCode = hashCode;
+			}
+		}
+	}
+
 	void CameraComponent::OnViewportResize(uint32 width, uint32 height)
 	{
 		m_AspectRatio = (float)width / (float)height;
@@ -147,7 +167,15 @@ namespace Flux {
 		}
 		}
 
+		RecalculateViewProjectionMatrix();
+
 		OnChanged();
+	}
+
+	void CameraComponent::RecalculateViewProjectionMatrix()
+	{
+		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+		m_InverseViewProjectionMatrix = Matrix4x4::Inverse(m_ViewProjectionMatrix);
 	}
 
 	void CameraComponent::SetProjectionType(ProjectionType type)

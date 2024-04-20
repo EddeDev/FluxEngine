@@ -35,6 +35,11 @@ namespace Flux {
 		{
 		}
 
+		Vector2(const Vector2& other)
+			: X(other.X), Y(other.Y)
+		{
+		}
+
 		struct Vector2Wrapper
 		{
 			float& X;
@@ -337,6 +342,16 @@ Vector2WrapperConst __VA_ARGS__ ##x##y() const { return { x, y }; }
 			}
 			FLUX_VERIFY(false, "Invalid Vector2 index!");
 			return X;
+		}
+
+		bool operator==(const Vector2& other) const
+		{
+			return X == other.X && Y == other.Y;
+		}
+
+		bool operator!=(const Vector2& other)
+		{
+			return !(*this == other);
 		}
 
 		float* GetPointer() { return &X; }

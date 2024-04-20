@@ -169,6 +169,27 @@ namespace YAML {
 		return out;
 	}
 
+	template<>
+	struct convert<Flux::Guid>
+	{
+		static Node encode(const Flux::Guid& rhs)
+		{
+			return Node(rhs.ToString());
+		}
+
+		static bool decode(const Node& node, Flux::Guid& rhs)
+		{
+			Flux::Guid::Parse(node.as<std::string>(), rhs);
+			return true;
+		}
+	};
+
+	Emitter& operator<<(Emitter& out, const Flux::Guid& v)
+	{
+		out << v.ToString();
+		return out;
+	}
+
 }
 
 namespace Flux {
@@ -223,10 +244,8 @@ namespace Flux {
 		std::filesystem::path projectFile = m_ProjectDirectory / projectFileName;
 
 		YAML::Emitter out;
-
 		out << YAML::BeginMap;
 		out << YAML::Key << "Project" << YAML::Value << projectName;
-
 		out << YAML::Key << "Settings" << YAML::Value << YAML::BeginMap;
 		out << YAML::Key << "EditorCameraPosition" << YAML::Value << m_Settings.EditorCameraPosition;
 		out << YAML::Key << "EditorCameraRotation" << YAML::Value << m_Settings.EditorCameraRotation;

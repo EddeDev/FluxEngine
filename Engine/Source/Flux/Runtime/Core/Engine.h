@@ -35,8 +35,17 @@ namespace Flux {
 
 		void Run();
 		void Close(bool restart = false);
-		void SubmitToEventThread(std::function<void()> function);
+		void SubmitToEventThread(std::function<void()> function, bool wait);
 		void SubmitToMainThread(std::function<void()> function);
+
+		template<bool TWait = false>
+		void SubmitToEventThread(std::function<void()> function)
+		{
+			if constexpr (TWait)
+				SubmitToEventThread(std::move(function), true);
+			else
+				SubmitToEventThread(std::move(function), false);
+		}
 
 		float GetTime() const { return m_CurrentTime; }
 		float GetDeltaTime() const { return m_DeltaTime; }
@@ -89,6 +98,7 @@ namespace Flux {
 		ThreadID m_RenderThreadID = 0;
 
 		std::queue<std::function<void()>> m_EventThreadQueue;
+		std::condition_variable m_EventThreadCondVar;
 		std::mutex m_EventThreadMutex;
 
 		std::queue<std::function<void()>> m_MainThreadQueue;

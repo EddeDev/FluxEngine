@@ -134,6 +134,7 @@ namespace Flux {
 			Platform::PumpMessages();
 			
 			Utils::ExecuteQueue(m_EventThreadQueue, m_EventThreadMutex);
+			m_EventThreadCondVar.notify_one();
 		}
 
 		m_MainThread->Wait();
@@ -181,11 +182,13 @@ namespace Flux {
 		m_RestartOnClose = restart;
 	}
 
-	void Engine::SubmitToEventThread(std::function<void()> function)
+	void Engine::SubmitToEventThread(std::function<void()> function, bool wait)
 	{
-		std::lock_guard<std::mutex> lock(m_EventThreadMutex);
+		std::unique_lock<std::mutex> lock(m_EventThreadMutex);
 		m_EventThreadQueue.push(std::move(function));
 		Platform::PostEmptyEvent();
+		if (wait)
+			m_EventThreadCondVar.wait(lock);
 	}
 
 	void Engine::SubmitToMainThread(std::function<void()> function)

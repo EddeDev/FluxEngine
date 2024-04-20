@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MathDebug.h"
+
 #include "Vector3.h"
 #include "Matrix2x2.h"
 
@@ -26,6 +28,8 @@ namespace Flux {
 
 		inline static Matrix3x3 Transpose(const Matrix3x3& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix3x3 result;
 			
 			result[0][0] = m[0][0];
@@ -45,6 +49,8 @@ namespace Flux {
 
 		inline static Matrix3x3 Inverse(const Matrix3x3& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			float invDeterminant = 1.0f / Determinant(m);
 
 			Matrix3x3 result;
@@ -62,6 +68,8 @@ namespace Flux {
 
 		inline static float Determinant(const Matrix3x3& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix2x2 x;
 			x[0] = { m[1][1], m[1][2] };
 			x[1] = { m[2][1], m[2][2] };
@@ -106,6 +114,8 @@ namespace Flux {
 
 		Matrix3x3 operator*(const Matrix3x3& m) const
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix3x3 result;
 
 			result.V0.X = V0.X * m.V0.X + V1.X * m.V0.Y + V2.X * m.V0.Z;
@@ -125,6 +135,8 @@ namespace Flux {
 
 		Vector3 operator*(const Vector3& v) const
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Vector3 result;
 			result.X = V0.X * v.X + V1.X * v.Y + V2.X * v.Z;
 			result.Y = V0.Y * v.X + V1.Y * v.Y + V2.Y * v.Z;

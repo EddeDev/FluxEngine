@@ -47,37 +47,39 @@ namespace Flux {
 			// TODO
 		}
 
-		DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX;
+		m_Style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX;
 
 		if (createInfo.Decorated)
 		{
-			style |= WS_CAPTION;
+			m_Style |= WS_CAPTION;
 
 			if (createInfo.Resizable)
-				style |= WS_MAXIMIZEBOX | WS_THICKFRAME;
+				m_Style |= WS_MAXIMIZEBOX | WS_THICKFRAME;
 		}
 		else
 		{
-			style |= WS_POPUP;
+			m_Style |= WS_POPUP;
 		}
 
 		if (createInfo.Maximized)
-			style |= WS_MAXIMIZE;
+			m_Style |= WS_MAXIMIZE;
 
-		DWORD exStyle = 0;
-		exStyle |= WS_EX_APPWINDOW;
+		m_ExStyle |= WS_EX_APPWINDOW;
 
 		int32 windowX = (GetSystemMetrics(SM_CXSCREEN) / 2) - (m_Width / 2);
 		int32 windowY = (GetSystemMetrics(SM_CYSCREEN) / 2) - (m_Height / 2);
 
 		RECT rect = { 0, 0, static_cast<LONG>(m_Width), static_cast<LONG>(m_Height) };
-		if (AdjustWindowRectEx(&rect, style, FALSE, exStyle))
+		if (AdjustWindowRectEx(&rect, m_Style, FALSE, m_ExStyle))
 		{
 			windowX = windowX + rect.left;
 			windowY = windowY + rect.top;
 			m_Width = rect.right - rect.left;
 			m_Height = rect.bottom - rect.top;
 		}
+
+		m_PositionX = windowX;
+		m_PositionY = windowY;
 
 		ATOM windowClass = static_cast<ATOM>(Platform::GetWindowClass());
 		if (!windowClass)
@@ -92,10 +94,10 @@ namespace Flux {
 		HWND hWndParent = static_cast<HWND>(createInfo.ParentWindow ? createInfo.ParentWindow->GetNativeHandle() : NULL);
 
 		m_WindowHandle = CreateWindowExW(
-			exStyle,
+			m_ExStyle,
 			MAKEINTATOM(windowClass),
 			title,
-			style,
+			m_Style,
 			windowX,
 			windowY,
 			m_Width,
@@ -152,6 +154,64 @@ namespace Flux {
 		DestroyWindow(m_WindowHandle);
 	}
 
+	void WindowsWindow::SetSize(uint32 width, uint32 height)
+	{
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
+
+		if (m_Width != width || m_Height != height)
+		{
+			RECT rect = { 0, 0, (LONG)width, (LONG)height };
+			::AdjustWindowRectEx(&rect, m_Style, FALSE, m_ExStyle);
+			m_Width = rect.right - rect.left;
+			m_Height = rect.bottom - rect.top;
+
+			::SetWindowPos(m_WindowHandle, nullptr, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+		}
+	}
+
+	void WindowsWindow::SetPosition(uint32 x, uint32 y)
+	{
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
+
+		if (m_PositionX != x || m_PositionY != y)
+		{
+			RECT rect = { static_cast<LONG>(x), static_cast<LONG>(y), static_cast<LONG>(x), static_cast<LONG>(y) };
+			::AdjustWindowRectEx(&rect, m_Style, FALSE, m_ExStyle);
+			m_PositionX = rect.left;
+			m_PositionY = rect.top;
+
+			::SetWindowPos(m_WindowHandle, NULL, m_PositionX, m_PositionY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		}
+	}
+
+	std::pair<uint32, uint32> WindowsWindow::GetPosition() const
+	{
+		return { m_PositionX, m_PositionY };
+	}
+
+	void WindowsWindow::SetTitle(const std::string& title)
+	{
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
+
+		std::lock_guard<std::mutex> lock(m_TitleMutex);
+
+		if (m_Title != title)
+		{
+			wchar_t* buffer = new wchar_t[title.size() + 1];
+			MultiByteToWideChar(CP_UTF8, 0, title.c_str(), -1, buffer, static_cast<int32>(title.size()) + 1);
+			SetWindowTextW(m_WindowHandle, buffer);
+			delete[] buffer;
+
+			m_Title = title;
+		}
+	}
+
+	const std::string& WindowsWindow::GetTitle()
+	{
+		std::lock_guard<std::mutex> lock(m_TitleMutex);
+		return m_Title;
+	}
+
 	void WindowsWindow::SetVisible(bool visible) const
 	{
 		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
@@ -164,6 +224,22 @@ namespace Flux {
 		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
 
 		return ::IsWindowVisible(m_WindowHandle);
+	}
+
+	void WindowsWindow::SetFocus()
+	{
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
+
+		::BringWindowToTop(m_WindowHandle);
+		::SetForegroundWindow(m_WindowHandle);
+		::SetFocus(m_WindowHandle);
+	}
+
+	bool WindowsWindow::IsFocused() const
+	{
+		FLUX_CHECK_IS_IN_THREAD(m_ThreadID);
+		FLUX_VERIFY(false, "Not implemented!");
+		return false;
 	}
 
 	WindowMenu WindowsWindow::CreateMenu() const
@@ -242,17 +318,17 @@ namespace Flux {
 		{
 		case WM_COMMAND:
 		{
-			m_EventQueue->AddEvent<WindowMenuEvent>(this, m_Menu, (uint32)wParam);
+			SubmitEvent<WindowMenuEvent>(this, m_Menu, (uint32)wParam);
 			break;
 		}
 		case WM_SETFOCUS:
 		{
-			m_EventQueue->AddEvent<WindowFocusEvent>(this, true);
+			SubmitEvent<WindowFocusEvent>(this, true);
 			return FALSE;
 		}
 		case WM_KILLFOCUS:
 		{
-			m_EventQueue->AddEvent<WindowFocusEvent>(this, false);
+			SubmitEvent<WindowFocusEvent>(this, false);
 			return FALSE;
 		}
 		case WM_SIZE:
@@ -269,12 +345,12 @@ namespace Flux {
 				bool maximized = wParam == SIZE_MAXIMIZED || (m_Maximized && wParam != SIZE_RESTORED);
 
 				if (m_Minimized != minimized)
-					m_EventQueue->AddEvent<WindowMinimizeEvent>(this, minimized);
+					SubmitEvent<WindowMinimizeEvent>(this, minimized);
 
 				if (m_Maximized != maximized)
-					m_EventQueue->AddEvent<WindowMaximizeEvent>(this, maximized);
+					SubmitEvent<WindowMaximizeEvent>(this, maximized);
 
-				m_EventQueue->AddEvent<WindowResizeEvent>(this, width, height);
+				SubmitEvent<WindowResizeEvent>(this, width, height);
 
 				m_Minimized = minimized;
 				m_Maximized = maximized;
@@ -288,7 +364,7 @@ namespace Flux {
 		}
 		case WM_CLOSE:
 		{
-			m_EventQueue->AddEvent<WindowCloseEvent>(this);
+			SubmitEvent<WindowCloseEvent>(this);
 			return FALSE;
 		}
 		case WM_KEYDOWN:
@@ -352,9 +428,9 @@ namespace Flux {
 				mods |= FLUX_MOD_NUM_LOCK;
 
 			if (HIWORD(lParam) & KF_UP)
-				m_EventQueue->AddEvent<KeyReleasedEvent>((KeyCode)key);
+				SubmitEvent<KeyReleasedEvent>(this, (KeyCode)key);
 			else
-				m_EventQueue->AddEvent<KeyPressedEvent>((KeyCode)key);
+				SubmitEvent<KeyPressedEvent>(this, (KeyCode)key);
 			break;
 		}
 		case WM_CHAR:
@@ -386,7 +462,7 @@ namespace Flux {
 				m_HighSurrogate = 0;
 
 				if (uMsg != WM_SYSCHAR)
-					m_EventQueue->AddEvent<KeyTypedEvent>(codepoint);
+					SubmitEvent<KeyTypedEvent>(this, codepoint);
 			}
 
 			return FALSE;
@@ -396,7 +472,7 @@ namespace Flux {
 			if (wParam == UNICODE_NOCHAR)
 				return TRUE;
 
-			m_EventQueue->AddEvent<KeyTypedEvent>((char32)wParam);
+			SubmitEvent<KeyTypedEvent>(this, (char32)wParam);
 			return FALSE;
 		}
 		case WM_LBUTTONDOWN:
@@ -434,9 +510,9 @@ namespace Flux {
 			m_MouseButtons[button] = pressed;
 
 			if (pressed)
-				m_EventQueue->AddEvent<MouseButtonPressedEvent>((MouseButtonCode)button);
+				SubmitEvent<MouseButtonPressedEvent>(this, (MouseButtonCode)button);
 			else
-				m_EventQueue->AddEvent<MouseButtonReleasedEvent>((MouseButtonCode)button);
+				SubmitEvent<MouseButtonReleasedEvent>(this, (MouseButtonCode)button);
 
 			for (i = 0; i <= FLUX_MOUSE_BUTTON_LAST; i++)
 			{
@@ -457,7 +533,7 @@ namespace Flux {
 			const int32 x = GET_X_LPARAM(lParam);
 			const int32 y = GET_Y_LPARAM(lParam);
 
-			m_EventQueue->AddEvent<MouseMovedEvent>((float)x, (float)y);
+			SubmitEvent<MouseMovedEvent>(this, (float)x, (float)y);
 			return FALSE;
 		}
 		case WM_MOUSEWHEEL:
@@ -465,7 +541,7 @@ namespace Flux {
 			const float x = 0.0f;
 			const float y = GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
 
-			m_EventQueue->AddEvent<MouseScrolledEvent>((float)x, (float)y);
+			SubmitEvent<MouseScrolledEvent>(this, (float)x, (float)y);
 			return FALSE;
 		}
 		case WM_MOUSEHWHEEL:
@@ -473,7 +549,7 @@ namespace Flux {
 			const float x = -GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
 			const float y = 0.0f;
 
-			m_EventQueue->AddEvent<MouseScrolledEvent>((float)x, (float)y);
+			SubmitEvent<MouseScrolledEvent>(this, (float)x, (float)y);
 			return FALSE;
 		}
 		case WM_SETCURSOR:

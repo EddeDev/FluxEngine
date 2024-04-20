@@ -35,17 +35,29 @@ namespace Flux {
 
 		auto& transformComponent = mainCameraEntity.GetComponent<TransformComponent>();
 		auto& cameraComponent = mainCameraEntity.GetComponent<CameraComponent>();
-		Matrix4x4 viewMatrix = Matrix4x4::Inverse(Math::BuildTransformationMatrix(transformComponent.GetWorldPosition(), transformComponent.GetWorldRotation()));
-		OnRender(pipeline, viewMatrix, cameraComponent.GetProjectionMatrix(), cameraComponent.GetNearClip(), cameraComponent.GetFarClip());
+
+		SceneCameraData cameraData;
+		cameraData.ViewMatrix = cameraComponent.GetViewMatrix();
+		cameraData.ProjectionMatrix = cameraComponent.GetProjectionMatrix();
+		cameraData.ViewProjectionMatrix = cameraComponent.GetViewProjectionMatrix();
+		cameraData.InverseViewProjectionMatrix = cameraComponent.GetInverseViewProjectionMatrix();
+		cameraData.Position = transformComponent.GetWorldPosition();
+		cameraData.NearClip = cameraComponent.GetNearClip();
+		cameraData.FarClip = cameraComponent.GetFarClip();
+
+		OnRender(pipeline, cameraData);
 	}
 
-	void Scene::OnRender(Ref<RenderPipeline> pipeline, const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix, float nearClip, float farClip)
+	void Scene::OnRender(Ref<RenderPipeline> pipeline, const SceneCameraData& cameraData)
 	{
 		auto& cameraSettings = pipeline->GetCameraSettings();
-		cameraSettings.ViewMatrix = viewMatrix;
-		cameraSettings.ProjectionMatrix = projectionMatrix;
-		cameraSettings.NearClip = nearClip;
-		cameraSettings.FarClip = farClip;
+		cameraSettings.ViewMatrix = cameraData.ViewMatrix;
+		cameraSettings.ProjectionMatrix = cameraData.ProjectionMatrix;
+		cameraSettings.ViewProjectionMatrix = cameraData.ViewProjectionMatrix;
+		cameraSettings.InverseViewProjectionMatrix = cameraData.InverseViewProjectionMatrix;
+		cameraSettings.CameraPosition = cameraData.Position;
+		cameraSettings.NearClip = cameraData.NearClip;
+		cameraSettings.FarClip = cameraData.FarClip;
 
 		auto& environmentSettings = pipeline->GetEnvironmentSettings();
 

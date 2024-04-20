@@ -20,6 +20,8 @@ namespace Flux {
 
 		inline static Matrix4x4 BuildTransformationMatrix(const Vector3& position, const Quaternion& rotation, const Vector3& scale = Vector3(1.0f))
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix4x4 positionMatrix = Matrix4x4::Translate(position);
 			Matrix4x4 rotationMatrix = rotation.ToMatrix4x4();
 			Matrix4x4 scaleMatrix = Matrix4x4::Scale(scale);
@@ -34,6 +36,8 @@ namespace Flux {
 
 		inline static bool DecomposeTransformationMatrix(const Matrix4x4& m, Vector3& outPosition, Quaternion& outOrientation, Vector3& outScale)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			// From https://github.com/g-truc/glm/blob/b101e8f3de31af8c06932e03a447fd1c67ff5fa4/glm/gtx/matrix_decompose.inl#L33
 
 			Matrix4x4 localMatrix(m);

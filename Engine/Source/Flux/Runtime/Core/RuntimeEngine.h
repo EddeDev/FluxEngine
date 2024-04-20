@@ -7,7 +7,8 @@
 #include "Flux/Runtime/Renderer/RenderPipeline.h"
 
 // TODO: Temp
-#include "Flux/Editor/EditorCamera.h"
+#include "Flux/Editor/Project/Project.h"
+#include "Flux/Editor/EditorAssetDatabase.h"
 
 namespace Flux {
 
@@ -25,10 +26,9 @@ namespace Flux {
 	private:
 		void OnWindowResizeEvent(WindowResizeEvent& event);
 	private:
+		Ref<Project> m_Project;
 		Ref<Scene> m_Scene;
 		Ref<RenderPipeline> m_RenderPipeline;
-
-		EditorCamera m_EditorCamera;
 	};
 
 }

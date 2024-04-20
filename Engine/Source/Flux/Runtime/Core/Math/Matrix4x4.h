@@ -1,8 +1,12 @@
 #pragma once
 
+#include "MathDebug.h"
+
 #include "Matrix3x3.h"
 
 #include "Flux/Runtime/Core/AssertionMacros.h"
+
+#include <city.h>
 
 namespace Flux {
 
@@ -68,6 +72,8 @@ namespace Flux {
 		// TODO: optimize this
 		inline static Matrix4x4 Inverse(const Matrix4x4& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix3x3 xx;
 			xx[0] = { m[1][1], m[1][2], m[1][3] };
 			xx[1] = { m[2][1], m[2][2], m[2][3] };
@@ -182,6 +188,8 @@ namespace Flux {
 
 		inline static float Determinant(const Matrix4x4& m)
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix3x3 x;
 			x[0] = { m[1][1], m[1][2], m[1][3] };
 			x[1] = { m[2][1], m[2][2], m[2][3] };
@@ -427,6 +435,8 @@ namespace Flux {
 
 		Matrix4x4 operator*(const Matrix4x4& m) const
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Matrix4x4 result;
 			
 			result.V0.X = V0.X * m.V0.X + V1.X * m.V0.Y + V2.X * m.V0.Z + V3.X * m.V0.W;
@@ -454,6 +464,8 @@ namespace Flux {
 
 		Vector4 operator*(const Vector4& v) const
 		{
+			FLUX_MATH_PROFILE_FUNC();
+
 			Vector4 result;
 			result.X = V0.X * v.X + V1.X * v.Y + V2.X * v.Z + V3.X * v.W;
 			result.Y = V0.Y * v.X + V1.Y * v.Y + V2.Y * v.Z + V3.Y * v.W;
@@ -486,6 +498,11 @@ namespace Flux {
 			}
 			FLUX_VERIFY(false, "Invalid Matrix4x4 index!");
 			return V0;
+		}
+
+		uint64 GetHashCode() const
+		{
+			return CityHash64((char*)this, sizeof(Matrix4x4));
 		}
 
 		float* GetPointer() { return &V0.X; }
