@@ -151,7 +151,7 @@ namespace Flux {
 			else
 			{
 				if (properties.Samples > 1)
-					glTextureStorage2DMultisample(data->TextureID, properties.MipCount, data->InternalFormat, properties.Width, properties.Height, GL_FALSE);
+					glTextureStorage2DMultisample(data->TextureID, properties.Samples, data->InternalFormat, properties.Width, properties.Height, GL_FALSE);
 				else
 					glTextureStorage2D(data->TextureID, properties.MipCount, data->InternalFormat, properties.Width, properties.Height);
 			}
