@@ -9,7 +9,7 @@ namespace Flux {
 	private:
 		typedef void (*CommandFn)(void*);
 	public:
-		CommandQueue(const std::string& debugName, uint64_t initialSize);
+		CommandQueue(const std::string& debugName, uint64 initialSize);
 		~CommandQueue();
 
 		template<typename TFunc>
@@ -21,8 +21,8 @@ namespace Flux {
 
 		void Flush();
 	private:
-		void* Allocate(CommandFn func, uint32_t size);
-		void Resize(uint32_t currentOffset, uint32_t newCapacity);
+		void* Allocate(CommandFn func, uint32 size);
+		void Resize(uint32 currentOffset, uint32 newCapacity);
 
 		template<typename TFunc>
 		static void Execute(void* pointer)
@@ -33,7 +33,7 @@ namespace Flux {
 		}
 	private:
 		Buffer m_Buffer;
-		uint8_t* m_BufferPointer;
+		uint8* m_BufferPointer;
 		std::string m_DebugName;
 		bool m_ShouldShrink = false;
 	};
