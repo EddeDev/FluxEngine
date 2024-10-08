@@ -105,7 +105,7 @@ namespace Flux {
 		std::mutex m_MainThreadMutex;
 
 		std::atomic<bool> m_Running = true;
-		bool m_Minimized = false;
+		std::atomic<bool> m_Minimized = false;
 		bool m_RestartOnClose = false;
 
 		bool m_VSync = true;
